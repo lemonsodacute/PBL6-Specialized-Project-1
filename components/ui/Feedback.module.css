@@ -1,0 +1,9 @@
+/* Reuse the existing empty panel, placing artwork beside its message. */
+.withMascot:global(.empty-state-box) { grid-template-columns:auto minmax(0,max-content); justify-content:center; align-items:center; column-gap:22px; text-align:left; }
+.withMascot .owl { grid-column:1; grid-row:1 / 3; --mascot-size:80px; }
+.withMascot>strong { grid-column:2; align-self:end; }
+.withMascot>strong:last-child { grid-row:1 / 3; align-self:center; }
+.withMascot>:global(.empty-state-description) { grid-column:2; align-self:start; }
+:global(.app-shell[data-role='admin']) .withMascot .owl { --mascot-size:64px; }
+:global(.app-shell[data-role='student']) .withMascot .owl { --mascot-size:80px; }
+@media(max-width:600px) { .withMascot:global(.empty-state-box) { column-gap:16px; } :global(.app-shell[data-role]) .withMascot .owl { --mascot-size:64px; } }

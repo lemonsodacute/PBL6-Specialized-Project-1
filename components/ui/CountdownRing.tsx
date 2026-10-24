@@ -1,0 +1,1 @@
+export function CountdownRing({ seconds, total = 60 }: { seconds: number; total?: number }) { const progress = Math.max(0, Math.min(1, seconds / total)); return <div className="countdown-ring" style={{ '--progress': progress } as React.CSSProperties}><span>{seconds}s</span></div>; }

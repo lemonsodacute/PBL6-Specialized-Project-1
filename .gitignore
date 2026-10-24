@@ -1,0 +1,44 @@
+﻿# Local environments and generated application files
+.venv/
+.venv-1/
+.venv-ocr/
+/backend/models/ocr/
+__pycache__/
+*.py[cod]
+node_modules/
+.next/
+.next-dev/
+/.next-proctor-qa/
+*.tsbuildinfo
+/test-results/
+.next-recovery-*/
+.env
+.env.*
+!.env.example
+
+# Private biometric data and experiment outputs; retain public test fixtures.
+/data/face_verification/
+/data/face_verification_private_mapping.csv
+/datasets/
+/backend/data/face_verification/
+/backend/data/face_verification_private_mapping.csv
+/backend/datasets/
+/backend/private/
+/áº£nh tháº»/
+/artifacts/release-qa/
+/artifacts/performance/
+/.next-perf*/
+/backend/uploads/
+/backend/app/uploads/
+/artifacts/training/
+/artifacts/face_verification/
+/artifacts/face_verification_checks/
+/backend/artifacts/training/
+/backend/artifacts/face_verification/
+
+
+/TheSV/
+/artifacts/
+.vscode/
+.agents/
+*.session.sql

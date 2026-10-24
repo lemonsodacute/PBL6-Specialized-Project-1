@@ -1,0 +1,110 @@
+.root {
+  position: relative;
+  min-width: 0;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 3px 7px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  font: inherit;
+}
+
+.trigger:hover, .trigger[aria-expanded='true'] {
+  background: var(--surface-muted);
+}
+
+.trigger:focus-visible, .item:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.identity {
+  overflow: hidden;
+  max-width: min(38vw, 440px);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.trigger > svg, .trigger > :global(.topbar-avatar) {
+  flex-shrink: 0;
+}
+
+.root .panel {
+  position: absolute;
+  z-index: var(--z-dropdown);
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(300px, calc(100vw - 32px));
+  max-height: calc(100dvh - 88px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  box-shadow: var(--shadow-overlay);
+}
+
+.summary {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px 14px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid var(--color-mist-border);
+  overflow-wrap: anywhere;
+  color: var(--color-deep-indigo);
+  font-size: 14px;
+}
+
+.summary span { color: var(--color-slate-veil); font-size: 12px; }
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.item:hover, .item:focus { background: var(--background); }
+
+/* Đăng xuất – danger semantic color */
+.logout {
+  color: var(--error);
+  font-weight: 600;
+}
+.logout:hover, .logout:focus {
+  background: var(--error-soft);
+  color: var(--error);
+}
+.logout:focus-visible {
+  outline-color: var(--color-danger-btn);
+}
+
+@media (max-width: 1023px) {
+  .identity { max-width: 120px; }
+  .identity small { display:none; }
+}
+
+.identity { display:grid; text-align:left; gap:2px; color:var(--text-primary); }
+.identity strong { font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; }
+.identity small { font-size:12px; color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis; }
+@media(max-width:639px){ .identity { display:none; } }

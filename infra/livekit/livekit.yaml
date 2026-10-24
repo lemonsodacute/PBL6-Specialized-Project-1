@@ -1,0 +1,18 @@
+# Production SFU template. Supply LIVEKIT_KEYS on the server through a secret
+# manager or a private env file; do not put credentials in this tracked file.
+port: 7880
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50100
+  use_external_ip: true
+room:
+  auto_create: false
+  enable_remote_unmute: false
+webhook:
+  # Replace with your configured API key identifier and public FastAPI URL.
+  api_key: REPLACE_API_KEY_ID
+  urls:
+    - https://api.example.com/api/v1/live-classes/provider-webhook
+logging:
+  level: warn

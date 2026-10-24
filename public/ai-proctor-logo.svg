@@ -1,0 +1,11 @@
+<svg width="420" height="150" viewBox="0 0 420 150" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+<title id="title">ProctoOwl</title><desc id="desc">ProctoOwl geometric owl mark</desc>
+<g transform="translate(18 26) scale(1.5)">
+  <path d="M5 5L21 13C28 9 36 9 43 13L59 5L56 34C54 49 44 58 32 61C20 58 10 49 8 34L5 5Z" fill="#006D77"/>
+  <path d="M12 27C12 18 23 16 32 24C41 16 52 18 52 27C52 39 42 43 32 37C22 43 12 39 12 27Z" fill="#F3FBF8"/>
+  <circle cx="23" cy="28" r="6" fill="#193D43"/><circle cx="41" cy="28" r="6" fill="#193D43"/>
+  <circle cx="25" cy="26" r="2" fill="white"/><circle cx="43" cy="26" r="2" fill="white"/>
+  <path d="M28 39L32 45L36 39H28Z" fill="#E4B75A"/>
+</g>
+<text x="124" y="94" fill="#006D77" font-family="Arial, sans-serif" font-size="49" font-weight="700" letter-spacing="-2">ProctoOwl</text>
+</svg>

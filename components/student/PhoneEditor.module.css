@@ -1,0 +1,8 @@
+.stacked { display: grid; justify-items: start; gap: 12px; min-width: 0; }
+.stacked > span { display: block; overflow-wrap: anywhere; }
+.notice { margin: 12px 0 0; color: var(--text-secondary); font-size: 13px; font-weight: 400; }
+
+@media (max-width: 640px) {
+  .stacked { justify-items: stretch; }
+  .stacked > button { width: 100%; }
+}

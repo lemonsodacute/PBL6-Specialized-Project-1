@@ -1,0 +1,21 @@
+.section { display: grid; gap: 24px; min-width: 0; }
+.warning { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--warning); border-radius: 12px; background: var(--warning-soft); color: var(--warning); overflow-wrap: anywhere; }
+.section h2, .section h3, .section h4, .section p { margin: 0; }
+.section > button { justify-self: start; }
+.confirmed { display: grid; justify-items: start; gap: 12px; }
+.updated { color: var(--text-secondary); font-size: 14px; }
+.processing { display: flex; align-items: center; gap: 12px; }
+.processing > div { display: grid; gap: 8px; }
+.processing .ui-spinner { border-color: var(--color-iris-bolt, var(--info)); border-right-color: transparent; }
+.preview { display: grid; gap: 24px; min-width: 0; padding-top: 8px; }
+.images { display: flex; align-items: start; flex-wrap: wrap; gap: 24px; }
+.images figure { margin: 0; display: grid; gap: 8px; max-width: 100%; }
+.images img { max-width: 100%; width: 440px; max-height: 320px; object-fit: contain; border-radius: 12px; }
+.images figure + figure img { width: 112px; height: 112px; }
+.images figcaption, .fields dt { color: var(--text-secondary); font-size: 14px; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 0; }
+.fields > div { min-width: 0; }
+.fields dd { margin: 8px 0 0; font-weight: 600; overflow-wrap: anywhere; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }
+@media (max-width: 1023px) { .fields { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 767px) { .actions > button { flex: 1 1 160px; } }

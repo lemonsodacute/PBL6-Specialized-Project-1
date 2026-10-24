@@ -1,0 +1,6 @@
+.column { width: 180px; min-width: 180px; max-width: 180px; padding-left: 8px; padding-right: 8px; }
+.actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: nowrap; width:100%; min-width:0; }
+.actions .primary { display: inline-flex; align-items: center; justify-content: center; height:auto; min-height:44px; max-width:calc(100% - 52px); padding:0 10px; font-size:13px; white-space:normal; overflow-wrap:anywhere; }
+.confirmActions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+.confirmError { color: var(--danger, var(--error)); margin-top: 16px; }
+@media (max-width: 767px) { .column { width: 64px; min-width: 64px; max-width: 64px; } .actions .primary { display: none; } }

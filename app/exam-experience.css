@@ -1,0 +1,32 @@
+.proctor-stream-hidden { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.floating-camera { position: fixed; z-index: 36; width: 260px; max-width: calc(100vw - 24px); overflow: hidden; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-medium); }
+.floating-camera-handle { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; padding: 4px 8px 4px 12px; cursor: grab; touch-action: none; user-select: none; color: var(--text-primary); font-size: 13px; font-weight: 600; }
+.floating-camera-handle:active { cursor: grabbing; }
+.floating-camera-handle > span { display: flex; align-items: center; gap: 8px; }
+.floating-camera-handle button { width: 40px; height: 40px; flex-shrink: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); cursor: pointer; font-size: 22px; }
+.floating-camera video { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--surface-muted); }
+.floating-camera-status { display: grid; gap: 8px; padding: 10px 12px 12px; color: var(--text-secondary); font-size: 12px; }
+.floating-camera-status > span { display: flex; align-items: center; gap: 6px; }
+.floating-camera.collapsed .floating-camera-status { display:flex; flex-wrap:wrap; gap:4px 12px; }
+.exam-media-dot { display: inline-block; flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
+.exam-media-dot.active { background: var(--success); }
+.exam-device-modal h3 { margin: 0 0 8px; font-size: 16px; }
+.exam-device-modal section p { margin: 0; }
+.device-ready { color: var(--success); }
+.device-pending { color: var(--text-secondary); }
+.exam-device-preview video { display: block; width: 100%; max-height: 260px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; background: var(--surface-muted); }
+.exam-device-modal .mic-meter { height: 10px; overflow: hidden; border-radius: 12px; background: var(--surface-muted); }
+.exam-device-modal .mic-meter i { display: block; height: 100%; background: var(--primary); }
+.attempt-page .attempt-header-actions { flex-wrap: wrap; }
+@media (max-width: 767px) {
+  .floating-camera { width: 240px; }
+  .floating-camera-handle { cursor: default; }
+  .attempt-page .attempt-header { padding: 16px; flex-wrap: wrap; gap: 12px; }
+  .attempt-page .attempt-header-actions { gap: 8px; width: 100%; }
+  .attempt-page .attempt-layout { width: calc(100% - 24px); grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .attempt-page .question-sidebar { position: static; }
+  .attempt-page .attempt-footer { gap: 8px; padding: 12px; flex-wrap: wrap; }
+  .attempt-page .attempt-footer > span { display: none; }
+  .attempt-page .attempt-footer .ui-button { flex: 1; min-width: 0; white-space: normal; }
+  .exam-device-modal .modal-actions { flex-wrap: wrap; }
+}

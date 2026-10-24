@@ -1,0 +1,206 @@
+.page { display:grid; gap:24px; min-width:0; }
+.page > * { min-width:0; }
+.calendarSection { scroll-margin-top:88px; }
+.page :global(.calendar-card) { padding:0; }
+.sectionHeader { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+.sectionHeader h2 { margin:0; font-size:20px; line-height:1.4; color:var(--text-primary); }
+.sectionHeader a { white-space:nowrap; }
+.modeSelect { min-height:44px; max-width:100%; padding:8px 32px 8px 12px; border:1px solid var(--border-control); border-radius:var(--radius-sm); background:var(--surface); color:var(--text-primary); font:inherit; }
+.desktopGrid :global(.calendar-grid) { min-width:0; }
+.desktopGrid :global(.calendar-grid.week) { min-height:220px; }
+.desktopGrid :global(.calendar-grid.month .calendar-day) { min-height:104px; padding:10px; }
+.desktopGrid :global(.calendar-grid.month .calendar-day > span) { display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:28px; font-size:13px; font-weight:600; }
+.desktopGrid :global(.calendar-grid.month .calendar-day.today > span) { border-radius:50%; background:var(--color-primary); color:var(--text-on-solid); }
+.page :global(.calendar-toolbar strong) { font-size:18px; }
+.desktopGrid :global(.calendar-event) { white-space:normal; font-size:12px; }
+.desktopGrid :global(.calendar-grid.day) { grid-template-columns:1fr; }
+.desktopGrid :global(.calendar-grid.day .calendar-weekdays) { display:none; }
+.eventPopover { position:fixed; z-index:var(--z-dropdown); width:min(360px, calc(100vw - 24px)); max-height:calc(100dvh - 24px); overflow:auto; overscroll-behavior:contain; box-sizing:border-box; padding:16px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface); color:var(--text-primary); box-shadow:var(--shadow-overlay); }
+.eventPopover > strong { display:block; overflow-wrap:anywhere; font-size:14px; margin-bottom:12px; }
+.eventPopover small { display:block; margin-top:6px; font-size:12px; color:var(--text-secondary); }
+.eventPopover a { display:inline-flex; align-items:center; min-height:44px; margin-top:8px; }
+.statusText, .eventRow .statusText { display:inline; font-size:inherit; font-weight:600; }
+.mobileAgenda { display:none; }
+.agenda { display:grid; gap:20px; padding:16px; }
+.agendaDay { min-width:0; }
+.agendaDay h3 { margin:0 0 8px; font-size:14px; color:var(--text-secondary); }
+.eventRow { display:flex; align-items:center; gap:12px; min-width:0; padding:12px 0; color:var(--text-primary); border-bottom:1px solid var(--border); }
+.eventRow:last-child { border-bottom:0; }
+.eventRow > span:not(:global(.ui-badge)) { flex:1; min-width:0; }
+.eventRow strong { display:block; font-size:14px; font-weight:600; overflow-wrap:anywhere; }
+.eventRow small { display:block; margin-top:4px; color:var(--text-secondary); font-size:12px; }
+.eventRow > a { flex-shrink:0; display:grid; place-items:center; min-width:44px; min-height:44px; }
+.upcomingList { display:grid; }
+.compactCard { padding:24px; }
+.muted { margin:12px 0 0; color:var(--text-secondary); font-size:14px; }
+.feedback { padding:20px; }
+.page > :global(.recent-activity-card) { margin:0; padding:20px; }
+.page :global(.recent-activity-card .card-toolbar) { display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; padding:0; }
+.page :global(.recent-activity-card h2) { margin:0; font-size:20px; line-height:1.4; }
+.page :global(.activity-row) { padding:12px 0; border:0; border-bottom:1px solid var(--border); border-radius:0; }
+.page :global(.activity-row:last-child) { border-bottom:0; }
+.page :global(.activity-row strong) { font-size:14px; }
+.page :global(.activity-row small) { font-size:12px; }
+.quickLinks { padding-top:0; }
+@media(max-width:767px) {
+  .page :global(.calendar-toolbar strong) { font-size:16px; }
+  .desktopGrid { display:none; }
+  .mobileAgenda { display:block; }
+  .sectionHeader h2, .page :global(.recent-activity-card h2) { font-size:18px; }
+  .compactCard, .page > :global(.recent-activity-card) { padding:16px; }
+  .page :global(.activity-row) { flex-wrap:wrap; gap:8px; }
+  .page :global(.activity-result) { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+  .eventRow { flex-wrap:wrap; }
+  .quickLinks { gap:8px; }
+}
+.eventRow[data-event-type="exam"] { border-left:3px solid var(--color-info); padding-left:12px; }
+.eventRow[data-event-type="live"] { border-left:3px solid var(--color-purple); padding-left:12px; }
+
+/* Friendly learning overview, using the same product tokens as Home/Login. */
+.neoShell{--neo-ink:var(--text-primary);--neo-outline:var(--border);--neo-cream:var(--background);--neo-paper:var(--surface);--neo-muted:var(--text-secondary);--neo-sky:var(--info-soft);--neo-mint:var(--success-soft);--neo-yellow:var(--warning-soft);--neo-lavender:var(--indigo-soft);--neo-coral:var(--error-soft)}
+.neoPage{gap:28px;padding:28px 28px 48px;max-width:1440px;color:var(--text-primary)}
+.welcome{display:flex;align-items:center;justify-content:space-between;gap:24px;min-width:0;padding:24px;border:1px solid var(--border);border-radius:var(--procto-card-radius);background-color:var(--background);background-image:var(--procto-dot-pattern);background-size:var(--procto-dot-spacing)}
+.welcome>div{min-width:0}
+.welcome p{margin:0 0 6px;font-size:14px;color:var(--text-secondary)}
+.welcome p strong{color:var(--text-primary)}
+.welcome h1{margin:0 0 10px;font:800 clamp(28px,3vw,38px)/1.12 var(--font-display);letter-spacing:-.015em;color:var(--text-primary)}
+.welcome>div>span{font-size:13px;color:var(--text-secondary)}
+.todayNote{display:flex;align-items:center;gap:10px;background:var(--warning-soft);color:var(--warning);border:1px solid color-mix(in srgb,var(--warning) 25%,var(--border));border-radius:12px;padding:12px 16px;max-width:240px;font-size:12px;font-weight:500}
+.todayNote svg{flex-shrink:0}
+.learningCards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.learningCard{--learning-accent:var(--info);--learning-tint:var(--info-soft);min-width:0;display:grid;grid-template-columns:44px minmax(0,1fr);align-items:start;gap:12px;padding:20px;background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--learning-accent);border-radius:var(--panel-radius);box-shadow:var(--shadow-subtle);color:var(--text-primary);text-decoration:none;transition:transform 200ms,box-shadow 200ms}
+.learningCard[data-kind='live']{--learning-accent:var(--indigo);--learning-tint:var(--indigo-soft)}
+.learningCard[data-kind='result']{--learning-accent:var(--success);--learning-tint:var(--success-soft)}
+.learningCard:hover{transform:translateY(-2px);box-shadow:var(--shadow-medium)}
+.learningCard>svg{grid-column:2;justify-self:end;color:var(--learning-accent)}
+.learningIcon{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--learning-tint);color:var(--learning-accent)}
+.learningCard small{font-size:11px;letter-spacing:.04em;font-weight:500;color:var(--learning-accent)}
+.learningCard h3{font:700 17px/1.4 var(--font-heading);letter-spacing:-.015em;margin:6px 0 8px;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.learningCard p{font-size:12px;color:var(--text-secondary);margin:0;line-height:1.6}
+.mainGrid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(280px,1fr);gap:24px;align-items:start}
+.mainGrid>*{min-width:0}
+.neoPage .sectionHeader{gap:12px;margin-bottom:14px;align-items:center}
+.neoPage .sectionHeader h2{font:700 20px/1.4 var(--font-heading);letter-spacing:-.015em}
+.neoPage .modeSelect{border:1px solid var(--border-control);border-radius:var(--radius-sm);font-size:12px;min-height:44px;padding:8px 26px 8px 10px;background:var(--surface);color:var(--text-primary)}
+.neoPage :global(.calendar-card){border:1px solid var(--border);border-radius:var(--panel-radius);box-shadow:var(--shadow-subtle);background:var(--surface);padding:0;overflow:hidden}
+.neoPage :global(.calendar-toolbar){padding:12px;gap:6px;background:var(--surface-muted);border-bottom:1px solid var(--border)}
+.neoPage :global(.calendar-toolbar strong){font:700 14px/1.5 var(--font-heading);margin-left:0;flex-basis:100%;order:-1}
+.neoPage :global(.calendar-toolbar button){border:1px solid var(--border-control);border-radius:999px;background:var(--surface);color:var(--text-primary);padding:6px 10px;min-height:44px;font-size:12px}
+.neoPage :global(.calendar-weekdays span){padding:10px 6px;font-size:12px;font-weight:500;border-color:var(--border);background:var(--surface);color:var(--text-secondary)}
+.neoPage .desktopGrid :global(.calendar-grid.month .calendar-day){min-height:78px;padding:6px;border-color:var(--border)}
+.neoPage .desktopGrid :global(.calendar-grid.month .calendar-day>span){font-size:12px;min-width:24px;height:24px}
+.neoPage :global(.calendar-day.outside){background:var(--surface-muted);color:var(--text-secondary)}
+.neoPage :global(.calendar-day.today){background:var(--warning-soft)}
+.neoPage :global(.calendar-legend){border-top:1px solid var(--border);padding:12px;font-size:12px;color:var(--text-primary)}
+.neoPage .compactCard{border:0;padding:0;background:transparent;box-shadow:none}
+.neoPage .upcomingSection .sectionHeader{min-height:44px}
+.neoPage .upcomingSection .sectionHeader a{font-size:12px;color:var(--primary);white-space:normal;line-height:1.5}
+.upcomingList{gap:14px}
+.neoPage .upcomingList .eventRow{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:16px;border:1px solid var(--border);border-radius:16px;background:var(--surface);box-shadow:var(--shadow-subtle)}
+.upcomingLabel{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.upcomingIcon{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:var(--info-soft);color:var(--info)}
+.neoPage .upcomingList h3{font:700 15px/1.4 var(--font-heading);margin:0 0 10px;overflow-wrap:anywhere}
+.neoPage .upcomingList small{font-size:12px;line-height:1.6;color:var(--text-secondary)}
+.neoPage .upcomingList .eventRow>a{display:inline-flex;align-items:center;align-self:flex-start;justify-content:flex-start;gap:8px;min-height:44px;font:700 13px/1.5 var(--font-heading);color:var(--primary);padding:0;margin:0}
+.neoPage .upcomingList :global(.ui-badge){font-size:11px;border-radius:999px;white-space:normal}
+.neoPage>:global(.recent-activity-card){padding:24px;border:1px solid var(--border);border-radius:var(--panel-radius);box-shadow:var(--shadow-subtle);background:var(--surface)}
+.neoPage :global(.recent-activity-card h2){font:700 20px/1.4 var(--font-heading);letter-spacing:-.015em}
+.neoPage :global(.activity-row){padding:14px 0}
+.neoPage :global(.activity-row strong){font-size:14px}
+.neoPage .quickLinks{gap:12px}
+.neoPage .quickLinks>a{border-radius:999px;background:var(--surface);color:var(--text-primary);font-family:var(--font-heading);font-weight:700}
+.neoPage :global(.table-link){color:var(--primary)}
+@media(max-width:1199px){.mainGrid{grid-template-columns:minmax(0,1.4fr) minmax(260px,1fr);gap:20px}.neoPage{padding-inline:24px}.learningCards{gap:16px}.learningCard{padding:16px;grid-template-columns:36px minmax(0,1fr);gap:10px}.learningIcon{width:36px;height:36px}.learningIcon svg{width:21px}.learningCard h3{font-size:16px}}
+@media(max-width:1023px){.mainGrid{grid-template-columns:minmax(0,1.5fr) minmax(250px,1fr)}.welcome{gap:16px}.todayNote{max-width:210px;padding:10px;font-size:12px}.learningCard{grid-template-columns:1fr;gap:12px}.learningCard>svg{grid-column:1}}
+@media(max-width:767px){.neoPage{padding:22px 18px 36px;gap:24px}.welcome{align-items:flex-start;flex-direction:column;gap:16px;padding:20px}.welcome h1{font-size:31px}.welcome>div>span{font-size:12px}.todayNote{max-width:100%;font-size:12px;padding:9px 12px}.learningCards{grid-template-columns:1fr;gap:16px}.learningCard{grid-template-columns:44px minmax(0,1fr) 18px;align-items:center;gap:12px;padding:16px}.learningIcon{width:44px;height:44px}.learningCard>svg{grid-column:3}.learningCard h3{font-size:16px;margin:5px 0}.learningCard small{font-size:11px}.learningCard p{font-size:12px}.mainGrid{grid-template-columns:1fr;gap:24px}.neoPage .sectionHeader h2{font-size:19px}.neoPage .sectionHeader{gap:8px}.neoPage .modeSelect{font-size:12px}.neoPage .agenda{padding:14px;gap:18px}.neoPage .agendaDay h3{font:700 14px/1.5 var(--font-heading);color:var(--text-primary)}.neoPage>:global(.recent-activity-card){padding:18px}.neoPage :global(.activity-row){flex-direction:column;align-items:flex-start;gap:10px}.neoPage .quickLinks>a{flex:1;padding-inline:10px;font-size:13px}}
+@media(prefers-reduced-motion:reduce){.learningCard{transform:none;transition:none}}
+
+/* Calendar only: identity colors, endpoint markers and bounded daily stacks. */
+.eventColor{--event-bg:var(--event-light-bg);--event-border:var(--event-light-border);--event-accent:var(--event-light-accent);--event-ink:#243247}
+:global(html[data-theme='dark']) .eventColor{--event-bg:var(--event-dark-bg);--event-border:var(--event-dark-border);--event-accent:var(--event-dark-accent);--event-ink:#edf2fa}
+.page .refinedCalendar{container-type:inline-size;border:1px solid var(--border);border-radius:14px;box-shadow:0 2px 8px rgb(24 33 47 / 5%)}
+.neoPage .refinedCalendar{border-color:color-mix(in srgb,var(--neo-outline) 32%,transparent)}
+.refinedCalendar :global(.calendar-toolbar){border-bottom:1px solid var(--border)}
+.neoPage .refinedCalendar :global(.calendar-toolbar){background:color-mix(in srgb,var(--neo-paper) 75%,var(--neo-yellow));border-bottom:1px solid color-mix(in srgb,var(--neo-outline) 22%,transparent)}
+.neoPage .refinedCalendar :global(.calendar-toolbar button){border-width:1px;box-shadow:none}
+.refinedCalendar .desktopGrid :global(.calendar-grid){min-width:0;align-items:stretch}
+.refinedCalendar .desktopGrid :global(.calendar-grid .calendar-day){padding:5px;min-height:82px;border-color:var(--border);overflow:hidden}
+.neoPage .refinedCalendar .desktopGrid :global(.calendar-grid .calendar-day){border-color:color-mix(in srgb,var(--neo-outline) 16%,transparent)}
+.refinedCalendar :global(.calendar-day.today){background:var(--warning-soft)}
+.neoPage .refinedCalendar :global(.calendar-day.today){background:color-mix(in srgb,var(--neo-paper) 75%,var(--neo-yellow))}
+.refinedCalendar .desktopGrid :global(.calendar-grid.week .calendar-day),.refinedCalendar .desktopGrid :global(.calendar-grid.day .calendar-day){min-height:220px}
+.dayEntries{display:grid;gap:4px;margin-top:5px;min-width:0}
+.refinedCalendar .eventColor.eventEntry{display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;min-height:44px;margin:0;padding:5px;border:1px solid var(--event-border);border-left:3px solid var(--event-accent);border-radius:6px;background:var(--event-bg);color:var(--event-ink);text-align:left;white-space:normal;box-shadow:none;cursor:pointer;line-height:1.3;font-family:var(--font-body,var(--font-inter)),sans-serif;overflow:hidden}
+.refinedCalendar .eventColor.eventEntry[data-marker='close']{background:transparent;border-style:solid;border-left-width:1px}
+.refinedCalendar .eventColor.eventEntry[data-marker='ongoing']{background:color-mix(in srgb,var(--event-bg) 55%,transparent);border-style:dashed;border-left-style:solid}
+.eventEntry:hover{filter:brightness(.97)}
+.eventEntry:focus-visible,.moreEvents:focus-visible{outline:2px solid var(--primary);outline-offset:2px;z-index:1}
+.entryTitle{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 11px/1.3 var(--font-heading,var(--font-inter)),sans-serif}
+.entryTiming{display:flex;align-items:center;gap:3px;font-size:10px;font-weight:500;line-height:1.3;white-space:nowrap}
+.eventEntry[data-marker='ongoing'] .entryTiming,.eventEntry[data-open-ended] .entryTiming{white-space:normal;overflow-wrap:normal}
+.entryMarker{flex:0 0 5px;width:5px;height:5px;border:1px solid var(--event-accent);border-radius:50%;background:var(--event-accent)}
+[data-marker='close'] .entryMarker{border-radius:0;background:transparent}
+[data-marker='ongoing'] .entryMarker{height:2px;border:0;border-radius:0}
+.refinedCalendar .moreEvents{display:block;width:100%;min-height:28px;padding:4px 1px;background:transparent;border:0;border-radius:4px;text-align:left;color:var(--primary);font:700 10px/1.4 var(--font-heading,var(--font-inter)),sans-serif;cursor:pointer;overflow-wrap:anywhere}
+.refinedCalendar .moreEvents:hover{text-decoration:underline;text-underline-offset:3px}
+.refinedCalendar .markerLegend{gap:10px 18px;border-top:1px solid var(--border);font-size:11px;line-height:1.6}
+.refinedCalendar .markerLegend .openMarker{width:7px;height:7px;border-radius:50%;background:currentColor}
+.refinedCalendar .markerLegend .closeMarker{width:7px;height:7px;border-radius:0;background:transparent;border:1px solid currentColor}
+.markerLegend small{flex-basis:100%;font-size:11px;color:var(--text-secondary)}
+.refinedCalendar .agendaDay{display:grid;gap:8px}
+.refinedCalendar .agendaDay h3{margin:0 0 2px}
+.refinedCalendar .eventEntry.agendaEntry{padding:12px;border-radius:9px;gap:6px}
+.agendaEntry .entryTitle{font-size:14px;white-space:normal;overflow-wrap:anywhere}
+.agendaEntry .entryTiming{font-size:12px}
+.agendaSummary{font-size:11px;line-height:1.5;font-weight:400}
+.refinedCalendar .agendaDay .moreEvents{min-height:44px;font-size:12px}
+.upcomingList .upcomingEvent.eventColor,.neoPage .upcomingList .upcomingEvent.eventColor{border:1px solid var(--event-border);border-left:4px solid var(--event-accent);background:var(--event-bg);color:var(--event-ink);box-shadow:none;border-radius:12px}
+.upcomingEvent .upcomingIcon{background:transparent;border-color:var(--event-border);color:var(--event-accent)}
+.courseNames{margin:0 0 8px;font-size:12px;line-height:1.6;color:inherit;overflow-wrap:anywhere}
+.timeWindow{font-weight:500;font-variant-numeric:tabular-nums}
+.eventPopover.refinedPopover{width:min(380px,calc(100vw - 24px));padding:16px;outline:none;border:1px solid var(--border-control);border-radius:var(--radius-md);background:var(--surface);color:var(--text-primary);font-family:var(--font-body);box-shadow:0 12px 36px rgb(0 0 0 / 16%);font-size:13px}
+.popoverHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;font-weight:500}
+.popoverHeader button{display:grid;place-items:center;flex-shrink:0;width:44px;height:44px;border:1px solid var(--border);border-radius:8px;background:transparent;color:inherit;cursor:pointer}
+.popoverHeader button:focus-visible,.popoverEvent a:focus-visible{outline:2px solid var(--primary);outline-offset:3px}
+.popoverEvent{padding:14px;background:var(--event-bg);color:var(--event-ink);border:1px solid var(--event-border);border-left:4px solid var(--event-accent);border-radius:9px;margin-top:12px;overflow-wrap:anywhere}
+.popoverEvent h3{margin:0 0 10px;font:700 16px/1.45 var(--font-heading),sans-serif;overflow-wrap:anywhere;white-space:normal}
+.eventPopover .popoverEvent small{font-size:12px;line-height:1.7;color:inherit;white-space:normal;overflow-wrap:anywhere}
+.popoverEvent a{display:inline-flex;align-items:center;gap:8px;min-height:44px;color:var(--primary);font-family:var(--font-heading),sans-serif;font-weight:700}
+:global(html[data-theme='dark']) .eventPopover.refinedPopover{border-color:var(--border-control);background:var(--surface);color:var(--text-primary);box-shadow:0 12px 36px rgb(0 0 0 / 28%)}
+:global(html[data-theme='dark']) .neoPage .refinedCalendar{box-shadow:0 2px 8px rgb(0 0 0 / 10%)}
+@container(max-width:480px){.refinedCalendar .desktopGrid{display:none}.refinedCalendar .mobileAgenda{display:block}}
+@container(min-width:481px){.refinedCalendar :global(.calendar-toolbar strong){flex-basis:auto;order:0;margin-left:auto}}
+:global(html[data-theme='dark']) .neoPage .upcomingList .upcomingEvent.eventColor{box-shadow:none}
+
+/* Prototype composition: an open greeting, quiet quick links and a paired calendar. */
+.neoPage{gap:28px}
+.welcome{padding:0 0 4px;border:0;border-radius:0;background:none;align-items:center}
+.welcome{position:relative;container-type:inline-size}
+.welcome .welcomeMascot{position:absolute;right:260px;bottom:0;display:none}
+@container(min-width:960px){.welcome .welcomeMascot{display:block}}
+.welcome h1{font-family:var(--font-display);font-weight:800;font-size:clamp(30px,3vw,42px);line-height:1.15;letter-spacing:0}
+.welcome p{font-size:15px;margin-bottom:8px}
+.welcome>div>span{font-size:15px;line-height:1.65}
+.todayNote{padding:8px 14px;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text-secondary);font-size:12px;max-width:235px}
+.noNextExam{display:flex;align-items:center;gap:14px;border:1px dashed var(--border);border-radius:22px;padding:22px;background:var(--surface);color:var(--text-primary)}
+.noNextExam>svg{flex-shrink:0;color:var(--primary)}
+.noNextExam strong{font-size:15px}.noNextExam p{font-size:14px;color:var(--text-secondary);margin:4px 0 0}
+.noNextExam a{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-left:auto;color:var(--primary);font-weight:800;font-size:14px;white-space:nowrap}
+.learningCards{gap:18px;margin:0 0 8px}
+.learningCard{display:grid;grid-template-columns:48px minmax(0,1fr) 18px;align-items:center;gap:12px;padding:18px;border:1px solid var(--border);border-radius:22px;box-shadow:none;--learning-tint:var(--student-coral);--learning-accent:var(--text-primary)}
+.learningCard[data-kind='live']{--learning-tint:var(--student-sky);--learning-accent:var(--text-primary)}
+.learningCard[data-kind='result']{--learning-tint:var(--student-mint);--learning-accent:var(--text-primary)}
+.learningIcon{width:48px;height:48px;border-radius:15px}
+.learningCard h3{font:700 18px/1.4 var(--font-body);margin:0 0 5px;display:block;overflow:visible;letter-spacing:0}
+.learningCard p{font-size:13px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.learningCard>svg{grid-column:3;color:var(--primary);width:18px}
+.neoPage .sectionHeader h2,.neoPage :global(.recent-activity-card h2){font-family:var(--font-display);font-weight:700;font-size:24px;letter-spacing:0}
+.neoPage :global(.calendar-toolbar){background:var(--surface);padding:14px}
+.neoPage :global(.calendar-toolbar strong){font-family:var(--font-body);font-weight:700;font-size:18px}
+.neoPage .upcomingList .upcomingEvent.eventColor{background:var(--surface);border:1px solid var(--border);border-left:5px solid var(--event-accent);border-radius:18px;padding:16px}
+.neoPage .upcomingList h3{font-family:var(--font-body);font-weight:800;font-size:15px}
+.neoPage .upcomingList .eventRow>a,.neoPage .quickLinks>a{font-family:var(--font-body);font-weight:800}
+.entryTitle,.refinedCalendar .moreEvents,.agendaDay h3{font-family:var(--font-body)}
+.neoPage :global(.activity-row strong){font-family:var(--font-body);font-weight:800}
+@media(max-width:1199px){.learningCards{gap:12px}.learningCard{grid-template-columns:40px minmax(0,1fr) 16px;gap:10px;padding:14px}.learningIcon{width:40px;height:40px}.learningCard h3{font-size:17px}}
+@media(max-width:767px){.welcome{padding:0;align-items:flex-start}.welcome h1{font-size:32px}.welcome>div>span{font-size:14px}.learningCards{gap:12px}.learningCard{grid-template-columns:48px minmax(0,1fr) 18px;padding:18px}.learningIcon{width:48px;height:48px}.noNextExam{flex-wrap:wrap;padding:18px}.noNextExam>div{flex:1;min-width:180px}.noNextExam a{margin-left:36px}.neoPage .sectionHeader h2,.neoPage :global(.recent-activity-card h2){font-size:22px}}

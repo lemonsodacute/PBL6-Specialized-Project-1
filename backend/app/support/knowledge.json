@@ -1,0 +1,818 @@
+{
+  "version": 1,
+  "categories": {
+    "student": [
+      {
+        "id": "exams",
+        "label": "Bài kiểm tra",
+        "topics": [
+          {
+            "id": "exams-0",
+            "label": "Vào kỳ thi",
+            "article_id": "student-2"
+          },
+          {
+            "id": "exams-1",
+            "label": "Làm bài và nộp bài",
+            "article_id": "student-4"
+          }
+        ]
+      },
+      {
+        "id": "identity",
+        "label": "Xác minh danh tính",
+        "topics": [
+          {
+            "id": "identity-0",
+            "label": "Kiểm tra điều kiện xác minh trước thi",
+            "article_id": "identity"
+          }
+        ]
+      },
+      {
+        "id": "student-card",
+        "label": "Thẻ sinh viên",
+        "topics": [
+          {
+            "id": "student-card-0",
+            "label": "Không đọc được thông tin",
+            "article_id": "card-class"
+          },
+          {
+            "id": "student-card-1",
+            "label": "Sai MSSV",
+            "article_id": "card-profile"
+          },
+          {
+            "id": "student-card-2",
+            "label": "Sai Lớp",
+            "article_id": "card-class"
+          },
+          {
+            "id": "student-card-3",
+            "label": "Không nhận diện khuôn mặt",
+            "article_id": "card-face"
+          },
+          {
+            "id": "student-card-4",
+            "label": "Không xác nhận được thẻ",
+            "article_id": "student-1"
+          },
+          {
+            "id": "student-card-5",
+            "label": "Thẻ bị thu hồi",
+            "article_id": "card-revoked"
+          }
+        ]
+      },
+      {
+        "id": "camera",
+        "label": "Camera / Microphone",
+        "topics": [
+          {
+            "id": "camera-0",
+            "label": "Camera hoặc microphone không hoạt động",
+            "article_id": "student-3"
+          }
+        ]
+      },
+      {
+        "id": "classes",
+        "label": "Lớp học",
+        "topics": [
+          {
+            "id": "classes-0",
+            "label": "Xem lớp học phần",
+            "article_id": "student-classes"
+          }
+        ]
+      },
+      {
+        "id": "live-class",
+        "label": "Lớp học trực tuyến",
+        "topics": [
+          {
+            "id": "live-class-0",
+            "label": "Tham gia lớp học trực tuyến",
+            "article_id": "student-6"
+          }
+        ]
+      },
+      {
+        "id": "results",
+        "label": "Điểm số / Kết quả",
+        "topics": [
+          {
+            "id": "results-0",
+            "label": "Xem kết quả",
+            "article_id": "student-5"
+          },
+          {
+            "id": "results-1",
+            "label": "Điểm số cần kiểm tra lại",
+            "article_id": "student-score"
+          }
+        ]
+      },
+      {
+        "id": "account",
+        "label": "Tài khoản",
+        "topics": [
+          {
+            "id": "account-0",
+            "label": "Cập nhật hồ sơ",
+            "article_id": "student-0"
+          },
+          {
+            "id": "account-1",
+            "label": "Tài khoản bị khóa hoặc sai quyền",
+            "article_id": "student-locked"
+          }
+        ]
+      },
+      {
+        "id": "other",
+        "label": "Vấn đề khác",
+        "topics": []
+      }
+    ],
+    "teacher": [
+      {
+        "id": "exams",
+        "label": "Đề thi",
+        "topics": [
+          {
+            "id": "exams-0",
+            "label": "Tạo đề thi",
+            "article_id": "teacher-2"
+          },
+          {
+            "id": "exams-1",
+            "label": "Chọn câu hỏi ngẫu nhiên",
+            "article_id": "teacher-3"
+          }
+        ]
+      },
+      {
+        "id": "question-bank",
+        "label": "Ngân hàng câu hỏi",
+        "topics": [
+          {
+            "id": "question-bank-0",
+            "label": "Ngân hàng câu hỏi và tạo câu thủ công",
+            "article_id": "teacher-0"
+          },
+          {
+            "id": "question-bank-1",
+            "label": "Tạo câu hỏi từ Word/PDF",
+            "article_id": "teacher-1"
+          }
+        ]
+      },
+      {
+        "id": "classes",
+        "label": "Lớp học",
+        "topics": [
+          {
+            "id": "classes-0",
+            "label": "Quản lý lớp",
+            "article_id": "teacher-4"
+          }
+        ]
+      },
+      {
+        "id": "monitoring",
+        "label": "Giám sát",
+        "aliases": ["monitoring", "proctoring", "giam sat thi"],
+        "topics": [
+          {
+            "id": "monitoring-0",
+            "label": "Không thấy sinh viên",
+            "article_id": "teacher-6"
+          },
+          {
+            "id": "monitoring-1",
+            "label": "Không thấy cảnh báo",
+            "article_id": "teacher-6"
+          },
+          {
+            "id": "monitoring-2",
+            "label": "Sai trạng thái đề thi",
+            "article_id": "teacher-2"
+          },
+          {
+            "id": "monitoring-3",
+            "label": "Không mở được giám sát",
+            "article_id": "teacher-6"
+          }
+        ]
+      },
+      {
+        "id": "grading",
+        "label": "Chấm điểm / Kết quả",
+        "topics": [
+          {
+            "id": "grading-0",
+            "label": "Xem điểm và kết quả đã lưu",
+            "article_id": "teacher-grading"
+          },
+          {
+            "id": "grading-1",
+            "label": "Điểm số cần kiểm tra lại",
+            "article_id": "teacher-score"
+          }
+        ]
+      },
+      {
+        "id": "live-class",
+        "label": "Lớp học trực tuyến",
+        "topics": [
+          {
+            "id": "live-class-0",
+            "label": "Bắt đầu lớp học trực tuyến",
+            "article_id": "teacher-7"
+          }
+        ]
+      },
+      {
+        "id": "reports",
+        "label": "Báo cáo",
+        "topics": [
+          {
+            "id": "reports-0",
+            "label": "Xem điểm sinh viên và báo cáo",
+            "article_id": "teacher-5"
+          }
+        ]
+      },
+      {
+        "id": "account",
+        "label": "Tài khoản",
+        "topics": [
+          {
+            "id": "account-0",
+            "label": "Hồ sơ và cài đặt giảng viên",
+            "article_id": "teacher-account"
+          },
+          {
+            "id": "account-1",
+            "label": "Tài khoản bị khóa hoặc sai quyền",
+            "article_id": "teacher-locked"
+          }
+        ]
+      },
+      {
+        "id": "other",
+        "label": "Vấn đề khác",
+        "topics": []
+      }
+    ]
+  },
+  "articles": [
+    {
+      "id": "student-0",
+      "role": "student",
+      "category": "account",
+      "title": "Cập nhật hồ sơ",
+      "steps": [
+        "Mở Hồ sơ sinh viên để kiểm tra họ tên, MSSV và số điện thoại.",
+        "Số điện thoại có thể cập nhật tại đây.",
+        "Thông tin định danh đã khóa do quản trị viên quản lý."
+      ],
+      "route": "/student/profile",
+      "keywords": [
+        "Cập nhật hồ sơ"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "lib/help-content.ts",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "student-1",
+      "role": "student",
+      "category": "student-card",
+      "title": "Xác thực thẻ sinh viên",
+      "steps": [
+        "Trong Hồ sơ, mở Xác minh danh tính và chọn Tải thẻ sinh viên.",
+        "Đợi hệ thống đọc ảnh, kiểm tra họ tên, MSSV và khuôn mặt trong bản xem trước, rồi bấm Xác nhận thẻ sinh viên khi thông tin hợp lệ.",
+        "Thẻ đã xác thực không có nút thay ảnh; chỉ tải lại khi được yêu cầu cập nhật hoặc xác thực không còn hiệu lực."
+      ],
+      "route": "/student/profile#identity-heading",
+      "keywords": [
+        "Xác thực thẻ sinh viên"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "lib/help-content.ts",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "student-2",
+      "role": "student",
+      "category": "exams",
+      "title": "Vào kỳ thi",
+      "steps": [
+        "Mở Làm kiểm tra để xem đề được giao.",
+        "Kiểm tra thời gian mở đề và số lượt thi còn lại.",
+        "Với đề yêu cầu camera, hoàn tất kiểm tra thiết bị và xác minh khuôn mặt, sau đó chọn Bắt đầu làm bài."
+      ],
+      "route": "/student/exams",
+      "keywords": [
+        "Vào kỳ thi"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "lib/help-content.ts",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "student-3",
+      "role": "student",
+      "category": "camera",
+      "title": "Camera hoặc microphone không hoạt động",
+      "steps": [
+        "Cho phép trình duyệt truy cập camera và microphone khi được hỏi.",
+        "Kiểm tra quyền của trang trong thanh địa chỉ và thiết bị đầu vào của máy.",
+        "Đóng ứng dụng đang chiếm camera rồi mở lại camera tại bước kiểm tra thiết bị.",
+        "Cài đặt ứng dụng không thể cấp quyền thay trình duyệt."
+      ],
+      "route": "/student/exams",
+      "keywords": [
+        "Camera hoặc microphone không hoạt động",
+        "camera",
+        "microphone",
+        "CAMERA_PERMISSION_DENIED"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "lib/help-content.ts",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "student-4",
+      "role": "student",
+      "category": "exams",
+      "title": "Làm bài và nộp bài",
+      "steps": [
+        "Trong bài thi, chọn đáp án hoặc nhập câu trả lời.",
+        "Theo dõi trạng thái lưu và thời gian còn lại.",
+        "Dùng Nộp bài và xác nhận khi đã kiểm tra bài làm.",
+        "Thời hạn bài thi do server quản lý; không đóng trang khi chưa nhận được kết quả nộp."
+      ],
+      "route": "/student/exams",
+      "keywords": [
+        "Làm bài và nộp bài"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "lib/help-content.ts",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "student-5",
+      "role": "student",
+      "category": "results",
+      "title": "Xem kết quả",
+      "steps": [
+        "Mở Điểm số / Kết quả hoặc Lịch sử làm bài để xem điểm đã lưu và chi tiết bài đã nộp.",
+        "Câu tự luận có thể cần giảng viên chấm thêm.",
+        "Đáp án đúng chỉ xuất hiện khi đề cho phép công bố hoặc đã đóng theo chính sách hiện tại."
+      ],
+      "route": "/student/grades",
+      "keywords": [
+        "Xem kết quả"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "lib/help-content.ts",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "student-6",
+      "role": "student",
+      "category": "live-class",
+      "title": "Tham gia lớp học trực tuyến",
+      "steps": [
+        "Mở Lớp học trực tuyến để tìm buổi học của lớp bạn.",
+        "Khi giảng viên đã bắt đầu buổi học, mở phòng và tham gia.",
+        "Cho phép thiết bị khi được hỏi; bật hoặc tắt camera và microphone bằng các điều khiển trong phòng."
+      ],
+      "route": "/student/live-classes",
+      "keywords": [
+        "Tham gia lớp học trực tuyến"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "lib/help-content.ts",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "teacher-0",
+      "role": "teacher",
+      "category": "question-bank",
+      "title": "Ngân hàng câu hỏi và tạo câu thủ công",
+      "steps": [
+        "Mở Ngân hàng câu hỏi, tạo hoặc chọn ngân hàng của bạn.",
+        "Trong ngân hàng, thêm câu hỏi, nhập nội dung, loại câu, các phương án và đáp án đúng phù hợp, rồi lưu.",
+        "Kiểm tra lại câu hỏi trước khi đưa vào đề."
+      ],
+      "route": "/dashboard/question-banks",
+      "keywords": [
+        "Ngân hàng câu hỏi và tạo câu thủ công"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "lib/help-content.ts",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "teacher-1",
+      "role": "teacher",
+      "category": "question-bank",
+      "title": "Tạo câu hỏi từ Word/PDF",
+      "steps": [
+        "Mở một ngân hàng và chọn tạo câu hỏi từ tài liệu.",
+        "Tải file .docx hoặc PDF, bấm Đọc tài liệu và xem trước văn bản, hình ảnh được trích xuất.",
+        "Chọn nhập câu có sẵn hoặc tạo bằng AI khi chức năng này đã được cấu hình; kiểm tra bản nháp và đáp án trước khi xác nhận nhập.",
+        "Phiên tài liệu có hiệu lực 2 giờ."
+      ],
+      "route": "/dashboard/question-banks",
+      "keywords": [
+        "Tạo câu hỏi từ Word/PDF"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "lib/help-content.ts",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "teacher-2",
+      "role": "teacher",
+      "category": "exams",
+      "title": "Tạo đề thi",
+      "steps": [
+        "Mở Đề thi và chọn Tạo đề thi.",
+        "Điền tên, thời gian, thời lượng và yêu cầu thiết bị; chọn câu hỏi và giao đề cho lớp.",
+        "Lưu nháp để kiểm tra hoặc xuất bản khi đã sẵn sàng.",
+        "Mặc định đã lưu trong Cài đặt chỉ điền sẵn cho đề mới."
+      ],
+      "route": "/dashboard/exams?create=1",
+      "keywords": [
+        "Tạo đề thi"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "lib/help-content.ts",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "teacher-3",
+      "role": "teacher",
+      "category": "exams",
+      "title": "Chọn câu hỏi ngẫu nhiên",
+      "steps": [
+        "Trong form đề thi, chọn ngân hàng rồi mở lựa chọn ngẫu nhiên để cấu hình số lượng, loại câu, chủ đề hoặc độ khó.",
+        "Kiểm tra danh sách câu đã chọn và tổng điểm trước khi lưu.",
+        "Hệ thống báo thiếu câu nếu ngân hàng không đáp ứng cấu hình."
+      ],
+      "route": "/dashboard/exams",
+      "keywords": [
+        "Chọn câu hỏi ngẫu nhiên"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "lib/help-content.ts",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "teacher-4",
+      "role": "teacher",
+      "category": "classes",
+      "title": "Quản lý lớp",
+      "steps": [
+        "Mở Lớp học để xem lớp và sinh viên được phép quản lý.",
+        "Mở chi tiết lớp để kiểm tra danh sách sinh viên và các đề được giao; chỉ thực hiện những thao tác có sẵn theo quyền của tài khoản."
+      ],
+      "route": "/dashboard/classes",
+      "keywords": [
+        "Quản lý lớp"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "lib/help-content.ts",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "teacher-5",
+      "role": "teacher",
+      "category": "reports",
+      "title": "Xem điểm sinh viên và báo cáo",
+      "steps": [
+        "Trong Đề thi, chọn Kết quả để xem danh sách sinh viên và lịch sử làm bài.",
+        "Trong Báo cáo, lọc theo Đề thi để xem từng bài làm, điểm đã lưu và sự kiện giám sát.",
+        "Chọn Xem để mở chi tiết báo cáo, rồi Xem bài làm và đáp án để đọc câu trả lời.",
+        "Tải lại báo cáo lấy dữ liệu mới; Xuất CSV tải đúng phạm vi đang lọc.",
+        "Khi chọn tất cả đề, điểm trung bình được chuẩn hóa theo phần trăm."
+      ],
+      "route": "/dashboard/reports",
+      "keywords": [
+        "Xem điểm sinh viên và báo cáo"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "lib/help-content.ts",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "teacher-6",
+      "role": "teacher",
+      "category": "monitoring",
+      "title": "Giám sát kỳ thi",
+      "steps": [
+        "Mở Giám sát, chọn kỳ thi được phép phụ trách rồi xem trạng thái sinh viên và cảnh báo.",
+        "Mở sinh viên để xem thông tin chi tiết, diễn biến và các thao tác giám sát đang được hỗ trợ."
+      ],
+      "route": "/dashboard/monitor",
+      "keywords": [
+          "Giám sát kỳ thi",
+          "giám sát",
+          "monitoring",
+          "proctoring",
+          "sinh viên đang thi",
+          "cảnh báo"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "lib/help-content.ts",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "teacher-7",
+      "role": "teacher",
+      "category": "live-class",
+      "title": "Bắt đầu lớp học trực tuyến",
+      "steps": [
+        "Mở Lớp học trực tuyến, chọn Tạo buổi học và điền lớp, tiêu đề, thời gian.",
+        "Với buổi học đã lên lịch, bấm Bắt đầu rồi vào phòng.",
+        "Kết thúc buổi học khi đã hoàn thành; phòng và quyền tham gia được backend kiểm tra."
+      ],
+      "route": "/dashboard/live-classes",
+      "keywords": [
+        "Bắt đầu lớp học trực tuyến"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "lib/help-content.ts",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "card-class",
+      "role": "student",
+      "category": "student-card",
+      "title": "Sai Lớp hoặc không đọc được thông tin trên thẻ",
+      "steps": [
+        "Chọn ảnh rõ nét, đủ toàn bộ thẻ, không bị lóa; đảm bảo dòng Lớp không bị che hoặc cắt mất.",
+        "Trong Hồ sơ → Xác minh danh tính, tải lại ảnh JPG/PNG khi hệ thống cho phép tải thẻ.",
+        "Kiểm tra thông tin trong bản xem trước. Không xác nhận nếu thông tin sai; nếu vẫn không đọc đúng, yêu cầu quản trị viên kiểm tra."
+      ],
+      "route": "/student/profile#identity-heading",
+      "keywords": [
+        "Sai Lớp hoặc không đọc được thông tin trên thẻ",
+        "sai lớp",
+        "không đọc được",
+        "ảnh thẻ",
+        "ocr",
+        "class"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "Reviewed application Help and feature UI",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "card-face",
+      "role": "student",
+      "category": "student-card",
+      "title": "Không nhận diện khuôn mặt trên thẻ",
+      "steps": [
+        "Dùng ảnh rõ, đủ toàn bộ thẻ và không cắt mất vùng khuôn mặt.",
+        "Kiểm tra khuôn mặt trong bản xem trước trước khi xác nhận thẻ. Nếu không nhận diện được, chọn ảnh khác rõ hơn."
+      ],
+      "route": "/student/profile#identity-heading",
+      "keywords": [
+        "Không nhận diện khuôn mặt trên thẻ",
+        "khuôn mặt",
+        "FACE_TOO_SMALL"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "Reviewed application Help and feature UI",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "card-profile",
+      "role": "student",
+      "category": "student-card",
+      "title": "MSSV hoặc hồ sơ đã khóa không khớp thẻ",
+      "steps": [
+        "Thông tin định danh đã khóa do quản trị viên quản lý. Trợ lý không thể sửa MSSV hoặc xác minh hồ sơ thay bạn. Vấn đề này cần quản trị viên hệ thống kiểm tra."
+      ],
+      "route": "/student/profile",
+      "keywords": [
+        "MSSV hoặc hồ sơ đã khóa không khớp thẻ",
+        "sai mssv",
+        "STUDENT_CODE_MISMATCH",
+        "hồ sơ không khớp"
+      ],
+      "requires_admin": true,
+      "is_active": true,
+      "source": "Reviewed application Help and feature UI",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "card-revoked",
+      "role": "student",
+      "category": "student-card",
+      "title": "Thẻ bị thu hồi",
+      "steps": [
+        "Kiểm tra thông báo về việc thu hồi hoặc yêu cầu cập nhật thẻ. Trợ lý không thể khôi phục xác thực; quản trị viên cần kiểm tra trường hợp của bạn."
+      ],
+      "route": "/student/profile#identity-heading",
+      "keywords": [
+        "Thẻ bị thu hồi",
+        "thu hồi",
+        "revoke"
+      ],
+      "requires_admin": true,
+      "is_active": true,
+      "source": "Reviewed application Help and feature UI",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "identity",
+      "role": "student",
+      "category": "identity",
+      "title": "Kiểm tra điều kiện xác minh trước thi",
+      "steps": [
+        "Đề phải được giao cho bạn hoặc lớp của bạn, đang trong thời gian làm bài và còn lượt thi. Nếu đề yêu cầu camera, hồ sơ, thẻ sinh viên và xác minh khuôn mặt trước thi phải hợp lệ. Xem thông báo trên trang kỳ thi để biết bước còn thiếu.",
+        "Trong Hồ sơ, mở Xác minh danh tính và chọn Tải thẻ sinh viên. Đợi hệ thống đọc ảnh, kiểm tra họ tên, MSSV và khuôn mặt trong bản xem trước, rồi bấm Xác nhận thẻ sinh viên khi thông tin hợp lệ. Thẻ đã xác thực không có nút thay ảnh; chỉ tải lại khi được yêu cầu cập nhật hoặc xác thực không còn hiệu lực."
+      ],
+      "route": "/student/profile#identity-heading",
+      "keywords": [
+        "Kiểm tra điều kiện xác minh trước thi",
+        "xác minh",
+        "không vào thi"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "Reviewed application Help and feature UI",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "student-classes",
+      "role": "student",
+      "category": "classes",
+      "title": "Xem lớp học phần",
+      "steps": [
+        "Mở Lớp học phần để xem các lớp của bạn và mở lớp cần kiểm tra.",
+        "Nếu bạn không thấy lớp được giao, quản trị viên cần kiểm tra danh sách thành viên."
+      ],
+      "route": "/student/classes",
+      "keywords": [
+        "Xem lớp học phần",
+        "lớp học",
+        "không thấy lớp"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "Reviewed application Help and feature UI",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "teacher-grading",
+      "role": "teacher",
+      "category": "grading",
+      "title": "Xem điểm và kết quả đã lưu",
+      "steps": [
+        "Trong Đề thi, chọn Kết quả để xem danh sách sinh viên và lịch sử làm bài. Trong Báo cáo, lọc theo Đề thi để xem từng bài làm, điểm đã lưu và sự kiện giám sát. Chọn Xem để mở chi tiết báo cáo, rồi Xem bài làm và đáp án để đọc câu trả lời. Tải lại báo cáo lấy dữ liệu mới; Xuất CSV tải đúng phạm vi đang lọc. Khi chọn tất cả đề, điểm trung bình được chuẩn hóa theo phần trăm.",
+        "Mở Đề thi → Kết quả hoặc Báo cáo → Xem kết quả. Điểm đọc từ bài làm đã lưu trên server. Sinh viên chưa làm hoặc đang làm hiển thị dấu —. Bấm Tải lại kết quả để lấy dữ liệu mới."
+      ],
+      "route": "/dashboard/exams",
+      "keywords": [
+        "Xem điểm và kết quả đã lưu",
+        "điểm",
+        "kết quả",
+        "chấm điểm"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "Reviewed application Help and feature UI",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "teacher-account",
+      "role": "teacher",
+      "category": "account",
+      "title": "Hồ sơ và cài đặt giảng viên",
+      "steps": [
+        "Mở Hồ sơ giảng viên để kiểm tra thông tin tài khoản. Mở Cài đặt để xem các tùy chọn của tài khoản.",
+        "Thông tin hoặc quyền không đúng cần được quản trị viên kiểm tra; trợ lý không thể thay đổi vai trò hay quyền."
+      ],
+      "route": "/teacher/profile",
+      "keywords": [
+        "Hồ sơ và cài đặt giảng viên",
+        "hồ sơ",
+        "cài đặt"
+      ],
+      "requires_admin": false,
+      "is_active": true,
+      "source": "Reviewed application Help and feature UI",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "student-locked",
+      "role": "student",
+      "category": "account",
+      "title": "Tài khoản bị khóa hoặc sai quyền",
+      "steps": [
+        "Vấn đề này cần quản trị viên hệ thống kiểm tra. Trợ lý không có quyền mở khóa tài khoản, thay đổi vai trò hoặc quyền truy cập."
+      ],
+      "route": "/student/help",
+      "keywords": [
+        "Tài khoản bị khóa hoặc sai quyền",
+        "bị khóa",
+        "sai quyền",
+        "sai role",
+        "unlock",
+        "permission"
+      ],
+      "requires_admin": true,
+      "is_active": true,
+      "source": "Reviewed application Help and feature UI",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "student-score",
+      "role": "student",
+      "category": "results",
+      "title": "Điểm số cần kiểm tra lại",
+      "steps": [
+        "Trợ lý không thể sửa hoặc suy đoán điểm. Quản trị viên cần kiểm tra yêu cầu về dữ liệu điểm; hãy mô tả kỳ thi và vấn đề bạn thấy."
+      ],
+      "route": "/student/grades",
+      "keywords": [
+        "Điểm số cần kiểm tra lại",
+        "sai điểm",
+        "điểm sai",
+        "sửa điểm"
+      ],
+      "requires_admin": true,
+      "is_active": true,
+      "source": "Reviewed application Help and feature UI",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "teacher-locked",
+      "role": "teacher",
+      "category": "account",
+      "title": "Tài khoản bị khóa hoặc sai quyền",
+      "steps": [
+        "Vấn đề này cần quản trị viên hệ thống kiểm tra. Trợ lý không có quyền mở khóa tài khoản, thay đổi vai trò hoặc quyền truy cập."
+      ],
+      "route": "/teacher/help",
+      "keywords": [
+        "Tài khoản bị khóa hoặc sai quyền",
+        "bị khóa",
+        "sai quyền",
+        "sai role",
+        "unlock",
+        "permission"
+      ],
+      "requires_admin": true,
+      "is_active": true,
+      "source": "Reviewed application Help and feature UI",
+      "updated_at": "2026-10-16"
+    },
+    {
+      "id": "teacher-score",
+      "role": "teacher",
+      "category": "grading",
+      "title": "Điểm số cần kiểm tra lại",
+      "steps": [
+        "Trợ lý không thể sửa hoặc suy đoán điểm. Quản trị viên cần kiểm tra yêu cầu về dữ liệu điểm; hãy mô tả kỳ thi và vấn đề bạn thấy."
+      ],
+      "route": "/dashboard/reports",
+      "keywords": [
+        "Điểm số cần kiểm tra lại",
+        "sai điểm",
+        "điểm sai",
+        "sửa điểm"
+      ],
+      "requires_admin": true,
+      "is_active": true,
+      "source": "Reviewed application Help and feature UI",
+      "updated_at": "2026-10-16"
+    }
+  ]
+}

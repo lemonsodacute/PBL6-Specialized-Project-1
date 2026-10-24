@@ -1,0 +1,32 @@
+/* ProctoOwl source of truth, taken from the approved Home/Login surfaces. */
+:root {
+  --procto-ink: #111b42;
+  --procto-muted: #4f6b79;
+  --procto-bg: #eaf5f4;
+  --procto-paper: #fff;
+  --procto-line: #d1e6e8;
+  --procto-tint: #eaf5f6;
+  --procto-dot: #cce5e7;
+  --procto-review: #d8f2ef;
+  --procto-dot-pattern: radial-gradient(var(--procto-dot) 1.7px, transparent 2px);
+  --procto-dot-spacing: 26px 26px;
+  --procto-card-radius: 23px;
+  --procto-card-shadow: 0 20px 42px rgb(20 70 80 / 10%);
+  --font-display: var(--font-public-heading), var(--font-public-body), sans-serif;
+  --font-heading: var(--font-public-heading), var(--font-public-body), sans-serif;
+  --font-body: var(--font-public-body), system-ui, sans-serif;
+  /* Legacy consumers inherit the official body font without changing callers. */
+  --font-inter: var(--font-public-body);
+  --font-student-display: var(--font-public-heading);
+  --font-student-body: var(--font-public-body);
+}
+:root[data-theme='dark'] {
+  --procto-ink: #edf5f2;
+  --procto-muted: #b9cdd0;
+  --procto-bg: #162832;
+  --procto-paper: #1c333b;
+  --procto-line: #35545c;
+  --procto-tint: #24464a;
+  --procto-dot: #28434c;
+  --procto-review: #21494c;
+}

@@ -1,0 +1,13 @@
+.mascot { display:block; flex:none; width:auto; height:var(--mascot-size,96px); max-width:100%; overflow:hidden; pointer-events:none; user-select:none; }
+.sm { --mascot-size:64px; }
+.md { --mascot-size:96px; }
+.lg { --mascot-size:120px; }
+.peek { border-bottom:2px solid var(--border); border-radius:0 0 12px 12px; }
+.corner { transform:rotate(-5deg); transform-origin:bottom center; }
+.compact { --mascot-size:48px; }
+.watermark { color:var(--primary); opacity:.06; }
+.empty-state { align-self:center; }
+:global(.app-shell[data-role='admin']) .mascot { --owl-body-top:#548b8c; --owl-body:#39767b; --owl-wing:#35656b; --owl-iris:#d5c795; --owl-beak:#c5ad70; }
+:global(html[data-theme='dark']) .mascot { --owl-body-top:#359ba1; --owl-body:#23818b; --owl-wing:#0d626c; }
+:global(html[data-theme='dark']) :global(.app-shell[data-role='admin']) .mascot { --owl-body-top:#639c9e; --owl-body:#43888e; --owl-wing:#316a71; }
+@media(max-width:767px) { .mascot:not(.empty-state):not(.compact) { display:none; } .empty-state { --mascot-size:64px; } }

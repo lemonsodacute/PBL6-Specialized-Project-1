@@ -1,0 +1,3 @@
+# Offline plots only. Install explicitly; production requirements stay unchanged.
+-r requirements-dev.txt
+matplotlib>=3.9,<4

@@ -1,0 +1,23 @@
+.page { display: grid; gap: var(--layout-gap); --stacked-card-spacing: 0px; }
+.page > :global(.page-header) { margin-bottom: 0; }
+.examSummary h2 { margin: 0 0 12px; }
+.examSummary p { margin: 8px 0; }
+.summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: var(--layout-gap); }
+.summary > div { display: grid; gap: 8px; padding: 16px; border: 1px solid var(--border); border-radius: var(--panel-radius); border-top:3px solid var(--color-info); }
+.summary > div:nth-child(2) { border-top-color:var(--color-primary); }
+.summary > div:nth-child(3) { border-top-color:var(--color-warning); }
+.summary > div:nth-child(4) { border-top-color:var(--color-indigo); }
+.summary span, .note { color: var(--text-muted, var(--text-secondary)); font-size: 14px; }
+.summary strong { font-size: 28px; line-height:1.3; font-variant-numeric:tabular-nums; }
+.history { background: var(--surface-secondary, var(--surface-muted)); }
+.detailHeader { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.question { white-space: pre-wrap; line-height: 1.6; font-size: 17px; margin: 12px 0 20px; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.fields > div { display: grid; gap: 8px; }
+.fields dt { color: var(--text-muted, var(--text-secondary)); font-size: 14px; }
+.fields dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.gradeForm { display: flex; align-items: end; flex-wrap: wrap; gap: 16px; margin-top: 24px; }
+.gradeForm label { display: grid; gap: 8px; }
+.filter { display: grid; gap: 8px; max-width: 520px; }
+.examLinks { display: grid; gap: 16px; }
+@media (max-width: 600px) { .summary, .fields { grid-template-columns: 1fr; } .detailHeader { flex-direction: column; } }

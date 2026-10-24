@@ -1,0 +1,14 @@
+'use client';
+import { useState } from 'react';
+import { Alert, Badge, Button, Card, CountdownRing, Input, Modal, Select, SeverityBadge, Table, Tabs, Textarea, Toast, PageHeader } from '@/components/ui';
+
+export default function UIKitPage() {
+  const [modalOpen, setModalOpen] = useState(false);
+  return <div className="ui-kit-page"><PageHeader mode="context" title="Bộ giao diện" actions={<Badge>Modern Academic</Badge>}/>
+    <section className="kit-section"><h2>Nút và nhãn</h2><Card><div className="component-row"><Button variant="primary">Primary</Button><Button variant="secondary">Secondary</Button><Button variant="outline">Outline</Button><Button variant="ghost">Ghost</Button><Button variant="info">Info</Button><Button variant="success">Success</Button><Button variant="warning">Warning</Button><Button variant="danger">Danger</Button></div><div className="component-row"><Badge>Đề thi đang hoạt động</Badge><Badge>Lần làm 2/3</Badge><SeverityBadge severity="low" /><SeverityBadge severity="medium" /><SeverityBadge severity="high" /><SeverityBadge severity="critical" /></div></Card></section>
+    <section className="kit-section"><h2>Điều khiển biểu mẫu</h2><Card><div className="form-grid"><label>Tìm câu hỏi<Input placeholder="Nhập từ khóa" /></label><label>Trạng thái<Select defaultValue="published"><option value="published">Đã xuất bản</option><option value="draft">Bản nháp</option></Select></label><label className="wide">Ghi chú<Textarea placeholder="Thêm ghi chú cho lớp học..." rows={3} /></label></div></Card></section>
+    <section className="kit-section"><h2>Điều hướng và phản hồi</h2><Card><Tabs items={['Tổng quan', 'Bài làm', 'Câu hỏi']} /><div className="feedback-stack"><Alert severity="low">Tất cả câu trả lời đã được lưu.</Alert><Alert severity="medium">Bài làm này còn 5 phút.</Alert><Alert severity="critical">Bài thi bị khóa trong khi vi phạm đang được xem xét.</Alert><Toast severity="high">Phát hiện tín hiệu rủi ro trong phiên thi.</Toast></div></Card></section>
+    <section className="kit-section"><h2>Data & actions</h2><Card><Table><thead><tr><th>Học sinh</th><th>Trạng thái</th><th>Điểm</th></tr></thead><tbody><tr><td>Nguyễn Minh Anh</td><td><Badge tone="info">Đang làm bài</Badge></td><td>—</td></tr><tr><td>Trần Gia Bảo</td><td><Badge tone="success">Đã nộp</Badge></td><td>86%</td></tr></tbody></Table><div className="action-row"><CountdownRing seconds={42} /><Button variant="outline" onClick={() => setModalOpen(true)}>Mở dialog</Button></div></Card></section>
+    <Modal open={modalOpen} size="small" title="Kết thúc bài làm này?" onClose={() => setModalOpen(false)}><p className="modal-copy">Câu trả lời sẽ được nộp và không thể thay đổi sau đó.</p><div className="modal-actions"><Button variant="outline" onClick={() => setModalOpen(false)}>Tiếp tục làm</Button><Button variant="success" onClick={() => setModalOpen(false)}>Nộp bài</Button></div></Modal>
+  </div>;
+}

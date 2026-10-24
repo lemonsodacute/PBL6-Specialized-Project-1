@@ -1,0 +1,84 @@
+.page { width: 100%; }
+
+.page .profileCard {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 32px;
+  padding: 32px;
+}
+
+.photoSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  border-right: 1px solid var(--color-mist-border);
+  padding-right: 32px;
+  text-align: center;
+}
+
+.photoSection h2, .information h2, .error h2, .classes h2, .account h2, .personal h2 {
+  margin: 0 0 10px;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.photo, .placeholder {
+  display: grid;
+  place-items: center;
+  width: 132px;
+  height: 164px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  object-fit: cover;
+}
+
+.placeholder { color: var(--primary); font-size: 48px; font-weight: 600; }
+.photoSection p, .missingPhoto { margin: 0; color: var(--color-slate-veil); font-size: 13px; }
+.information { min-width: 0; }
+.photoSection h2 { font-size: var(--text-body-sm); }
+.information h2 { margin: 0; font-size: 28px; line-height: 1.3; letter-spacing: -.5px; }
+.summary { display: grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap: var(--space-4); margin: 0; }
+.summary > div:not(.cardField) { grid-column:1 / -1; }
+.summary dt { font-size: var(--text-caption); color: var(--text-secondary); margin-bottom: var(--space-1); }
+.summary dd { margin: 0; overflow-wrap: anywhere; }
+.cardField { min-width:0; }
+.personal { margin-top: var(--space-8); }
+.personal .details { margin-bottom: 0; }
+.visuallyHidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px 28px;
+  margin: 24px 0 28px;
+}
+
+.details div { min-width: 0; }
+.details dt { margin-bottom: 8px; color: var(--color-slate-veil); font-size: 14px; }
+.details dd { margin: 0; color: var(--color-deep-indigo); font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
+
+.sections { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--space-6); margin-top: var(--space-6); }
+.account .details { grid-template-columns: 1fr; margin-bottom: 16px; }
+.account p { margin: 0; color: var(--text-secondary); font-size: 14px; }
+.classes h3 { margin: 0 0 12px; color: var(--color-deep-indigo); font-size: 15px; font-weight: 600; }
+.classes p, .error p { margin: 0 0 14px; color: var(--color-slate-veil); font-size: 14px; }
+.classes ul { display: flex; flex-wrap: wrap; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.classes li { min-width: 0; max-width: 100%; }
+.classes a { display: block; min-height: 44px; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--primary); background: var(--background); font-size: 14px; overflow-wrap: anywhere; transition: background var(--transition-fast); }
+.classes a:hover { background: var(--primary-soft); }
+.classes a:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+@media (max-width: 1000px) {
+  .sections { grid-template-columns: minmax(0, 1fr); }
+  .page .profileCard { grid-template-columns: minmax(0, 1fr); gap: 28px; padding: 24px; }
+  .photoSection { border-right: 0; border-bottom: 1px solid var(--color-mist-border); padding: 0 0 24px; }
+}
+
+@media (max-width: 767px) {
+  .page .profileCard { padding: 20px; }
+  .details { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+}

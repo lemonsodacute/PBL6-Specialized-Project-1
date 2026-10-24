@@ -1,0 +1,269 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AI Proctoring API",
+    "version": "1.0.0",
+    "description": "Contract derived from schema.sql, IMPLEMENTATION_SPEC.md and lib/api.ts. Every successful response uses { data, meta }; every error uses { error: { code, message, details } }."
+  },
+  "servers": [{ "url": "http://localhost:8000/api/v1" }],
+  "security": [{ "cookieAuth": [] }],
+  "tags": [
+    { "name": "Auth" }, { "name": "Users" }, { "name": "Exams" },
+    { "name": "Attempts" }, { "name": "Proctoring" }, { "name": "Reports" }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"], "operationId": "login", "security": [],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } } },
+        "responses": { "200": { "$ref": "#/components/responses/AuthResponse" }, "401": { "$ref": "#/components/responses/ErrorResponse" } }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["Auth"], "operationId": "refreshToken",
+        "responses": { "200": { "$ref": "#/components/responses/AuthResponse" }, "401": { "$ref": "#/components/responses/ErrorResponse" } }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"], "operationId": "logout",
+        "responses": { "200": { "$ref": "#/components/responses/EmptyResponse" }, "401": { "$ref": "#/components/responses/ErrorResponse" } }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": ["Users"], "operationId": "listUsers", "x-roles": ["admin"],
+        "parameters": [{ "$ref": "#/components/parameters/Page" }, { "$ref": "#/components/parameters/Limit" }],
+        "responses": { "200": { "description": "Paginated users", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserListResponse" } } } }, "403": { "$ref": "#/components/responses/ErrorResponse" } }
+      },
+      "post": {
+        "tags": ["Users"], "operationId": "createUser", "x-roles": ["admin"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserCreateRequest" } } } },
+        "responses": { "201": { "$ref": "#/components/responses/UserResponse" }, "409": { "$ref": "#/components/responses/ErrorResponse" } }
+      }
+    },
+    "/users/{id}": {
+      "put": {
+        "tags": ["Users"], "operationId": "updateUser", "x-roles": ["admin"],
+        "parameters": [{ "$ref": "#/components/parameters/UserId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserUpdateRequest" } } } },
+        "responses": { "200": { "$ref": "#/components/responses/UserResponse" }, "404": { "$ref": "#/components/responses/ErrorResponse" } }
+      }
+    },
+    "/exams": {
+      "get": {
+        "tags": ["Exams"], "operationId": "listExams", "x-roles": ["admin", "teacher", "student"],
+        "parameters": [{ "$ref": "#/components/parameters/Page" }, { "$ref": "#/components/parameters/Limit" }],
+        "responses": { "200": { "description": "Paginated exams", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExamListResponse" } } } } }
+      },
+      "post": {
+        "tags": ["Exams"], "operationId": "createExam", "x-roles": ["admin", "teacher"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExamCreateRequest" } } } },
+        "responses": { "201": { "$ref": "#/components/responses/ExamResponse" }, "422": { "$ref": "#/components/responses/ErrorResponse" } }
+      }
+    },
+    "/exams/{id}": {
+      "get": {
+        "tags": ["Exams"], "operationId": "getExam", "x-roles": ["admin", "teacher", "student"],
+        "parameters": [{ "$ref": "#/components/parameters/ExamId" }],
+        "responses": { "200": { "$ref": "#/components/responses/ExamResponse" }, "404": { "$ref": "#/components/responses/ErrorResponse" } }
+      },
+      "put": {
+        "tags": ["Exams"], "operationId": "updateExam", "x-roles": ["admin", "teacher"],
+        "parameters": [{ "$ref": "#/components/parameters/ExamId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExamUpdateRequest" } } } },
+        "responses": { "200": { "$ref": "#/components/responses/ExamResponse" }, "404": { "$ref": "#/components/responses/ErrorResponse" } }
+      },
+      "delete": {
+        "tags": ["Exams"], "operationId": "deleteExam", "x-roles": ["admin", "teacher"],
+        "parameters": [{ "$ref": "#/components/parameters/ExamId" }],
+        "responses": { "200": { "$ref": "#/components/responses/EmptyResponse" }, "404": { "$ref": "#/components/responses/ErrorResponse" } }
+      }
+    },
+    "/exams/{exam_id}/attempts": {
+      "get": {
+        "tags": ["Attempts"], "operationId": "listExamAttempts", "x-roles": ["admin", "teacher"],
+        "parameters": [{ "$ref": "#/components/parameters/ExamIdPath" }, { "$ref": "#/components/parameters/Page" }, { "$ref": "#/components/parameters/Limit" }],
+        "responses": { "200": { "description": "Paginated attempts", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AttemptListResponse" } } } } }
+      }
+    },
+    "/exams/{id}/report": {
+      "get": {
+        "tags": ["Reports"], "operationId": "getExamReport", "x-roles": ["admin", "teacher"],
+        "parameters": [{ "$ref": "#/components/parameters/ExamId" }],
+        "responses": { "200": { "$ref": "#/components/responses/ReportResponse" }, "404": { "$ref": "#/components/responses/ErrorResponse" } }
+      }
+    },
+    "/exams/{id}/report/export": {
+      "get": {
+        "tags": ["Reports"], "operationId": "exportExamReport", "x-roles": ["admin", "teacher"],
+        "parameters": [{ "$ref": "#/components/parameters/ExamId" }, { "name": "format", "in": "query", "required": false, "schema": { "type": "string", "default": "csv", "enum": ["csv", "xlsx"] } }],
+        "responses": { "200": { "description": "Export metadata wrapped in the standard response envelope", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportExportResponse" } } } } }
+      }
+    },
+    "/attempts/{exam_id}/start": {
+      "post": {
+        "tags": ["Attempts"], "operationId": "startAttempt", "x-roles": ["student"],
+        "parameters": [{ "$ref": "#/components/parameters/ExamIdPath" }],
+        "responses": { "201": { "$ref": "#/components/responses/AttemptResponse" }, "409": { "$ref": "#/components/responses/ErrorResponse" } }
+      }
+    },
+    "/attempts/{id}/questions": {
+      "get": {
+        "tags": ["Attempts"], "operationId": "getAttemptQuestions", "x-roles": ["student", "teacher", "admin"],
+        "parameters": [{ "$ref": "#/components/parameters/AttemptId" }, { "$ref": "#/components/parameters/Page" }, { "$ref": "#/components/parameters/Limit" }],
+        "responses": { "200": { "description": "Attempt questions", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AttemptQuestionListResponse" } } } } }
+      }
+    },
+    "/attempts/{id}/answers": {
+      "post": {
+        "tags": ["Attempts"], "operationId": "autosaveAnswer", "x-roles": ["student"],
+        "parameters": [{ "$ref": "#/components/parameters/AttemptId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AnswerAutosaveRequest" } } } },
+        "responses": { "200": { "$ref": "#/components/responses/AnswerResponse" }, "409": { "$ref": "#/components/responses/ErrorResponse" } }
+      }
+    },
+    "/attempts/{id}/submit": {
+      "post": {
+        "tags": ["Attempts"], "operationId": "submitAttempt", "x-roles": ["student"],
+        "parameters": [{ "$ref": "#/components/parameters/AttemptId" }],
+        "description": "Idempotent submit. Server validates server_deadline_at and computes scoring.",
+        "responses": { "200": { "$ref": "#/components/responses/AttemptResponse" }, "409": { "$ref": "#/components/responses/ErrorResponse" } }
+      }
+    },
+    "/attempts/{id}/violations": {
+      "post": {
+        "tags": ["Attempts"], "operationId": "createViolations", "x-roles": ["student"],
+        "parameters": [{ "$ref": "#/components/parameters/AttemptId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ViolationBatchRequest" } } } },
+        "responses": { "200": { "description": "Inserted violations", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ViolationListResponse" } } } } }
+      }
+    },
+    "/attempts/{id}/proctoring/start": {
+      "post": {
+        "tags": ["Proctoring"], "operationId": "startProctoringSession", "x-roles": ["student"],
+        "parameters": [{ "$ref": "#/components/parameters/AttemptId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProctoringStartRequest" } } } },
+        "responses": { "201": { "$ref": "#/components/responses/ProctoringSessionResponse" }, "409": { "$ref": "#/components/responses/ErrorResponse" } }
+      }
+    },
+    "/attempts/{id}/proctoring": {
+      "get": {
+        "tags": ["Proctoring"], "operationId": "getProctoringSession", "x-roles": ["student", "teacher", "admin"],
+        "parameters": [{ "$ref": "#/components/parameters/AttemptId" }],
+        "responses": { "200": { "$ref": "#/components/responses/ProctoringSessionResponse" }, "404": { "$ref": "#/components/responses/ErrorResponse" } }
+      }
+    },
+    "/attempts/{id}/detection-events": {
+      "post": {
+        "tags": ["Proctoring"], "operationId": "createDetectionEvents", "x-roles": ["student"],
+        "parameters": [{ "$ref": "#/components/parameters/AttemptId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DetectionEventBatchRequest" } } } },
+        "responses": { "200": { "description": "Inserted detection events", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DetectionEventListResponse" } } } } }
+      }
+    },
+    "/ws/monitor/{exam_id}": {
+      "get": {
+        "tags": ["Proctoring"], "operationId": "monitorWebSocketDocumentation", "x-roles": ["teacher", "admin"],
+        "description": "WebSocket endpoint. Connect to ws(s)://host/api/v1/ws/monitor/{exam_id}. This GET operation documents the message contract; it is not an HTTP response endpoint.",
+        "parameters": [{ "$ref": "#/components/parameters/ExamIdPath" }],
+        "responses": { "101": { "description": "Switching Protocols" }, "401": { "$ref": "#/components/responses/ErrorResponse" }, "403": { "$ref": "#/components/responses/ErrorResponse" } }
+      }
+    }
+  },
+  "x-websockets": {
+    "/ws/monitor/{exam_id}": {
+      "url": "wss://{host}/api/v1/ws/monitor/{exam_id}",
+      "pathParameters": { "exam_id": "UUID of exams.id" },
+      "clientMessages": {
+        "violation": { "$ref": "#/components/schemas/MonitorViolationMessage" },
+        "detection_event": { "$ref": "#/components/schemas/MonitorDetectionMessage" },
+        "ping": { "$ref": "#/components/schemas/MonitorPingMessage" }
+      },
+      "serverMessages": {
+        "violation": { "$ref": "#/components/schemas/MonitorViolationMessage" },
+        "detection_event": { "$ref": "#/components/schemas/MonitorDetectionMessage" },
+        "presence": { "$ref": "#/components/schemas/MonitorPresenceMessage" },
+        "error": { "$ref": "#/components/schemas/WebSocketErrorMessage" }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": { "cookieAuth": { "type": "apiKey", "in": "cookie", "name": "auth_token" } },
+    "parameters": {
+      "Page": { "name": "page", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "default": 1 } },
+      "Limit": { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 } },
+      "UserId": { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+      "ExamId": { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+      "ExamIdPath": { "name": "exam_id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+      "AttemptId": { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+    },
+    "responses": {
+      "ErrorResponse": { "description": "Standard error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+      "EmptyResponse": { "description": "Successful operation", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EmptyEnvelope" } } } },
+      "AuthResponse": { "description": "Authenticated user; auth cookies are set by the server", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
+      "UserResponse": { "description": "User", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserResponse" } } } },
+      "ExamResponse": { "description": "Exam", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExamResponse" } } } },
+      "AttemptResponse": { "description": "Attempt", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AttemptResponse" } } } },
+      "AnswerResponse": { "description": "Answer", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AnswerResponse" } } } },
+      "ProctoringSessionResponse": { "description": "Proctoring session", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProctoringSessionResponse" } } } },
+      "ReportResponse": { "description": "Exam report", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReportResponse" } } } }
+    },
+    "schemas": {
+      "Meta": { "type": "object", "required": ["total"], "properties": { "total": { "type": "integer", "minimum": 0 }, "page": { "type": "integer", "minimum": 1 }, "limit": { "type": "integer", "minimum": 1 } }, "additionalProperties": true },
+      "Error": { "type": "object", "required": ["code", "message", "details"], "properties": { "code": { "type": "string" }, "message": { "type": "string" }, "details": {} } },
+      "ErrorEnvelope": { "type": "object", "required": ["error"], "properties": { "error": { "$ref": "#/components/schemas/Error" } }, "additionalProperties": false },
+      "EmptyEnvelope": { "type": "object", "required": ["data", "meta"], "properties": { "data": {}, "meta": { "$ref": "#/components/schemas/Meta" } } },
+      "UserRole": { "type": "string", "enum": ["admin", "teacher", "student"] },
+      "ExamStatus": { "type": "string", "enum": ["draft", "published", "ongoing", "closed"] },
+      "AttemptStatus": { "type": "string", "enum": ["not_started", "in_progress", "submitted", "auto_submitted", "terminated"] },
+      "QuestionType": { "type": "string", "enum": ["mcq_single", "mcq_multi", "essay", "oral"] },
+      "QuestionDifficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
+      "ViolationType": { "type": "string", "enum": ["tab_switch", "window_blur", "copy", "paste", "fullscreen_exit", "right_click", "devtools_open", "network_offline", "network_online", "multi_monitor", "other"] },
+      "SeverityLevel": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+      "DetectionEventType": { "type": "string", "enum": ["face_not_detected", "multiple_faces", "face_mismatch", "gaze_away", "object_phone", "object_book", "object_paper", "person_in_background", "audio_voice_detected", "audio_noise_abnormal"] },
+      "User": { "type": "object", "required": ["id", "full_name", "email", "password_hash", "role", "is_active", "created_at", "updated_at"], "properties": { "id": { "type": "string", "format": "uuid" }, "full_name": { "type": "string", "maxLength": 255 }, "email": { "type": "string", "format": "email", "maxLength": 255 }, "password_hash": { "type": "string", "writeOnly": true }, "role": { "$ref": "#/components/schemas/UserRole" }, "phone": { "type": ["string", "null"], "maxLength": 20 }, "avatar_url": { "type": ["string", "null"], "format": "uri" }, "is_active": { "type": "boolean" }, "last_login_at": { "type": ["string", "null"], "format": "date-time" }, "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" } } },
+      "Exam": { "type": "object", "required": ["id", "title", "created_by", "start_time", "end_time", "duration_minutes", "shuffle_questions", "shuffle_options", "allow_review", "max_attempts", "require_camera", "require_fullscreen", "status", "created_at", "updated_at"], "properties": { "id": { "type": "string", "format": "uuid" }, "title": { "type": "string", "maxLength": 255 }, "description": { "type": ["string", "null"] }, "created_by": { "type": "string", "format": "uuid" }, "start_time": { "type": "string", "format": "date-time" }, "end_time": { "type": "string", "format": "date-time" }, "duration_minutes": { "type": "integer", "exclusiveMinimum": 0 }, "shuffle_questions": { "type": "boolean" }, "shuffle_options": { "type": "boolean" }, "allow_review": { "type": "boolean" }, "max_attempts": { "type": "integer", "exclusiveMinimum": 0 }, "passing_score": { "type": ["number", "null"] }, "require_camera": { "type": "boolean" }, "require_fullscreen": { "type": "boolean" }, "violation_auto_lock_threshold": { "type": ["integer", "null"] }, "status": { "$ref": "#/components/schemas/ExamStatus" }, "extra_settings_json": {}, "deleted_at": { "type": ["string", "null"], "format": "date-time" }, "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" } } },
+      "ExamAttempt": { "type": "object", "required": ["id", "exam_id", "student_id", "attempt_number", "status", "max_score", "violation_count", "created_at", "updated_at"], "properties": { "id": { "type": "string", "format": "uuid" }, "exam_id": { "type": "string", "format": "uuid" }, "student_id": { "type": "string", "format": "uuid" }, "attempt_number": { "type": "integer" }, "started_at": { "type": ["string", "null"], "format": "date-time" }, "server_deadline_at": { "type": ["string", "null"], "format": "date-time" }, "submitted_at": { "type": ["string", "null"], "format": "date-time" }, "status": { "$ref": "#/components/schemas/AttemptStatus" }, "score": { "type": ["number", "null"] }, "max_score": { "type": ["number", "null"] }, "violation_count": { "type": "integer" }, "risk_score": { "type": ["number", "null"] }, "ip_address": { "type": ["string", "null"] }, "user_agent": { "type": ["string", "null"] }, "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" } } },
+      "Answer": { "type": "object", "required": ["id", "attempt_id", "question_id", "answered_at", "updated_at"], "properties": { "id": { "type": "string", "format": "uuid" }, "attempt_id": { "type": "string", "format": "uuid" }, "question_id": { "type": "string", "format": "uuid" }, "answer_content": {}, "is_correct": { "type": ["boolean", "null"] }, "points_awarded": { "type": ["number", "null"] }, "graded_by": { "type": ["string", "null"], "format": "uuid" }, "graded_at": { "type": ["string", "null"], "format": "date-time" }, "answered_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" } } },
+      "ViolationLog": { "type": "object", "required": ["id", "attempt_id", "type", "severity", "occurred_at", "created_at"], "properties": { "id": { "type": "string", "format": "uuid" }, "attempt_id": { "type": "string", "format": "uuid" }, "type": { "$ref": "#/components/schemas/ViolationType" }, "severity": { "$ref": "#/components/schemas/SeverityLevel" }, "metadata_json": {}, "occurred_at": { "type": "string", "format": "date-time" }, "created_at": { "type": "string", "format": "date-time" } } },
+      "ProctoringSession": { "type": "object", "required": ["id", "attempt_id", "camera_enabled", "mic_enabled", "created_at", "updated_at"], "properties": { "id": { "type": "string", "format": "uuid" }, "attempt_id": { "type": "string", "format": "uuid" }, "camera_enabled": { "type": "boolean" }, "mic_enabled": { "type": "boolean" }, "full_recording_url": { "type": ["string", "null"], "format": "uri" }, "started_at": { "type": ["string", "null"], "format": "date-time" }, "ended_at": { "type": ["string", "null"], "format": "date-time" }, "overall_risk_score": { "type": ["number", "null"] }, "reviewed_by": { "type": ["string", "null"], "format": "uuid" }, "reviewed_at": { "type": ["string", "null"], "format": "date-time" }, "review_notes": { "type": ["string", "null"] }, "deleted_at": { "type": ["string", "null"], "format": "date-time" }, "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" } } },
+      "DetectionEvent": { "type": "object", "required": ["id", "proctoring_session_id", "attempt_id", "event_type", "severity", "occurred_at"], "properties": { "id": { "type": "string", "format": "uuid" }, "proctoring_session_id": { "type": "string", "format": "uuid" }, "attempt_id": { "type": "string", "format": "uuid" }, "event_type": { "$ref": "#/components/schemas/DetectionEventType" }, "confidence_score": { "type": ["number", "null"] }, "severity": { "$ref": "#/components/schemas/SeverityLevel" }, "snapshot_url": { "type": ["string", "null"], "format": "uri" }, "metadata_json": {}, "occurred_at": { "type": "string", "format": "date-time" } } },
+      "LoginRequest": { "type": "object", "required": ["email", "password"], "properties": { "email": { "type": "string", "format": "email" }, "password": { "type": "string", "format": "password", "writeOnly": true, "description": "Transport credential; the database stores only users.password_hash." } } },
+      "UserCreateRequest": { "type": "object", "required": ["full_name", "email", "password", "role"], "properties": { "full_name": { "type": "string", "maxLength": 255 }, "email": { "type": "string", "format": "email" }, "password": { "type": "string", "format": "password", "writeOnly": true }, "role": { "$ref": "#/components/schemas/UserRole" }, "phone": { "type": ["string", "null"] }, "avatar_url": { "type": ["string", "null"], "format": "uri" }, "is_active": { "type": "boolean", "default": true } } },
+      "UserUpdateRequest": { "type": "object", "properties": { "full_name": { "type": "string", "maxLength": 255 }, "email": { "type": "string", "format": "email" }, "role": { "$ref": "#/components/schemas/UserRole" }, "phone": { "type": ["string", "null"] }, "avatar_url": { "type": ["string", "null"], "format": "uri" }, "is_active": { "type": "boolean" } } },
+      "ExamCreateRequest": { "type": "object", "required": ["title", "created_by", "start_time", "end_time", "duration_minutes"], "properties": { "title": { "type": "string", "maxLength": 255 }, "description": { "type": ["string", "null"] }, "created_by": { "type": "string", "format": "uuid" }, "start_time": { "type": "string", "format": "date-time" }, "end_time": { "type": "string", "format": "date-time" }, "duration_minutes": { "type": "integer", "exclusiveMinimum": 0 }, "shuffle_questions": { "type": "boolean" }, "shuffle_options": { "type": "boolean" }, "allow_review": { "type": "boolean" }, "max_attempts": { "type": "integer", "exclusiveMinimum": 0 }, "passing_score": { "type": ["number", "null"] }, "require_camera": { "type": "boolean" }, "require_fullscreen": { "type": "boolean" }, "violation_auto_lock_threshold": { "type": ["integer", "null"] }, "status": { "$ref": "#/components/schemas/ExamStatus" }, "extra_settings_json": {} } },
+      "ExamUpdateRequest": { "type": "object", "properties": { "title": { "type": "string", "maxLength": 255 }, "description": { "type": ["string", "null"] }, "created_by": { "type": "string", "format": "uuid" }, "start_time": { "type": "string", "format": "date-time" }, "end_time": { "type": "string", "format": "date-time" }, "duration_minutes": { "type": "integer", "exclusiveMinimum": 0 }, "shuffle_questions": { "type": "boolean" }, "shuffle_options": { "type": "boolean" }, "allow_review": { "type": "boolean" }, "max_attempts": { "type": "integer", "exclusiveMinimum": 0 }, "passing_score": { "type": ["number", "null"] }, "require_camera": { "type": "boolean" }, "require_fullscreen": { "type": "boolean" }, "violation_auto_lock_threshold": { "type": ["integer", "null"] }, "status": { "$ref": "#/components/schemas/ExamStatus" }, "extra_settings_json": {} } },
+      "AnswerAutosaveRequest": { "type": "object", "required": ["question_id", "answer_content"], "properties": { "question_id": { "type": "string", "format": "uuid" }, "answer_content": {} } },
+      "ViolationInput": { "type": "object", "required": ["type", "severity"], "properties": { "type": { "$ref": "#/components/schemas/ViolationType" }, "severity": { "$ref": "#/components/schemas/SeverityLevel" }, "metadata_json": {}, "occurred_at": { "type": "string", "format": "date-time" } } },
+      "ViolationBatchRequest": { "type": "object", "required": ["violations"], "properties": { "violations": { "type": "array", "items": { "$ref": "#/components/schemas/ViolationInput" }, "minItems": 1 } } },
+      "ProctoringStartRequest": { "type": "object", "required": ["camera_enabled", "mic_enabled"], "properties": { "camera_enabled": { "type": "boolean" }, "mic_enabled": { "type": "boolean" } } },
+      "DetectionEventInput": { "type": "object", "required": ["proctoring_session_id", "event_type", "severity"], "properties": { "proctoring_session_id": { "type": "string", "format": "uuid" }, "event_type": { "$ref": "#/components/schemas/DetectionEventType" }, "confidence_score": { "type": ["number", "null"] }, "severity": { "$ref": "#/components/schemas/SeverityLevel" }, "snapshot_url": { "type": ["string", "null"], "format": "uri" }, "metadata_json": {}, "occurred_at": { "type": "string", "format": "date-time" } } },
+      "DetectionEventBatchRequest": { "type": "object", "required": ["events"], "properties": { "events": { "type": "array", "items": { "$ref": "#/components/schemas/DetectionEventInput" }, "minItems": 1 } } },
+      "AttemptQuestion": { "type": "object", "properties": { "id": { "type": "string", "format": "uuid" }, "exam_id": { "type": "string", "format": "uuid" }, "question_id": { "type": "string", "format": "uuid" }, "draw_rule_id": { "type": ["string", "null"], "format": "uuid" }, "order_index": { "type": "integer" }, "points": { "type": "number" }, "created_at": { "type": "string", "format": "date-time" } } },
+      "Report": { "type": "object", "description": "Report aggregate derived from schema tables. No report row table exists in schema.sql, so the backend must publish only agreed aggregate/row fields and keep entity row fields in schema naming.", "additionalProperties": true },
+      "ReportExport": { "type": "object", "properties": { "id": { "type": "string", "format": "uuid" }, "exam_id": { "type": ["string", "null"], "format": "uuid" }, "exported_by": { "type": ["string", "null"], "format": "uuid" }, "format": { "type": ["string", "null"], "maxLength": 20 }, "file_url": { "type": ["string", "null"], "format": "uri" }, "created_at": { "type": "string", "format": "date-time" } } },
+      "UserPublic": { "type": "object", "required": ["id", "full_name", "email", "role", "is_active", "created_at", "updated_at"], "properties": { "id": { "type": "string", "format": "uuid" }, "full_name": { "type": "string", "maxLength": 255 }, "email": { "type": "string", "format": "email", "maxLength": 255 }, "role": { "$ref": "#/components/schemas/UserRole" }, "phone": { "type": ["string", "null"], "maxLength": 20 }, "avatar_url": { "type": ["string", "null"], "format": "uri" }, "is_active": { "type": "boolean" }, "last_login_at": { "type": ["string", "null"], "format": "date-time" }, "created_at": { "type": "string", "format": "date-time" }, "updated_at": { "type": "string", "format": "date-time" } } },
+      "AuthResponse": { "type": "object", "required": ["data", "meta"], "properties": { "data": { "type": "object", "required": ["user"], "properties": { "user": { "$ref": "#/components/schemas/UserPublic" } } }, "meta": { "$ref": "#/components/schemas/Meta" } } },
+      "UserResponse": { "type": "object", "required": ["data", "meta"], "properties": { "data": { "$ref": "#/components/schemas/UserPublic" }, "meta": { "$ref": "#/components/schemas/Meta" } } },
+      "UserListResponse": { "type": "object", "required": ["data", "meta"], "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/UserPublic" } }, "meta": { "$ref": "#/components/schemas/Meta" } } },
+      "ExamResponse": { "type": "object", "required": ["data", "meta"], "properties": { "data": { "$ref": "#/components/schemas/Exam" }, "meta": { "$ref": "#/components/schemas/Meta" } } },
+      "ExamListResponse": { "type": "object", "required": ["data", "meta"], "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Exam" } }, "meta": { "$ref": "#/components/schemas/Meta" } } },
+      "AttemptResponse": { "type": "object", "required": ["data", "meta"], "properties": { "data": { "$ref": "#/components/schemas/ExamAttempt" }, "meta": { "$ref": "#/components/schemas/Meta" } } },
+      "AttemptListResponse": { "type": "object", "required": ["data", "meta"], "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/ExamAttempt" } }, "meta": { "$ref": "#/components/schemas/Meta" } } },
+      "AttemptQuestionListResponse": { "type": "object", "required": ["data", "meta"], "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/AttemptQuestion" } }, "meta": { "$ref": "#/components/schemas/Meta" } } },
+      "AnswerResponse": { "type": "object", "required": ["data", "meta"], "properties": { "data": { "$ref": "#/components/schemas/Answer" }, "meta": { "$ref": "#/components/schemas/Meta" } } },
+      "ViolationListResponse": { "type": "object", "required": ["data", "meta"], "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/ViolationLog" } }, "meta": { "$ref": "#/components/schemas/Meta" } } },
+      "DetectionEventListResponse": { "type": "object", "required": ["data", "meta"], "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/DetectionEvent" } }, "meta": { "$ref": "#/components/schemas/Meta" } } },
+      "ProctoringSessionResponse": { "type": "object", "required": ["data", "meta"], "properties": { "data": { "$ref": "#/components/schemas/ProctoringSession" }, "meta": { "$ref": "#/components/schemas/Meta" } } },
+      "ReportResponse": { "type": "object", "required": ["data", "meta"], "properties": { "data": { "$ref": "#/components/schemas/Report" }, "meta": { "$ref": "#/components/schemas/Meta" } } },
+      "ReportExportResponse": { "type": "object", "required": ["data", "meta"], "properties": { "data": { "$ref": "#/components/schemas/ReportExport" }, "meta": { "$ref": "#/components/schemas/Meta" } } },
+      "MonitorViolationMessage": { "type": "object", "required": ["type", "data"], "properties": { "type": { "const": "violation" }, "data": { "$ref": "#/components/schemas/ViolationLog" } } },
+      "MonitorDetectionMessage": { "type": "object", "required": ["type", "data"], "properties": { "type": { "const": "detection_event" }, "data": { "$ref": "#/components/schemas/DetectionEvent" } } },
+      "MonitorPingMessage": { "type": "object", "required": ["type"], "properties": { "type": { "const": "ping" } } },
+      "MonitorPresenceMessage": { "type": "object", "required": ["type", "data"], "properties": { "type": { "const": "presence" }, "data": { "type": "object", "additionalProperties": true } } },
+      "WebSocketErrorMessage": { "type": "object", "required": ["type", "error"], "properties": { "type": { "const": "error" }, "error": { "$ref": "#/components/schemas/Error" } } }
+    }
+  }
+}

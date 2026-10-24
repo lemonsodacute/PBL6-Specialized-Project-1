@@ -1,0 +1,30 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { Badge, Button, Card, LoadingSkeleton, PageHeader } from '@/components/ui';
+import { api, ApiError } from '@/lib/api';
+import {getStudentFinalScore,studentAttemptLabel} from '@/lib/studentExamStatus';
+import { examEssay, examOptions, examSelection } from '@/lib/exam-answer-options';
+
+type ResultQuestion = { question_id: string; order_index: number; type: string; content: string; options_json: unknown; student_answer: unknown; is_correct: boolean | null; points_awarded: number | null; points: number; explanation: string | null; correct_answer: unknown };
+type ResultData = { id: string; exam_id: string; exam_title: string; status: string; submitted_at: string | null; started_at: string | null; score: number | null; max_score: number | null; final_score?: number | string | null; grading_pending?: boolean; show_answers: boolean; questions: ResultQuestion[] };
+const unwrap = <T,>(response: unknown): T => ((response as { data?: T }).data ?? response) as T;
+const formatDate = (value?: string | null) => value ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : '—';
+const displayAnswer = (value: unknown, question: ResultQuestion) => {
+  if (question.type === 'essay') return examEssay(value) || 'Chưa trả lời';
+  const options = examOptions(question.options_json);
+  return examSelection(value).map(id => options.find(option => option.value === id)?.label ?? id).join(', ') || 'Chưa trả lời';
+};
+const typeLabel = (type: string) => ({ mcq_single: 'Trắc nghiệm', mcq_multi: 'Nhiều đáp án', essay: 'Tự luận', oral: 'Hình thức đã ngừng hỗ trợ' }[type] ?? type);
+
+export default function AttemptResultPage() {
+  const { id } = useParams<{ id: string }>(); const router = useRouter(); const [result, setResult] = useState<ResultData | null>(null); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [selected, setSelected] = useState(0);
+  useEffect(() => { void api.attempts.result(id).then((response) => setResult(unwrap<ResultData>(response))).catch((cause) => { if (cause instanceof ApiError && cause.status === 409) { router.replace('/student/attempts/' + id); return; } setError(cause instanceof ApiError ? cause.message : 'Không tải được kết quả bài thi.'); }).finally(() => setLoading(false)); }, [id, router]);
+  const stats = useMemo(() => { const graded = result?.questions.filter((question) => question.type === 'mcq_single' || question.type === 'mcq_multi') ?? []; return { correct: graded.filter((question) => question.is_correct === true).length, wrong: graded.filter((question) => question.is_correct === false).length, unanswered: graded.filter((question) => question.student_answer === null || question.student_answer === undefined || question.student_answer === '').length }; }, [result]);
+  if (loading) return <div className="workspace-page"><LoadingSkeleton rows={5} /></div>;
+  if (error || !result) return <div className="workspace-page"><Card><p role="alert">{error || 'Không có kết quả bài thi.'}</p><Button onClick={() => router.push('/student/grades')}>Về Điểm số / Kết quả</Button></Card></div>;
+  const question = result.questions[selected];
+  const finalScore=getStudentFinalScore({...result,grading_pending:result.grading_pending??result.questions.some(item=>item.type==='essay'&&item.student_answer!==null&&item.points_awarded===null)});
+  return <div className="workspace-page result-page"><PageHeader mode="context" context="Kết quả" title={result.exam_title} actions={<Button variant="outline" onClick={() => router.push('/student/grades')}>Về Điểm số / Kết quả</Button>}/><Badge>{studentAttemptLabel(result.status)}</Badge><p className="detail-meta">Nộp lúc {formatDate(result.submitted_at)} · Bắt đầu lúc {formatDate(result.started_at)}</p><div className="result-summary-grid"><Card><span>Điểm tổng</span><strong>{finalScore===null?'Đang chờ chấm':`${finalScore} / ${result.max_score??'—'}`}</strong></Card><Card><span>Đúng</span><strong>{stats.correct}</strong></Card><Card><span>Sai</span><strong>{stats.wrong}</strong></Card><Card><span>Chưa làm</span><strong>{stats.unanswered}</strong></Card></div>{question&&<div className="result-layout"><Card className="result-question-nav"><h2>Câu hỏi</h2><div>{result.questions.map((item, index) => <button key={item.question_id} className={(index === selected ? 'active ' : '') + (item.is_correct === true ? 'correct' : item.is_correct === false ? 'wrong' : '')} onClick={() => setSelected(index)}>{index + 1}</button>)}</div></Card><Card className="result-question-detail"><div className="result-question-heading"><div><Badge>{typeLabel(question.type)}</Badge><h2>Câu {selected + 1}. {question.content}</h2></div><strong>{question.points_awarded ?? '—'} / {question.points} điểm</strong></div><div className="result-answer-row"><span>Đáp án của bạn</span><strong>{displayAnswer(question.student_answer, question)}</strong></div>{result.show_answers && <div className="result-answer-row"><span>Đáp án đúng</span><strong>{displayAnswer(question.correct_answer, question)}</strong></div>}{question.type === 'essay' ? <p className="result-pending">{question.student_answer===null?'Chưa trả lời':question.points_awarded===null?'Chờ giáo viên chấm':'Đã chấm'}</p> : <p className={question.is_correct ? 'result-correct' : 'result-wrong'}>{question.is_correct ? 'Đúng' : question.is_correct === false ? 'Sai' : 'Chưa chấm'}</p>}{question.explanation && <div className="result-explanation"><strong>Giải thích</strong><p>{question.explanation}</p></div>}</Card></div>}{!result.show_answers && <p className="result-note">Đáp án đúng sẽ hiển thị khi đề thi được phép công bố hoặc đã đóng.</p>}</div>;
+}

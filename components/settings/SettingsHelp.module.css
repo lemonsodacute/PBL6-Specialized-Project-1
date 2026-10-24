@@ -1,0 +1,29 @@
+.settings { max-width: 880px; display: grid; gap: var(--layout-gap); }
+.help { max-width: 1100px; display: grid; gap: var(--layout-gap); }
+.settings > div:first-child, .help > div:first-child { margin-bottom: 0; }
+.groupHeading { font-family:var(--font-heading); font-size: 20px; font-weight: 700; margin: 0; }
+.section h2 { font-family:var(--font-heading); font-size: 20px; font-weight: 700; margin: 0 0 12px; }
+.section p { margin: 8px 0 16px; }
+.fields { display: grid; gap: 20px; padding: 0; margin: 20px 0; border: 0; min-width: 0; }
+.field { display: grid; gap: 8px; font-weight: 500; }
+.check { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+.check input { width: 18px; height: 18px; margin-top: 4px; flex: 0 0 auto; }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.muted { color: var(--text-secondary); font-size: 14px; }
+.security { font-size: 14px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-muted); }
+.success { color: var(--success); }
+.error { color: var(--error); }
+.quickGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.quickLink { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: var(--panel-padding); border: 1px solid var(--border); border-radius: var(--panel-radius); background: var(--surface); color: var(--text-primary); font-family:var(--font-heading); font-weight: 700; text-decoration: none; }
+.quickLink:hover { background: var(--surface-muted); }
+.guides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.guide h3 { font-family:var(--font-heading); font-size: 18px; margin: 0 0 12px; font-weight: 700; }
+.guide p { margin: 0 0 16px; line-height: 1.7; }
+.faq { display: grid; gap: 12px; }
+.faq details { border: 1px solid var(--border); border-radius: var(--panel-radius); padding: 16px; background: var(--surface); }
+.faq details[open] { border-color: var(--primary); }
+.faq summary { display: list-item; min-height: 32px; font-weight: 600; cursor: pointer; }
+.faq p { margin: 12px 0 0; line-height: 1.7; }
+.support { white-space: pre-wrap; overflow-wrap: anywhere; }
+.quickGrid, .guides, .faq { margin-top: 16px; }
+@media (max-width: 700px) { .quickGrid, .guides { grid-template-columns: 1fr; } .settings, .help { padding-inline: 16px; } .actions button { width: 100%; } }

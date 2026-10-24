@@ -1,0 +1,38 @@
+/* Dark mode changes surfaces and semantic ink, never the layout. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --surface-page: var(--procto-bg);
+  --surface-card: var(--procto-paper);
+  --surface-muted: var(--procto-tint);
+  --border-default: var(--procto-line);
+  --border-control: #718595;
+  --text-primary: var(--procto-ink);
+  --text-secondary: var(--procto-muted);
+  --text-placeholder: #95a7b7;
+  --primary: color-mix(in srgb, var(--color-primary) 40%, white);
+  --role-student: var(--primary);
+  --role-teacher: var(--primary);
+  --role-admin: var(--primary);
+  --primary-soft: color-mix(in srgb, var(--color-primary) 25%, var(--surface-card));
+  --info: #9ebcff;
+  --info-soft: #22324e;
+  --success: #8cd3ac;
+  --success-soft: #203c30;
+  --warning: #f0c277;
+  --warning-soft: #3e3322;
+  --error: #f7a0a5;
+  --error-soft: #412a30;
+  --purple: #c6a6ef;
+  --purple-soft: #322a44;
+  --indigo: #b5acf5;
+  --indigo-soft: #2e2c47;
+  --orange: #f3b28b;
+  --orange-soft: #403027;
+  --shadow-subtle: 0 1px 2px rgb(0 0 0 / 8%);
+  --shadow-medium: 0 4px 16px rgb(0 0 0 / 16%);
+  --shadow-overlay: 0 16px 48px rgb(0 0 0 / 32%);
+}
+html[data-theme='dark'] :is(.bg-white, .bg-slate-50, .bg-gray-50) { background: var(--surface); }
+html[data-theme='dark'] :is(.text-slate-500, .text-slate-600, .text-slate-700, .text-gray-500) { color: var(--text-secondary); }
+
+html[data-theme='dark'] :is(.text-red-500, .text-red-600) { color:var(--error); }
