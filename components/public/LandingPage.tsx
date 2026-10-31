@@ -9,6 +9,7 @@ import { PublicHeader } from './PublicHeader';
 import { PublicSessionRedirect } from './PublicSessionRedirect';
 import styles from './PublicHome.module.css';
 import { publicTypography } from './typography';
+import { publicHomeSessionBootstrap } from '@/lib/public-home-navigation';
 
 const register = '/login?mode=register';
 const features = [
@@ -34,7 +35,7 @@ const steps = [
 export function LandingPage() {
   return <>
     {/* Hide the public page before paint only while an existing session is restored. */}
-    <script dangerouslySetInnerHTML={{ __html: "try{if(sessionStorage.getItem('ai-proctoring-current-user'))document.documentElement.dataset.publicHomeAuth='pending';}catch(e){}" }} />
+    <script dangerouslySetInnerHTML={{ __html: publicHomeSessionBootstrap }} />
     <PublicSessionRedirect />
     <div className={styles.sessionNotice} role="status">Đang mở không gian làm việc…</div>
     <div className={`${styles.page} ${styles.theme} ${publicTypography}`}>

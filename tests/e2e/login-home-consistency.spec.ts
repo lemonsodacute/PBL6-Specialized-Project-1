@@ -53,7 +53,7 @@ for (const width of [1440, 390]) for (const theme of ['light', 'dark'] as const)
     });
     await expect(page.getByRole('heading', { name: 'Đăng nhập', exact: true })).toBeVisible();
     const back = page.getByRole('link', { name: 'Quay lại trang chủ', exact: true });
-    await expect(back).toHaveAttribute('href', '/');
+    await expect(back).toHaveAttribute('href', '/#trang-chu');
     expect(await back.evaluate(el => !!el.closest('form'))).toBe(false);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     await page.getByLabel('Email', { exact: true }).focus();
@@ -61,7 +61,7 @@ for (const width of [1440, 390]) for (const theme of ['light', 'dark'] as const)
     await back.focus();
     expect(await back.evaluate(el => getComputedStyle(el).outlineStyle)).toBe('solid');
     await page.keyboard.press('Enter');
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL('/#trang-chu');
     await expect(page.locator('#hero-title')).toBeVisible();
   });
 }

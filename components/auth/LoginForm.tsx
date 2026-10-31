@@ -9,6 +9,7 @@ import { useAuth } from '@/components/auth/AuthContext';
 import type { User } from '@/types';
 import { api, ApiError } from '@/lib/api';
 import { friendlyError } from '@/lib/uiErrors';
+import { PUBLIC_HOME_HREF } from '@/lib/public-home-navigation';
 import { PublicBrand } from '@/components/public/PublicBrand';
 import { publicTypography } from '@/components/public/typography';
 import homeStyles from '@/components/public/PublicHome.module.css';
@@ -117,7 +118,7 @@ export default function LoginForm({ initialMode }: { initialMode?: string }) {
 
   return <main className={`${styles.page} ${homeStyles.theme} ${canvasStyles.canvas} ${publicTypography}`}>
     <div className={`${styles.content} ${mode === 'register' ? styles.register : ''}`}>
-    <Link href="/" className={styles.backLink}><ArrowLeft size={18} aria-hidden="true" />Quay lại trang chủ</Link>
+    <Link href={PUBLIC_HOME_HREF} className={styles.backLink}><ArrowLeft size={18} aria-hidden="true" />Quay lại trang chủ</Link>
     <div className={styles.brand}><PublicBrand /></div>
     <Card className={`login-card ${mode === 'register' ? 'register-card' : ''}`}>
       <div className="login-heading"><p className="eyebrow">Hệ thống thi trực tuyến</p><h1>{titles[mode]}</h1><p>{subtitles[mode]}</p></div>
