@@ -149,6 +149,9 @@
   --workspace-topbar-mint: #c9f1e4;
   --workspace-topbar-yellow: #ffe08a;
   --workspace-topbar-yellow-hover: #f7d36d;
+  --student-nav-selected-bg: var(--workspace-topbar-yellow);
+  --student-nav-selected-ink: var(--workspace-topbar-ink);
+  --student-nav-selected-radius: 20px;
   --workspace-topbar-pink: #ffc9d6;
   --workspace-topbar-unread: #c92b46;
   --workspace-topbar-unread-ink: #ffffff;

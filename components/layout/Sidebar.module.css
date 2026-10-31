@@ -23,6 +23,19 @@
 .flyout :global(a:focus-visible){outline:3px solid var(--primary);outline-offset:-3px}
 .flyout :global(.nav-icon){width:19px;height:19px;flex:0 0 19px}
 .flyout :global(.nav-label){white-space:normal}
+/* Student selection stays pastel on every route, including dark mode and portals. */
+.shell:global(.app-shell)[data-role='student'] :global(.sidebar :is(a[aria-current='page'],.student-nav-group.is-active[aria-expanded='false'])),
+.shell:global(.app-shell)[data-role='student'][data-sidebar-collapsed='true'] :global(.sidebar .student-nav-group.is-active),
+.flyout[data-student-presentation='true'] :global(a[aria-current='page']) {
+  background:var(--student-nav-selected-bg);
+  color:var(--student-nav-selected-ink);
+  border-color:transparent;
+  border-radius:var(--student-nav-selected-radius);
+  box-shadow:none;
+  font-weight:800;
+}
+.shell:global(.app-shell)[data-role='student'] :global(.sidebar a[aria-current='page'] .nav-icon),
+.flyout[data-student-presentation='true'] :global(a[aria-current='page'] .nav-icon){color:var(--student-nav-selected-ink)}
 @media(min-width:1024px){
   .shell .collapseToggle{display:inline-flex;align-items:center;justify-content:center}
   .shell[data-sidebar-collapsed='true']{--workspace-sidebar-width:80px}
