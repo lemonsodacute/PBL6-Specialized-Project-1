@@ -111,7 +111,7 @@ export function WorkspaceShell({ children, user, navigation, contentClassName = 
       </nav>
       <div className="sidebar-bottom">{navLink(settingsRoute(user.role), 'Cài đặt')}{navLink(helpRoute(user.role), 'Trợ giúp')}</div>
     </aside>
-    <div className={`workspace ${student && pathname === '/student/exams' ? canvasStyles.canvas : ''}`}>
+    <div className={`workspace ${student ? canvasStyles.canvas : ''}`}>
       <header className={`topbar ${topbarStyles.bar} ${student ? 'student-topbar' : ''}`}>
         <button type="button" className="icon-button shell-menu-button" disabled={!preferenceReady} aria-label="Mở menu" aria-expanded={open} aria-controls="workspace-sidebar" onClick={() => setOpen(true)}>
           <Menu size={20} aria-hidden="true" />

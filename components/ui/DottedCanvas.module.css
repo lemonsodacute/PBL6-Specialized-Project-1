@@ -4,3 +4,8 @@
   /* Reset the full paint so the dark workspace glow cannot add extra layers. */
   background: var(--login-canvas-bg) var(--login-canvas-pattern) 0 0 / var(--login-canvas-spacing) repeat;
 }
+
+/* The Student footer belongs to the canvas, rather than covering it with a flat fill. */
+:global(.student-app-shell) .canvas:global(.workspace) > :global(.student-footer) {
+  background: transparent;
+}

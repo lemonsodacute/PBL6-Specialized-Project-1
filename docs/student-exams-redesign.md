@@ -6,7 +6,7 @@ The Student “Làm kiểm tra” page follows the supplied HTML's outlined card
 
 The original Login background was in `components/auth/LoginForm.module.css`: `--public-bg`, `--public-dot-pattern` and `--public-dot-spacing`. `PublicHome.module.css` maps these directly to `--procto-bg`, `--procto-dot-pattern` and `--procto-dot-spacing` in `app/proctoowl-theme.css`.
 
-Both Login and the Student exam workspace now use **the same `DottedCanvas.module.css` class**. The three `--login-canvas-*` aliases resolve the existing tokens at the root. This prevents the Student theme from replacing the Login dots with its smaller cream dots. The shared class also resets the entire background paint so the dark AppShell glow cannot introduce a different layer. The sidebar and cards do not receive this class.
+Both Login and every Student workspace now use **the same `DottedCanvas.module.css` class**. The three `--login-canvas-*` aliases resolve the existing tokens at the root. This prevents the Student theme from replacing the Login dots with its smaller cream dots. The shared class also resets the entire background paint so the dark AppShell glow cannot introduce a different layer. The sidebar and cards do not receive this class. The Student footer is transparent so the canvas continues to the bottom of the workspace.
 
 In light mode the existing Login values are `#eaf5f4`, dots `#cce5e7` with 1.7px radius fading to transparent at 2px, repeated every 26px. Dark values come from the existing dark Login tokens. There is no copied approximation in the exam stylesheet.
 
@@ -26,7 +26,7 @@ In light mode the existing Login values are `#eaf5f4`, dots `#cce5e7` with 1.7px
 - `app/proctoowl-ui.css` — delegates topbar presentation to the shared module.
 - `app/student/exams/page.tsx` — heading/date/mascot and presentation wiring.
 - `components/auth/LoginForm.tsx`, `components/auth/LoginForm.module.css` — reuse the extracted background.
-- `components/layout/AppShell.tsx` — header class and exam-only workspace canvas class; unrelated local live-class changes are excluded from the commit.
+- `components/layout/AppShell.tsx` — header class and shared canvas class for every Student workspace; unrelated local live-class changes are excluded from the commit.
 - `components/layout/WorkspaceTopbar.module.css` — shared pastel header.
 - `components/student/StudentExamCard.tsx`, `components/student/StudentExams.module.css` — optional outlined exam presentation and scoped sidebar styling.
 - `components/ui/DottedCanvas.module.css` — one background implementation.
@@ -49,3 +49,11 @@ Validation uses synthetic session/API fixtures in browser tests; production comp
 - The initial exam checks caught inherited Student dots, the dark workspace glow and an old dark active-card shadow rule. All were fixed before the final 14-case run. A test-fixture union type was corrected before the final TypeScript check.
 
 Logs and screenshots are under `artifacts/student-exams-redesign/` and `artifacts/workspace-topbar-redesign/` (ignored by Git).
+
+## Student workspace background follow-up
+
+The shared Login canvas now applies to every Student workspace, including the overview, classes, online classes, exams, history, grades, profile, settings and help. Sidebar, topbar and card presentation are preserved; the footer is transparent so the dots continue behind it.
+
+The visual inspection verified all 36 combinations of those 9 routes, light/dark themes and 1440/390px widths. Background paint matched Login exactly, sidebars had no dot pattern, footers were transparent and no horizontal overflow occurred. Four screenshots and the measured values are saved under `artifacts/student-workspace-background/`.
+
+Standalone TypeScript and targeted lint passed. The verified production build generated all 42 pages using the existing build cache. A fresh-cache attempt hit an error in the existing Google Fonts loader; font configuration and dependencies were not changed for this background update.
