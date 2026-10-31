@@ -1,4 +1,5 @@
-.page { display:grid; gap:24px; min-width:0; }
+.page { --student-box-outline:var(--workspace-topbar-profile-outline); --student-box-shadow:3px 3px 0 var(--workspace-topbar-outline); --student-calendar-shadow:6px 6px 0 var(--workspace-topbar-outline); --student-calendar-day-border:color-mix(in srgb,var(--color-primary) 28%,var(--surface)); display:grid; gap:24px; min-width:0; }
+:global(html[data-theme='dark']) .page { --student-box-shadow:var(--dark-shadow); --student-calendar-shadow:var(--dark-shadow); --student-calendar-day-border:var(--dark-border-control); }
 .page > * { min-width:0; }
 .calendarSection { scroll-margin-top:88px; }
 .page :global(.calendar-card) { padding:0; }
@@ -118,16 +119,23 @@
 /* Calendar only: identity colors, endpoint markers and bounded daily stacks. */
 .eventColor{--event-bg:var(--event-light-bg);--event-border:var(--event-light-border);--event-accent:var(--event-light-accent);--event-ink:#243247}
 :global(html[data-theme='dark']) .eventColor{--event-bg:var(--event-dark-bg);--event-border:var(--event-dark-border);--event-accent:var(--event-dark-accent);--event-ink:#edf2fa}
-.page .refinedCalendar{container-type:inline-size;border:1px solid var(--border);border-radius:14px;box-shadow:0 2px 8px rgb(24 33 47 / 5%)}
-.neoPage .refinedCalendar{border-color:color-mix(in srgb,var(--neo-outline) 32%,transparent)}
-.refinedCalendar :global(.calendar-toolbar){border-bottom:1px solid var(--border)}
-.neoPage .refinedCalendar :global(.calendar-toolbar){background:color-mix(in srgb,var(--neo-paper) 75%,var(--neo-yellow));border-bottom:1px solid color-mix(in srgb,var(--neo-outline) 22%,transparent)}
-.neoPage .refinedCalendar :global(.calendar-toolbar button){border-width:1px;box-shadow:none}
-.refinedCalendar .desktopGrid :global(.calendar-grid){min-width:0;align-items:stretch}
-.refinedCalendar .desktopGrid :global(.calendar-grid .calendar-day){padding:5px;min-height:82px;border-color:var(--border);overflow:hidden}
-.neoPage .refinedCalendar .desktopGrid :global(.calendar-grid .calendar-day){border-color:color-mix(in srgb,var(--neo-outline) 16%,transparent)}
-.refinedCalendar :global(.calendar-day.today){background:var(--warning-soft)}
-.neoPage .refinedCalendar :global(.calendar-day.today){background:color-mix(in srgb,var(--neo-paper) 75%,var(--neo-yellow))}
+.page:global(.workspace-page) .refinedCalendar:global(.calendar-card){container-type:inline-size;border:3px solid var(--student-box-outline);border-radius:30px;box-shadow:var(--student-calendar-shadow);background:var(--surface)}
+.page .refinedCalendar :global(.calendar-toolbar){gap:10px;padding:18px 16px 12px;border-bottom:0;background:var(--surface);flex-wrap:wrap}
+.page .refinedCalendar :global(.calendar-toolbar strong){font-weight:800;line-height:1.4;color:var(--text-primary)}
+.page .refinedCalendar :global(.calendar-toolbar button){display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:48px;height:48px;min-height:48px;padding:0;border:3px solid var(--student-box-outline);border-radius:50%;background:var(--surface);color:var(--text-primary);box-shadow:none}
+.page .refinedCalendar :global(.calendar-toolbar) .todayButton{width:auto;padding-inline:18px;border-radius:999px;background:var(--student-yellow);color:var(--workspace-topbar-ink);font-weight:800}
+.page .refinedCalendar :global(.calendar-toolbar button):hover{background:var(--surface-muted)}
+.page .refinedCalendar :global(.calendar-toolbar) .todayButton:hover{background:var(--workspace-topbar-yellow-hover)}
+.page .refinedCalendar :global(.calendar-toolbar button):focus-visible{outline:3px solid var(--workspace-topbar-focus);outline-offset:3px}
+.refinedCalendar .desktopGrid{padding:0 16px 16px}
+.refinedCalendar .desktopGrid :global(.calendar-grid){min-width:0;align-items:stretch;gap:6px}
+.page .refinedCalendar :global(.calendar-weekdays span){padding:4px 0 6px;border:0;background:transparent;font-size:13px;font-weight:800;text-align:center}
+.page .refinedCalendar .desktopGrid :global(.calendar-grid .calendar-day){padding:5px;min-height:82px;border:2px solid var(--student-calendar-day-border);border-radius:14px;background:var(--surface);overflow:hidden}
+.page .refinedCalendar .desktopGrid :global(.calendar-day.outside){border-color:color-mix(in srgb,var(--student-calendar-day-border) 45%,var(--surface));background:var(--surface)}
+.page .refinedCalendar .desktopGrid :global(.calendar-day > span){display:inline-block;min-width:0;height:auto;font-size:14px;font-weight:800;line-height:1.4}
+.page .refinedCalendar .desktopGrid :global(.calendar-day.outside > span){color:var(--text-placeholder)}
+.page .refinedCalendar .desktopGrid :global(.calendar-day.today){border:3px solid var(--student-box-outline);background:var(--student-yellow);color:var(--workspace-topbar-ink)}
+.page .refinedCalendar .desktopGrid :global(.calendar-day.today > span){background:transparent;color:var(--workspace-topbar-ink);border-radius:0}
 .refinedCalendar .desktopGrid :global(.calendar-grid.week .calendar-day),.refinedCalendar .desktopGrid :global(.calendar-grid.day .calendar-day){min-height:220px}
 .dayEntries{display:grid;gap:4px;margin-top:5px;min-width:0}
 .refinedCalendar .eventColor.eventEntry{display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;min-height:44px;margin:0;padding:5px;border:1px solid var(--event-border);border-left:3px solid var(--event-accent);border-radius:6px;background:var(--event-bg);color:var(--event-ink);text-align:left;white-space:normal;box-shadow:none;cursor:pointer;line-height:1.3;font-family:var(--font-body,var(--font-inter)),sans-serif;overflow:hidden}
@@ -136,7 +144,7 @@
 .eventEntry:hover{filter:brightness(.97)}
 .eventEntry:focus-visible,.moreEvents:focus-visible{outline:2px solid var(--primary);outline-offset:2px;z-index:1}
 .entryTitle{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 11px/1.3 var(--font-heading,var(--font-inter)),sans-serif}
-.entryTiming{display:flex;align-items:center;gap:3px;font-size:10px;font-weight:500;line-height:1.3;white-space:nowrap}
+.entryTiming{display:flex;flex-wrap:wrap;align-items:center;gap:3px;font-size:10px;font-weight:500;line-height:1.3;white-space:normal;overflow-wrap:anywhere}
 .eventEntry[data-marker='ongoing'] .entryTiming,.eventEntry[data-open-ended] .entryTiming{white-space:normal;overflow-wrap:normal}
 .entryMarker{flex:0 0 5px;width:5px;height:5px;border:1px solid var(--event-accent);border-radius:50%;background:var(--event-accent)}
 [data-marker='close'] .entryMarker{border-radius:0;background:transparent}
@@ -204,3 +212,16 @@
 .neoPage :global(.activity-row strong){font-family:var(--font-body);font-weight:800}
 @media(max-width:1199px){.learningCards{gap:12px}.learningCard{grid-template-columns:40px minmax(0,1fr) 16px;gap:10px;padding:14px}.learningIcon{width:40px;height:40px}.learningCard h3{font-size:17px}}
 @media(max-width:767px){.welcome{padding:0;align-items:flex-start}.welcome h1{font-size:32px}.welcome>div>span{font-size:14px}.learningCards{gap:12px}.learningCard{grid-template-columns:48px minmax(0,1fr) 18px;padding:18px}.learningIcon{width:48px;height:48px}.noNextExam{flex-wrap:wrap;padding:18px}.noNextExam>div{flex:1;min-width:180px}.noNextExam a{margin-left:36px}.neoPage .sectionHeader h2,.neoPage :global(.recent-activity-card h2){font-size:22px}}
+.learningCard:focus-visible{outline:2px solid var(--primary);outline-offset:3px}
+:global(html[data-theme='dark']) .learningCard{background:var(--dark-surface-1);border:1px solid var(--dark-border);box-shadow:var(--dark-highlight);transition:background-color 180ms,border-color 180ms,transform 180ms}
+:global(html[data-theme='dark']) .learningCard:is(:hover,:focus-visible){background:var(--dark-surface-2);border-color:var(--dark-border-hover);box-shadow:var(--dark-highlight),var(--dark-glow-soft);transform:translateY(-1px)}
+:global(html[data-theme='dark']) .learningCard:is(:hover,:focus-visible)>svg{color:var(--dark-focus)}
+:global(html[data-theme='dark']) .learningIcon{background:var(--dark-surface-3);color:var(--primary);border:1px solid var(--dark-border)}
+@media(prefers-reduced-motion:reduce){:global(html[data-theme='dark']) .learningCard{transition:none;transform:none}}
+
+/* Stronger outlines for the existing overview boxes, without changing their layout. */
+.page .todayNote,.page .noNextExam,.page:global(.workspace-page) .learningCard,.page .modeSelect,.page .quickLinks>a{border:2px solid var(--student-box-outline);box-shadow:var(--student-box-shadow)}
+.page:global(.workspace-page) > :global(.recent-activity-card.ui-card){border:2px solid var(--student-box-outline);box-shadow:var(--student-box-shadow)}
+.page .upcomingList .upcomingEvent.eventColor{border:2px solid var(--student-box-outline);border-left:5px solid var(--event-accent);box-shadow:var(--student-box-shadow)}
+.eventPopover.refinedPopover{border:2px solid var(--workspace-topbar-profile-outline);border-radius:20px}
+@media(max-width:767px){.page:global(.workspace-page) .refinedCalendar:global(.calendar-card){border-radius:24px}.page .refinedCalendar :global(.calendar-toolbar){padding:16px 12px 12px}}

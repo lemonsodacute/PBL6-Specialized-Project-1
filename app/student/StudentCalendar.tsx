@@ -185,7 +185,7 @@ export default function StudentCalendar({ overview = false }: { overview?: boole
         </select>
       </div>
       <Card className={`calendar-card ${styles.refinedCalendar}`}>
-        <div className="calendar-toolbar"><button type="button" aria-label="Lịch trước" onClick={() => shift(-1)}><ChevronLeft size={18} aria-hidden="true" /></button><button type="button" onClick={() => setCursor(new Date())}>Hôm nay</button><button type="button" aria-label="Lịch tiếp theo" onClick={() => shift(1)}><ChevronRight size={18} aria-hidden="true" /></button><strong>{periodLabel}</strong></div>
+        <div className="calendar-toolbar"><button type="button" aria-label="Lịch trước" onClick={() => shift(-1)}><ChevronLeft size={18} aria-hidden="true" /></button><button type="button" className={styles.todayButton} onClick={() => setCursor(new Date())}>Hôm nay</button><button type="button" aria-label="Lịch tiếp theo" onClick={() => shift(1)}><ChevronRight size={18} aria-hidden="true" /></button><strong>{periodLabel}</strong></div>
         {loading ? <LoadingSkeleton rows={4} /> : error ? <div role="alert" className={styles.feedback}><p className="form-error">{error}</p><Button variant="warning" onClick={() => setReload(value => value + 1)}>Thử lại</Button></div>
           : mode === 'agenda' ? agenda : <>
             <div className={styles.desktopGrid}><div className={`calendar-grid ${mode}`}><div className="calendar-weekdays">{['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(day => <span key={day}>{day}</span>)}</div>
