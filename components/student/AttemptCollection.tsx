@@ -29,8 +29,10 @@ export function AttemptCollection({history=false}:{history?:boolean}){
   const now=useStudentExamRefresh(result.reload,user?.id);
   const rows=history?result.rows:result.rows.filter(row=>isCompletedAttempt(row.status));
   return <div className="workspace-page">
-    <StudentPageHeader title={history?'Lịch sử làm bài':'Điểm số / Kết quả'}/>
-    <p>{history?'Mỗi dòng là một lần làm bài: thời điểm bắt đầu, nộp bài, thời lượng và trạng thái.':'Các bài đã hoàn thành và điểm chính thức. Bài chưa chấm xong sẽ hiển thị đang chờ chấm.'} {history&&<Link className="table-link" href="/student/grades">Xem điểm số / kết quả</Link>}</p>
+    {!history&&<>
+      <StudentPageHeader title="Điểm số / Kết quả"/>
+      <p>Các bài đã hoàn thành và điểm chính thức. Bài chưa chấm xong sẽ hiển thị đang chờ chấm.</p>
+    </>}
     <Card><CollectionToolbar state={state} placeholder="Tìm đề thi..." filters={[
       {key:'status',label:'Trạng thái',options:[...(history?[{value:'not_started',label:'Chưa bắt đầu'},{value:'in_progress',label:'Đang làm'}]:[]),{value:'submitted',label:'Đã nộp'},{value:'auto_submitted',label:'Tự động nộp'},{value:'terminated',label:'Bị kết thúc'}]},
       {key:'from_time',label:history?'Bắt đầu từ ngày':'Nộp từ ngày',type:'date',options:[]},
