@@ -1,7 +1,7 @@
 import { listQuery, type ListParams } from './collection-query';
 import { isCompletedAttempt } from './studentExamStatus';
 /** Typed-ish API boundary for the FastAPI service described in IMPLEMENTATION_SPEC.md. */
-import type { IdentityResult, IdentityStatus } from './identity';
+import type { EntryIdentityResult, IdentityResult, IdentityStatus } from './identity';
 import type { UserProfile } from './profile';
 import type { CardStatus } from './student-card';
 import { parseCardPreview } from './student-card';
@@ -290,7 +290,7 @@ export const api = {
     delete: (id: string) => apiFetch<void>(`/exam-assignments/${id}`, { method: 'DELETE' }),
   },
   attempts: {
-    start: (examId: string) => apiFetch<unknown>('/attempts', { method: 'POST', body: { exam_id: examId } }),
+    start: (examId: string, entryVerificationId?: string, resumeAttemptId?: string) => apiFetch<unknown>('/attempts', { method: 'POST', body: { exam_id: examId, entry_verification_id: entryVerificationId, resume_attempt_id: resumeAttemptId } }),
     // Backend endpoint for the current student's attempts; used to avoid one request per exam.
     mine: (params: ListParams & {examId?:string} = {}) => apiFetch<unknown>(`/attempts/mine?${listQuery({...params,exam_id:params.examId??params.exam_id,examId:undefined})}`),
     list: (examId: string, params: ListParams = {}) => apiFetch<unknown[]>(`/attempts?exam_id=${encodeURIComponent(examId)}&` + listQuery(params)),
@@ -324,6 +324,7 @@ export const api = {
     detectionEvent: (body: unknown) => apiFetch<unknown>('/proctoring/detection-events', { method: 'POST', body }),
   },
   identity: {
+    verifyEntry: (examId: string, image: Blob, consent: boolean) => { const form = new FormData(); form.append('image', image, 'entry-verification.jpg'); form.append('consent', String(consent)); return apiUpload<EntryIdentityResult>(`/identity/exams/${examId}/verify-entry`, form); },
     status: async () => (await apiFetch<{ data: IdentityStatus }>('/identity/status')).data,
     enroll: (images: Blob[], consent: boolean) => { const form = new FormData(); images.forEach((image, index) => form.append(['front', 'left', 'right'][index], image, `identity-${index}.jpg`)); form.append('consent', String(consent)); return apiUpload<IdentityStatus>('/identity/enroll', form); },
     delete: () => apiFetch<void>('/identity', { method: 'DELETE' }),

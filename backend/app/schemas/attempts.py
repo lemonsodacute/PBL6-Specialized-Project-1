@@ -5,6 +5,8 @@ from decimal import Decimal
 from pydantic import BaseModel, Field, field_validator, model_validator
 class AttemptStart(BaseModel):
     exam_id: UUID
+    entry_verification_id: UUID | None = None
+    resume_attempt_id: UUID | None = None
 class AnswerSave(BaseModel):
     question_id: UUID
     answer_content: Any = None

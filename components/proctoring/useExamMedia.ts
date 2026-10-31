@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { captureLiveFrame } from '@/components/identity/captureLiveFrame';
+import { takeExamMedia, transferExamMedia } from './examMediaTransfer';
 
 export type DeviceStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'not_found' | 'unsupported' | 'lost' | 'error';
 export type DeviceInfo = { deviceId: string; label: string };
@@ -12,7 +14,7 @@ const errorStatus = (cause: unknown): DeviceStatus => {
 };
 
 // This stream belongs only to the active exam. Device selection does not own cleanup.
-export function useExamMedia(requireVideo: boolean, requireAudio: boolean) {
+export function useExamMedia(requireVideo: boolean, requireAudio: boolean, attemptId?: string) {
   const streamRef = useRef<MediaStream | null>(null);
   const generation = useRef(0);
   const mounted = useRef(false);
@@ -21,6 +23,8 @@ export function useExamMedia(requireVideo: boolean, requireAudio: boolean) {
   const animation = useRef<number | null>(null);
   const listeners = useRef<(() => void)[]>([]);
   const preference = useRef({ cameraId: '', microphoneId: '' });
+  const entryConfirmed = useRef(false);
+  const cleanupTimer = useRef<number | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraStatus, setCameraStatus] = useState<DeviceStatus>('idle');
   const [microphoneStatus, setMicrophoneStatus] = useState<DeviceStatus>('idle');
@@ -37,6 +41,7 @@ export function useExamMedia(requireVideo: boolean, requireAudio: boolean) {
   }, []);
 
   const stopStream = useCallback(() => {
+    entryConfirmed.current = false;
     generation.current++;
     listeners.current.splice(0).forEach(remove => remove());
     streamRef.current?.getTracks().forEach(track => track.stop());
@@ -78,6 +83,27 @@ export function useExamMedia(requireVideo: boolean, requireAudio: boolean) {
     } catch { /* A meter is informational; permission/track readiness is the gate. */ }
   }, []);
 
+  const adoptStream = useCallback((combined: MediaStream, reportStatus = true) => {
+    streamRef.current = combined;
+    setStream(combined);
+    const videoTrack = combined.getVideoTracks()[0], audioTrack = combined.getAudioTracks()[0];
+    if (reportStatus) {
+      setCameraStatus(live(videoTrack) ? 'granted' : 'idle');
+      setMicrophoneStatus(live(audioTrack) ? 'granted' : 'idle');
+    }
+    combined.getTracks().forEach(track => {
+      const ended = () => {
+        if (streamRef.current !== combined || !mounted.current) return;
+        (track.kind === 'video' ? setCameraStatus : setMicrophoneStatus)('lost');
+        setLostMessage('Kết nối thiết bị đã bị ngắt. Vui lòng kết nối lại và kiểm tra cài đặt thiết bị.');
+      };
+      track.addEventListener('ended', ended);
+      listeners.current.push(() => track.removeEventListener('ended', ended));
+    });
+    videoElements.current.forEach(element => { if (element.isConnected) element.srcObject = combined; else videoElements.current.delete(element); });
+    startMeter(combined); void refreshDevices();
+  }, [refreshDevices, startMeter]);
+
   const acquire = useCallback(async (cameraId?: string, microphoneId?: string) => {
     stopStream();
     const request = generation.current;
@@ -109,47 +135,62 @@ export function useExamMedia(requireVideo: boolean, requireAudio: boolean) {
       } catch (cause) { if (current()) (kind === 'video' ? setCameraStatus : setMicrophoneStatus)(errorStatus(cause)); }
     }
     if (!current()) { combined.getTracks().forEach(track => track.stop()); return false; }
-    streamRef.current = combined;
-    setStream(combined);
     const videoTrack = combined.getVideoTracks()[0], audioTrack = combined.getAudioTracks()[0];
     const ids = { cameraId: videoTrack?.getSettings().deviceId || camera, microphoneId: audioTrack?.getSettings().deviceId || microphone };
     preference.current = ids; setSelectedCamera(ids.cameraId); setSelectedMicrophone(ids.microphoneId);
     try { localStorage.setItem(preferenceKey, JSON.stringify(ids)); } catch { /* Optional preference. */ }
-    combined.getTracks().forEach(track => {
-      const ended = () => {
-        if (streamRef.current !== combined || !mounted.current) return;
-        (track.kind === 'video' ? setCameraStatus : setMicrophoneStatus)('lost');
-        setLostMessage('Kết nối thiết bị đã bị ngắt. Vui lòng kết nối lại và kiểm tra cài đặt thiết bị.');
-      };
-      track.addEventListener('ended', ended);
-      listeners.current.push(() => track.removeEventListener('ended', ended));
-    });
-    videoElements.current.forEach(element => { if (element.isConnected) element.srcObject = combined; else videoElements.current.delete(element); });
-    startMeter(combined); void refreshDevices();
+    adoptStream(combined, false);
     return (!requireVideo || live(videoTrack)) && (!requireAudio || live(audioTrack));
-  }, [requireVideo, requireAudio, refreshDevices, startMeter, stopStream]);
+  }, [requireVideo, requireAudio, adoptStream, stopStream]);
 
   useEffect(() => {
+    if (cleanupTimer.current !== null) clearTimeout(cleanupTimer.current);
+    const attachedVideos = videoElements.current;
     mounted.current = true;
     try {
       const saved = JSON.parse(localStorage.getItem(preferenceKey) || '{}');
       preference.current = { cameraId: typeof saved?.cameraId === 'string' ? saved.cameraId : '', microphoneId: typeof saved?.microphoneId === 'string' ? saved.microphoneId : '' };
     } catch { /* Ignore a malformed/stale preference. */ }
+    const transferred = attemptId ? takeExamMedia(attemptId) : null;
+    if (transferred) {
+      entryConfirmed.current = transferred.getTracks().length > 0 && transferred.getTracks().every(live);
+      adoptStream(transferred);
+      setSelectedCamera(transferred.getVideoTracks()[0]?.getSettings().deviceId || '');
+      setSelectedMicrophone(transferred.getAudioTracks()[0]?.getSettings().deviceId || '');
+    }
     void refreshDevices();
     navigator.mediaDevices?.addEventListener('devicechange', refreshDevices);
     window.addEventListener('pagehide', stopStream);
     return () => {
-      mounted.current = false; stopStream(); videoElements.current.clear();
+      mounted.current = false;
+      // React's development effect replay must not stop a just-transferred stream.
+      cleanupTimer.current = window.setTimeout(() => { stopStream(); attachedVideos.clear(); }, 0);
       navigator.mediaDevices?.removeEventListener('devicechange', refreshDevices);
       window.removeEventListener('pagehide', stopStream);
     };
-  }, [refreshDevices, stopStream]);
+  }, [refreshDevices, stopStream, attemptId, adoptStream]);
+
+  const captureFrame = useCallback(async () => {
+    const current = streamRef.current;
+    const video = [...videoElements.current].find(element => element.isConnected && element.srcObject === current && element.videoWidth > 0);
+    if (!current || !video) throw new Error('Hãy bật camera và chờ hình ảnh trực tiếp trước khi xác minh.');
+    return captureLiveFrame(video, current);
+  }, []);
+  const transferToAttempt = useCallback((id: string) => {
+    const current = streamRef.current;
+    if (!current || (requireVideo && !live(current.getVideoTracks()[0])) || (requireAudio && !live(current.getAudioTracks()[0]))) return false;
+    transferExamMedia(id, current);
+    // Detach ownership before unmount; the destination hook owns track cleanup.
+    streamRef.current = null;
+    stopStream();
+    return true;
+  }, [requireVideo, requireAudio, stopStream]);
 
   const cameraReady = cameraStatus === 'granted' && live(stream?.getVideoTracks()[0]);
   const microphoneReady = microphoneStatus === 'granted' && live(stream?.getAudioTracks()[0]);
   const ready = (!requireVideo || cameraReady) && (!requireAudio || microphoneReady);
   const busy = cameraStatus === 'requesting' || microphoneStatus === 'requesting';
-  return { stream, cameraStatus, microphoneStatus, cameraReady, microphoneReady, ready, busy, cameras, microphones, selectedCamera, selectedMicrophone, level, lostMessage, acquire, attachVideo, stopStream };
+  return { stream, cameraStatus, microphoneStatus, cameraReady, microphoneReady, ready, busy, cameras, microphones, selectedCamera, selectedMicrophone, level, lostMessage, acquire, attachVideo, stopStream, captureFrame, transferToAttempt, entryConfirmed };
 }
 
 export type ExamMedia = ReturnType<typeof useExamMedia>;

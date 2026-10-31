@@ -20,6 +20,8 @@ async function setup(page: Page, devices = true) {
   const questions = [0, 1].map(index => ({ id: `question-${index}`, content: `Câu hỏi ${index + 1}`, type: 'mcq_single', options_json: { options: ['A', 'B'] }, default_points: 1, topic: 'HTML' }));
   const state = { status: 'in_progress', submits: 0, submitStatus: 200, submitCode: '', calls: [] as { path: string; method: string }[], answers: [] as { question_id: string; answer_content: string }[], submitGate: null as Promise<void> | null, saveGate: null as Promise<void> | null, locked: false, deadline: new Date(Date.now() + 3_600_000).toISOString() };
   const attempt = () => ({ id: attemptId, exam_id: examId, status: state.status, remaining_seconds: 3600, started_at: new Date().toISOString(), server_deadline_at: state.deadline, questions, answers: state.answers });
+  await page.route('**/api/v1/identity/exams/exam-ux/verify-entry', route => respond(route, { data: { id: 'entry-ux', verified: true, status: 'verified', threshold: .363 } }));
+  await page.route('**/api/v1/attempts', route => respond(route, { data: attempt() }));
   await page.route('**/api/v1/exams/exam-ux', route => respond(route, { data: { id: examId, title: 'Bài thi kiểm tra trải nghiệm', duration_minutes: 60, require_camera: devices, require_mic: devices, require_fullscreen: false } }));
   await page.route('**/api/v1/attempts/attempt-ux**', async route => {
     const path = new URL(route.request().url()).pathname, method = route.request().method();

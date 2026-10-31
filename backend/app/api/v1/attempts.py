@@ -14,7 +14,7 @@ from app.core.database import get_db
 from app.models.entities import (
     Answer, AttemptStatus, Class, ClassEnrollment, Exam, ExamAssignment, ExamAttempt,
     DetectionEvent, ExamQuestion, ProctoringSession, Question, User, UserRole, ViolationLog,
-    IdentityVerification, SeverityLevel,
+    SeverityLevel,
 )
 from app.schemas.attempts import AnswerSave, AttemptStart
 from app.schemas.content import QuestionForStudent, QuestionForTeacher, student_safe_options
@@ -24,9 +24,7 @@ from app.services.grading import grade_attempt
 from app.services.question_types import SUPPORTED_QUESTION_TYPES, require_supported_exam, unsupported_question_type
 from app.services.audit import record_audit
 from app.services.notifications import notify_teachers_of_exam
-from app.api.v1.identity import verification_is_current
-from app.services.student_identity_profile import lock_user
-from app.services.student_card_identity import require_reference
+from app.services.exam_entry import consume_entry_verification
 import logging
 
 logger = logging.getLogger('app.audit')
@@ -279,17 +277,27 @@ def start(payload: AttemptStart, db: Session = Depends(get_db), user: User = Dep
     end_time = exam.end_time if exam.end_time.tzinfo else exam.end_time.replace(tzinfo=timezone.utc)
     if now < start_time or now > end_time:
         raise _error('EXAM_NOT_AVAILABLE', 'The exam is outside its allowed time window', 403)
+    if exam.require_camera and payload.entry_verification_id is None:
+        consume_entry_verification(db, user, exam.id, None)  # Reject historical success alone.
     in_progress = db.scalar(select(ExamAttempt).where(
         ExamAttempt.exam_id == exam.id, ExamAttempt.student_id == user.id,
         ExamAttempt.status == AttemptStatus.in_progress,
     ).order_by(ExamAttempt.attempt_number.desc()).limit(1))
+    if payload.resume_attempt_id and (in_progress is None or in_progress.id != payload.resume_attempt_id):
+        raise _error('ATTEMPT_NOT_IN_PROGRESS', 'Lượt thi không còn hoạt động. Vui lòng tải lại trang.', 409)
     if in_progress:
         if _finalize_if_expired(db, in_progress):
-            in_progress = None
+            if payload.resume_attempt_id:
+                raise _error('ATTEMPT_EXPIRED', 'Lượt thi đã hết thời gian. Vui lòng xem kết quả.', 409)
+            # Finalization commits and releases locks. Re-enter under a fresh exam
+            # lock before checking/consuming proof or creating another attempt.
+            return start(payload, db, user)
         else:
+            if exam.require_camera:
+                consume_entry_verification(db, user, exam.id, payload.entry_verification_id)
             if exam.require_camera and not db.scalar(select(ProctoringSession.id).where(ProctoringSession.attempt_id == in_progress.id)):
                 db.add(ProctoringSession(attempt_id=in_progress.id, camera_enabled=True, mic_enabled=True, started_at=now))
-                db.commit()
+            db.commit()  # Consume the entry proof even when resuming an existing attempt.
             return ok(_serialize_attempt(db, in_progress, user))
     attempt_count = db.scalar(select(func.count()).select_from(ExamAttempt).where(
         ExamAttempt.exam_id == exam.id, ExamAttempt.student_id == user.id,
@@ -297,13 +305,9 @@ def start(payload: AttemptStart, db: Session = Depends(get_db), user: User = Dep
     if attempt_count >= exam.max_attempts:
         raise _error('MAX_ATTEMPTS_REACHED', 'Maximum attempts for this exam has been reached', 409)
     if exam.require_camera:
-        user = lock_user(db, user.id)
-        reference = require_reference(db, user)
-        verification = db.scalar(select(IdentityVerification).where(
-            IdentityVerification.exam_id == exam.id, IdentityVerification.student_id == user.id,
-        ).order_by(IdentityVerification.created_at.desc()).limit(1))
-        if not verification_is_current(verification, reference, now):
-            raise _error('IDENTITY_VERIFICATION_REQUIRED', 'Vui lòng xác minh khuôn mặt trước khi bắt đầu bài thi. Kết quả xác minh có hiệu lực 15 phút.', 403)
+        now = consume_entry_verification(db, user, exam.id, payload.entry_verification_id)
+        if now > end_time:
+            raise _error('EXAM_NOT_AVAILABLE', 'The exam is outside its allowed time window', 403)
     links = db.scalars(select(ExamQuestion).where(ExamQuestion.exam_id == exam.id).order_by(ExamQuestion.order_index)).all()
     question_ids = [str(link.question_id) for link in links]
     if exam.shuffle_questions:

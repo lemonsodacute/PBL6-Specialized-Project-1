@@ -231,20 +231,21 @@ class IdentityTests(TestCase):
     def test_camera_exam_requires_server_verification(self):
         db = MagicMock()
         exam = SimpleNamespace(id=uuid4(), deleted_at=None, start_time=self.now - timedelta(hours=1), end_time=self.now + timedelta(hours=1), require_camera=True, max_attempts=2)
-        db.scalar.side_effect = [exam, uuid4(), None, None, 0, self.user, None]
-        with patch('app.api.v1.attempts.require_reference', return_value=self.reference), self.assertRaises(HTTPException) as raised:
+        db.scalar.side_effect = [exam, uuid4(), None, self.user]
+        with patch('app.services.exam_entry.require_reference', return_value=self.reference), self.assertRaises(HTTPException) as raised:
             start(AttemptStart(exam_id=exam.id), db, self.user)
-        self.assertEqual(raised.exception.detail['code'], 'IDENTITY_VERIFICATION_REQUIRED')
+        self.assertEqual(raised.exception.detail['code'], 'FINAL_IDENTITY_VERIFICATION_REQUIRED')
         db.add.assert_not_called()
 
-    def test_existing_attempt_can_resume_without_reverification(self):
+    def test_existing_attempt_requires_a_final_recheck_too(self):
         db = MagicMock()
         exam = SimpleNamespace(id=uuid4(), deleted_at=None, start_time=self.now - timedelta(hours=1), end_time=self.now + timedelta(hours=1), require_camera=True)
         attempt = SimpleNamespace(id=uuid4(), status=AttemptStatus.in_progress)
-        db.scalar.side_effect = [exam, uuid4(), None, attempt, uuid4()]
-        with patch('app.api.v1.attempts._finalize_if_expired', return_value=False), patch('app.api.v1.attempts._serialize_attempt', return_value={'id': str(attempt.id)}):
-            result = start(AttemptStart(exam_id=exam.id), db, self.user)
-        self.assertEqual(result['data']['id'], str(attempt.id))
+        db.scalar.side_effect = [exam, uuid4(), None, self.user]
+        with patch('app.services.exam_entry.require_reference', return_value=self.reference), self.assertRaises(HTTPException) as raised:
+            start(AttemptStart(exam_id=exam.id), db, self.user)
+        self.assertEqual(raised.exception.status_code, 403)
+        db.add.assert_not_called()
 
 
 class FaceImageTests(TestCase):

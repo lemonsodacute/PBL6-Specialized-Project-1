@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import UUID, uuid4
 import logging
+import hashlib
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import or_, select, update
@@ -15,6 +16,7 @@ from app.models.entities import ClassEnrollment, Exam, ExamAssignment, IdentityV
 from app.services.face_recognition import MAX_IMAGE_BYTES, face_error, get_face_engine, match_threshold
 from app.services.student_card_identity import active_reference, require_reference, reference_status
 from app.services.student_identity_profile import lock_user
+from app.services.exam_entry import ENTRY_PURPOSE, ENTRY_MISMATCH, ENTRY_FACE_ERRORS
 from app.services.student_card_previews import utc
 from app.services.face_embeddings import FaceEmbeddingError, get_face_embedding, delete_face_embedding
 from app.services.student_card_previews import _try_remove
@@ -193,6 +195,15 @@ async def legacy_unavailable(user: User = Depends(roles(UserRole.student))):
 
 @router.post('/exams/{exam_id}/verify')
 async def verify(exam_id: UUID, image: UploadFile = File(...), consent: bool = Form(...), db: Session = Depends(get_db), user: User = Depends(roles(UserRole.student))):
+    return await _verify(exam_id, image, consent, db, user)
+
+
+@router.post('/exams/{exam_id}/verify-entry')
+async def verify_entry(exam_id: UUID, image: UploadFile = File(...), consent: bool = Form(...), db: Session = Depends(get_db), user: User = Depends(roles(UserRole.student))):
+    return await _verify(exam_id, image, consent, db, user, final_entry=True)
+
+
+async def _verify(exam_id, image, consent, db, user, *, final_entry=False):
     if not consent:
         raise face_error('CONSENT_REQUIRED', 'Vui lòng đồng ý xác minh khuôn mặt cho bài thi này.')
     _require_exam(db, exam_id, user)
@@ -205,16 +216,33 @@ async def verify(exam_id: UUID, image: UploadFile = File(...), consent: bool = F
     except FaceEmbeddingError:
         db.rollback()
         raise face_error('MODEL_ERROR', 'Ảnh định danh chưa sẵn sàng. Vui lòng cập nhật trong Hồ sơ.', 503) from None
-    db.rollback()  # DNN inference must not hold user/exam locks.
+    if final_entry:
+        # A new final check invalidates earlier unused proofs, even if this frame fails.
+        db.execute(update(IdentityVerification).where(
+            IdentityVerification.student_id == user_id, IdentityVerification.exam_id == exam_id,
+            IdentityVerification.liveness_json['purpose'].astext == ENTRY_PURPOSE,
+            IdentityVerification.status == 'verified',
+        ).values(status='superseded'))
+        db.commit()
+    else:
+        db.rollback()
+    # DNN inference must not hold user/exam locks.
     content = await _read_image(image)
+    received_at = datetime.now(timezone.utc)
+    frame_hash = hashlib.sha256(content).hexdigest()
     engine = await run_in_threadpool(get_face_engine)
-    probe = await run_in_threadpool(engine.extract_embedding, content)
+    try:
+        probe = await run_in_threadpool(engine.extract_embedding, content)
+    except HTTPException as exc:
+        if final_entry and isinstance(exc.detail, dict) and exc.detail.get('code') in ENTRY_FACE_ERRORS:
+            exc.detail = {**exc.detail, 'message': ENTRY_FACE_ERRORS[exc.detail['code']]}
+        raise
     score = engine.compare_embeddings(probe, template)
     threshold = match_threshold()
     verified = score >= threshold
     result = {'verified': verified, 'status': 'verified' if verified else 'rejected',
               'score': round(score, 4), 'threshold': threshold, 'liveness_checked': False,
-              'message': 'Xác minh danh tính thành công. Bạn có thể bắt đầu bài thi.' if verified else 'Khuôn mặt chưa khớp. Hãy kiểm tra ánh sáng và thử lại.'}
+              'message': 'Xác minh danh tính thành công. Bạn có thể bắt đầu bài thi.' if verified else ENTRY_MISMATCH if final_entry else 'Khuôn mặt chưa khớp. Hãy kiểm tra ánh sáng và thử lại.'}
     try:
         # Consistent lock order with attempts.start: exam, then student.
         db.scalar(select(Exam).where(Exam.id == exam_id).with_for_update())
@@ -223,8 +251,16 @@ async def verify(exam_id: UUID, image: UploadFile = File(...), consent: bool = F
         reference = require_reference(db, current)
         if reference.id != version or current.identity_profile_version != profile_version:
             raise face_error('REFERENCE_CHANGED', 'Ảnh định danh đã thay đổi. Vui lòng xác minh lại.', 409)
+        if final_entry and db.scalar(select(IdentityVerification.id).where(
+            IdentityVerification.student_id == user_id, IdentityVerification.exam_id == exam_id,
+            IdentityVerification.liveness_json['frame_sha256'].astext == frame_hash,
+        ).limit(1)) is not None:
+            raise face_error('FRESH_FRAME_REQUIRED', 'Vui lòng chụp ảnh camera mới để xác minh lại.', 409)
+        metadata = {'checked': False, 'frame_sha256': frame_hash}
+        if final_entry:
+            metadata.update(purpose=ENTRY_PURPOSE, frame_received_at=received_at.isoformat(), profile_version=profile_version)
         verification = IdentityVerification(student_id=user_id, exam_id=exam_id, reference_version=version,
-            image_path=None, liveness_json={'checked': False}, status=result['status'], score=result['score'],
+            image_path=None, liveness_json=metadata, status=result['status'], score=result['score'],
             failure_reason=None if verified else 'FACE_MISMATCH', created_at=datetime.now(timezone.utc))
         db.add(verification)
         db.commit()

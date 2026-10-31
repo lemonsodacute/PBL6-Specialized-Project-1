@@ -13,6 +13,9 @@ export type IdentityResult = {
   message: string;
 };
 
+export type EntryIdentityResult = IdentityResult & { id: string; reference_version: string };
+export const entryMismatchMessage = 'Không thể xác minh người đang ngồi trước camera là sinh viên đã xác thực.';
+
 export const identityPoses = [
   { label: 'Nhìn thẳng', hint: 'Nhìn thẳng vào camera, giữ khuôn mặt ở giữa khung.' },
   { label: 'Quay trái', hint: 'Quay nhẹ sang trái khoảng 20°, vẫn để camera thấy hai mắt.' },

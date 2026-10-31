@@ -7,8 +7,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { Badge, Button, Card, LoadingSkeleton, PageHeader } from '@/components/ui';
 import { CameraPreview, CapturedImage } from '@/components/identity/CameraPreview';
 import { useIdentityCamera } from '@/components/identity/useIdentityCamera';
+import { useExamMedia } from '@/components/proctoring/useExamMedia';
+import { ExamDeviceSetup } from '@/components/proctoring/ExamDeviceSetup';
 import { api, ApiError } from '@/lib/api';
-import { identityError } from '@/lib/identity';
+import { entryMismatchMessage, identityError } from '@/lib/identity';
 import type { CardStatus } from '@/lib/student-card';
 import { formatCalendarDateTime } from '@/lib/calendar-date';
 
@@ -29,6 +31,8 @@ export default function VerifyExamPage() {
   const working = useRef(false);
   const [verified, setVerified] = useState(false);
   const [image, setImage] = useState<Blob | null>(null);
+  const [devicesOpen, setDevicesOpen] = useState(false);
+  const media = useExamMedia(Boolean(exam?.require_camera), Boolean(exam?.require_mic));
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -98,14 +102,28 @@ export default function VerifyExamPage() {
 
   async function startAttempt() {
     if (!exam || (exam.require_camera && !verified) || working.current) return;
+    if ((exam.require_camera || exam.require_mic) && !media.ready) return;
     working.current = true;
     setBusy(true);
     setError('');
     try {
-      const response = await api.attempts.start(examId) as { id?: string; data?: { id?: string } };
+      let entryId: string | undefined;
+      if (exam.require_camera) {
+        // Always capture here; never reuse the initial verification preview/blob.
+        const frame = await media.captureFrame();
+        const final = await api.identity.verifyEntry(examId, frame, consent);
+        if (!final.verified || final.status !== 'verified') {
+          setError(entryMismatchMessage);
+          return;
+        }
+        entryId = final.id;
+        if (!entryId) throw new Error('Chưa nhận được xác nhận danh tính. Vui lòng thử lại.');
+      }
+      const response = await api.attempts.start(examId, entryId) as { id?: string; data?: { id?: string } };
       const attemptId = response.data?.id ?? response.id;
       if (!attemptId) throw new Error('Không nhận được mã lượt thi. Vui lòng thử lại.');
       camera.stop();
+      media.transferToAttempt(attemptId);
       router.push(`/student/attempts/${attemptId}`);
     } catch (cause) {
       if (cause instanceof ApiError && ['IDENTITY_VERIFICATION_REQUIRED', 'REFERENCE_CHANGED', 'REFERENCE_REQUIRED', 'PROFILE_NOT_VERIFIED'].includes(cause.code ?? '')) {
@@ -113,6 +131,8 @@ export default function VerifyExamPage() {
         setImage(null);
         setConsent(false);
         setStep(0);
+        setDevicesOpen(false);
+        media.stopStream();
         camera.stop();
         void load();
       }
@@ -137,8 +157,8 @@ export default function VerifyExamPage() {
       {step === 1 && <><h2>Xác minh khuôn mặt</h2><p>Nhìn thẳng vào camera, chụp ảnh rõ mặt rồi gửi xác minh.</p><div className="identity-actions"><Button variant="outline" disabled={busy || camera.state === 'opening'} onClick={() => void camera.open(Boolean(exam.require_mic))}>{camera.state === 'on' ? 'Mở lại camera' : 'Mở camera'}</Button><Button variant={image ? 'warning' : 'primary'} disabled={busy || !camera.ready || camera.state !== 'on'} onClick={() => void capture()}>{image ? 'Chụp lại' : 'Chụp ảnh'}</Button></div>
         {image && <div className="identity-trial-preview"><CapturedImage image={image} alt="Ảnh khuôn mặt để xác minh trước bài thi" /><p>Ảnh sẽ được đối chiếu với ảnh định danh từ thẻ sinh viên đã xác nhận.</p></div>}
         <label className="identity-consent"><input type="checkbox" checked={consent} disabled={busy} onChange={event => setConsent(event.target.checked)} /><span>Tôi đồng ý sử dụng ảnh này để xác minh khuôn mặt cho bài thi.</span></label><Button variant="success" disabled={busy || !image || !consent} onClick={() => void verify()}>{busy ? 'Đang xử lý…' : 'Xác minh khuôn mặt'}</Button><Link href={profileLink}>Cập nhật ảnh định danh trong Hồ sơ</Link></>}
-      {step === 2 && <><div className="identity-complete-icon" aria-hidden="true"><Check className="inline-icon" aria-hidden="true" /></div><h2>{verified ? 'Xác minh danh tính thành công' : 'Sẵn sàng vào bài'}</h2><p>{verified ? 'Bạn có thể bắt đầu bài thi. Kết quả xác minh có hiệu lực trong 15 phút. ' : ''}Thời gian làm bài chỉ bắt đầu khi bạn bấm nút bên dưới.</p><Button variant="success" disabled={busy || (exam.require_camera && !verified)} onClick={() => void startAttempt()}>{busy ? 'Đang tạo lượt thi…' : 'Bắt đầu làm bài'}</Button></>}
-      {(error || camera.error) && <div className="identity-message error" role="alert">{error || camera.error}</div>}
+      {step === 2 && <><div className="identity-complete-icon" aria-hidden="true"><Check className="inline-icon" aria-hidden="true" /></div><h2>{verified ? 'Xác minh danh tính thành công' : 'Sẵn sàng vào bài'}</h2><p>Hoàn tất xác nhận thiết bị trước khi vào bài. {exam.require_camera ? 'Camera sẽ chụp ảnh mới để xác minh lại ngay khi bạn vào phòng thi. ' : ''}Thời gian làm bài chỉ bắt đầu sau khi các kiểm tra bắt buộc thành công.</p><Button variant="success" disabled={busy || (exam.require_camera && !verified)} onClick={() => { if (exam.require_camera || exam.require_mic) setDevicesOpen(true); else void startAttempt(); }}>{busy ? 'Đang xác minh danh tính...' : 'Bắt đầu làm bài'}</Button></>}
+      {!devicesOpen && (error || camera.error) && <div className="identity-message error" role="alert">{error || camera.error}</div>}
     </Card><Card className="verify-guide">
       <h2>Hướng dẫn chuẩn bị</h2>
       {exam.require_camera ? <ol>
@@ -148,6 +168,6 @@ export default function VerifyExamPage() {
       </ol> : <p>Bài thi này không yêu cầu xác minh khuôn mặt. Hoàn tất bước kiểm tra thiết bị để tiếp tục.</p>}
       {exam.require_mic && <p>Bài thi yêu cầu microphone. Hãy cấp quyền khi trình duyệt hỏi.</p>}
       <p>Bạn chỉ vào bài thi sau khi hoàn tất các bước được yêu cầu.</p>
-    </Card></div><p className="identity-return"><Link href="/student/exams"><ArrowLeft className="inline-icon" aria-hidden="true" /> Quay lại danh sách đề thi</Link></p>
+    </Card></div><ExamDeviceSetup open={devicesOpen} media={media} requireVideo={exam.require_camera} requireAudio={Boolean(exam.require_mic)} verifying={busy} entryError={error} onEnter={() => void startAttempt()} onClose={() => setDevicesOpen(false)} /><p className="identity-return"><Link href="/student/exams"><ArrowLeft className="inline-icon" aria-hidden="true" /> Quay lại danh sách đề thi</Link></p>
   </div>;
 }
