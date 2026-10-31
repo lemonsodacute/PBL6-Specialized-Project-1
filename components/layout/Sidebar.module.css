@@ -1,7 +1,7 @@
 .shell{--workspace-sidebar-width:260px;--workspace-sidebar-motion:220ms}
 .shell:global(.app-shell) :global(.sidebar){width:var(--workspace-sidebar-width);flex-basis:var(--workspace-sidebar-width);transition:width var(--workspace-sidebar-motion) ease-out,flex-basis var(--workspace-sidebar-motion) ease-out,padding var(--workspace-sidebar-motion) ease-out}
 /* Keep the brand/role and bottom actions in flow; only navigation scrolls. */
-.shell:global(.app-shell) :global(.sidebar){height:100dvh;overflow:clip}
+.shell:global(.app-shell) :global(.sidebar){height:calc(100dvh - 2 * var(--workspace-nav-inset));top:var(--workspace-nav-inset);margin:var(--workspace-nav-inset) 0 var(--workspace-nav-inset) var(--workspace-nav-inset);border-radius:var(--workspace-nav-radius);box-shadow:var(--shadow-medium);overflow:clip}
 .shell:global(.app-shell) :global(.sidebar)>*{flex-shrink:0}
 .shell:global(.app-shell) :global(.sidebar nav){flex:1;min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:none}
 .shell:global(.app-shell) :global(.sidebar nav)>*{flex-shrink:0}
@@ -45,7 +45,8 @@
   .shell[data-sidebar-collapsed='true'] :global(.sidebar .sidebar-disabled){justify-content:center;overflow:hidden;font-size:0}
 }
 @media(max-width:1023px){
-  .shell:global(.app-shell) :global(.sidebar){width:min(280px,calc(100vw - 48px));transition:transform var(--workspace-sidebar-motion) ease-out}
+  .shell{--workspace-nav-inset:8px;--workspace-nav-radius:24px}
+  .shell:global(.app-shell) :global(.sidebar){inset:var(--workspace-nav-inset) auto var(--workspace-nav-inset) var(--workspace-nav-inset);margin:0;width:min(280px,calc(100vw - 48px));transition:transform var(--workspace-sidebar-motion) ease-out}
   .shell:global(.app-shell) :global(.sidebar .brand){width:calc(100% - 52px);background-size:calc(100% - 16px) auto}
   .shell :global(.shell-close-button){top:28px;right:10px;z-index:1;color:var(--sidebar-active);background:var(--sidebar-hover);border:1px solid rgb(255 255 255 / 35%)}
 }

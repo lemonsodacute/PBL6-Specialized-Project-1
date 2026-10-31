@@ -3,11 +3,14 @@
   height: 80px;
   min-height: 80px;
   min-width: 0;
+  width: auto;
   padding: 12px 32px;
+  margin: var(--workspace-nav-inset) var(--workspace-topbar-gutter) 0;
   gap: 16px;
   background: var(--workspace-topbar-bg);
-  border-bottom: 2px solid var(--workspace-topbar-divider);
-  box-shadow: 0 3px 0 var(--workspace-topbar-shadow);
+  border: 1px solid var(--workspace-topbar-divider);
+  border-radius: var(--workspace-topbar-radius);
+  box-shadow: var(--shadow-medium);
 }
 .bar:global(.topbar) :global(.topbar-title) {
   flex: 0 1 auto;
@@ -113,7 +116,7 @@
   .bar:global(.topbar) :global(.topbar-user) > button { max-width: 280px; }
 }
 @media (max-width: 639px) {
-  :global(.app-shell) .bar:global(.topbar) { height: 76px; min-height: 76px; padding-inline: 12px; gap: 8px; }
+  :global(.app-shell) .bar:global(.topbar) { height: 76px; min-height: 76px; padding-inline: 12px; margin: 8px 8px 0; border-radius: 22px; gap: 8px; }
   .bar:global(.topbar) :global(.topbar-title) { padding: 8px 10px; gap: 7px; font-size: 12px; }
   .bar:global(.topbar) :global(.header-actions) { flex: 0 0 auto; gap: 10px; }
   .bar:global(.topbar) :global(.notification-bell),

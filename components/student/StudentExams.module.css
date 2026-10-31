@@ -118,3 +118,44 @@
   .page .card :global(.student-exam-meta) { grid-row: 3; }
 }
 @media (prefers-reduced-motion: reduce) { .page :global(.ui-button) { transition: none; transform: none; } }
+
+/* Only open/upcoming cards use the softer reference treatment. */
+.softCard { --soft-accent: var(--primary); --soft-status-bg: var(--student-exam-soft-open-bg); --soft-status-ink: var(--student-exam-soft-open-ink); }
+.softCard:global([data-exam-status='upcoming']) { --soft-accent: var(--color-warning); --soft-status-bg: var(--student-exam-soft-upcoming-bg); --soft-status-ink: var(--student-exam-soft-upcoming-ink); }
+:global(.student-app-shell[data-role]) .page .card.softCard:global(.student-exam-card) {
+  grid-template-rows: auto auto 1fr auto;
+  padding: 26px;
+  border: 1px solid var(--student-exam-soft-line);
+  border-left: 4px solid var(--soft-accent);
+  border-radius: 24px;
+  background: var(--student-exam-paper);
+  box-shadow: var(--student-exam-soft-shadow);
+  color: var(--student-exam-soft-ink);
+}
+.page .card.softCard :global(.student-exam-card-top h3) { color: var(--student-exam-soft-ink); font-size: 22px; }
+.page .card.softCard :global(.student-exam-card-top p) { color: var(--student-exam-soft-muted); font-size: 14px; }
+.page .card.softCard :global(.study-set-mark) { width: 56px; height: 56px; flex-basis: 56px; border: 0; border-radius: 16px; background: var(--primary-soft); color: var(--primary); }
+.page .card.softCard:global([data-exam-status='upcoming']) :global(.study-set-mark) { background: var(--student-exam-soft-upcoming-bg); color: var(--student-exam-soft-upcoming-ink); }
+.page .card.softCard > :global(.ui-badge),
+.page .card.softCard:global([data-exam-status='upcoming']) :global(.student-exam-meta > .ui-badge:first-child) { padding: 5px 14px; border: 0; border-radius: 999px; background: var(--soft-status-bg); color: var(--soft-status-ink); font-size: 13px; font-weight: 800; }
+.page .card.softCard > :global(.ui-badge)::before { content: ''; width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: currentColor; }
+.page .card.softCard :global(.student-exam-meta) { grid-column: 1 / -1; grid-row: 2; gap: 8px; }
+.page .card.softCard :global(.student-exam-meta > span) { padding: 5px 12px; border: 1px solid var(--student-exam-soft-line); border-radius: 999px; background: var(--student-exam-soft-panel); color: var(--student-exam-soft-muted); font-size: 13px; font-weight: 600; }
+.page .card.softCard .schedule { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.page .card.softCard:global([data-exam-status='upcoming']) .schedule { grid-template-columns: minmax(0, 1fr); }
+.page .card.softCard .schedule > div { padding: 14px 16px; border: 0; border-radius: 16px; background: var(--student-exam-soft-panel); }
+.page .card.softCard .schedule dt { color: var(--student-exam-soft-muted); font-size: 13px; font-weight: 500; }
+.page .card.softCard .schedule dd { color: var(--student-exam-soft-ink); font-size: 16px; font-weight: 800; }
+.page .card.softCard :global(.student-exam-actions .ui-button) { min-height: 56px; border: 0; border-radius: 16px; box-shadow: none; }
+.page .card.softCard :global(.student-exam-actions .ui-button:disabled) { background: var(--student-exam-soft-panel); color: var(--student-exam-soft-muted); }
+.page :global([data-exam-group='open'] .student-exam-section-heading h2),
+.page :global([data-exam-group='upcoming'] .student-exam-section-heading h2) { color: var(--student-exam-soft-ink); font-size: 24px; }
+.page :global([data-exam-group='open'] .student-exam-section-heading > span),
+.page :global([data-exam-group='upcoming'] .student-exam-section-heading > span) { padding: 0; border: 0; background: transparent; color: var(--student-exam-soft-muted); font-weight: 500; }
+@media (max-width: 767px) {
+  :global(.student-app-shell[data-role]) .page .card.softCard:global(.student-exam-card) { padding: 20px; grid-template-columns: minmax(0, 1fr); }
+  .page .card.softCard :global(.student-exam-card-top h3) { font-size: 21px; }
+  .page .card.softCard > :global(.ui-badge) { grid-column: 1; grid-row: 2; justify-self: start; }
+  .page .card.softCard:global([data-exam-status='open']) :global(.student-exam-meta) { grid-row: 3; }
+}
+@media (max-width: 639px) { .page .card.softCard .schedule { grid-template-columns: minmax(0, 1fr); } }

@@ -50,10 +50,16 @@ for (const theme of ['light', 'dark'] as const) for (const width of [1440, 1024,
     await expect(card(page, rows[4].title)).toHaveCount(0);
     for (const row of rows.slice(0, 4)) {
       const item = card(page, row.title);
-      await expect(item).toHaveCSS('border-top-width', '3px');
-      await expect(item).toHaveCSS('border-left-width', '3px');
       const shadow = await item.evaluate(el => getComputedStyle(el).boxShadow);
-      expect(shadow).toContain('5px 5px 0px');
+      if (row.id === 'working') {
+        await expect(item).toHaveCSS('border-top-width', '3px');
+        await expect(item).toHaveCSS('border-left-width', '3px');
+        expect(shadow).toContain('5px 5px 0px');
+      } else {
+        await expect(item).toHaveCSS('border-top-width', '1px');
+        await expect(item).toHaveCSS('border-left-width', '4px');
+        expect(shadow).not.toContain('5px 5px 0px');
+      }
       await expect(item.locator('time').first()).toHaveAttribute('datetime', row.start_time);
       await expect(item.locator('time').last()).toHaveAttribute('datetime', row.end_time);
       await expect(item).toContainText('60 phút');

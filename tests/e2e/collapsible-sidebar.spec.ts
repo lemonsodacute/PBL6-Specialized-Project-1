@@ -50,8 +50,9 @@ for(const role of ['student','teacher','admin'] as const)test(`${role}: collapse
   expect(expandBox.x+expandBox.width).toBeLessThanOrEqual(rail.x+rail.width);
   const after=(await page.locator('.workspace').boundingBox())!;
   expect(page.url()).toBe(routeBefore);
-  expect(Math.round(after.width-before.width)).toBe(180);expect(Math.round(after.x)).toBe(80);
-  expect(await page.locator('.topbar').evaluate(el=>Math.round(el.getBoundingClientRect().left))).toBe(80);
+  expect(Math.round(after.width-before.width)).toBe(180);expect(Math.round(after.x)).toBe(Math.round(rail.x+rail.width));
+  const headerInset=await page.locator('.topbar').evaluate(el=>parseFloat(getComputedStyle(el).marginLeft));
+  expect(await page.locator('.topbar').evaluate(el=>Math.round(el.getBoundingClientRect().left))).toBe(Math.round(after.x+headerInset));
   await expect(sidebar(page).getByRole('link',{name:homeName,exact:true})).toHaveAttribute('href',homeHref!);
   await expect(sidebar(page).locator('nav [aria-current="page"]')).toHaveCount(1);
   expect(await sidebar(page).locator('.brand').evaluate(el=>getComputedStyle(el).backgroundImage)).toContain('proctoowl-mark.svg');
@@ -127,7 +128,7 @@ for(const size of [390,768])test(`${size}px: saved desktop preference uses a ful
   const workspace=(await page.locator('.workspace').boundingBox())!;expect(workspace.x).toBe(0);expect(workspace.width).toBe(size);
   const menu=page.getByRole('button',{name:'Mở menu',exact:true});await expect(menu).toBeEnabled();await menu.click();
   const dialog=page.getByRole('dialog',{name:'Menu điều hướng'});await expect(dialog).toBeVisible();
-  await expect.poll(async()=>Math.round((await dialog.boundingBox())!.x)).toBe(0);
+  await expect.poll(async()=>Math.round((await dialog.boundingBox())!.x)).toBe(8);
   await expect(dialog.getByRole('link',{name:'Lớp học phần',exact:true})).toBeVisible();
   expect(await dialog.locator('.nav-label').first().evaluate(el=>getComputedStyle(el).clipPath)).toBe('none');
   await page.evaluate(()=>document.fonts.ready);

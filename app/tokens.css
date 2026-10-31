@@ -138,6 +138,10 @@
 
 /* One pastel topbar for every workspace. Dark ink stays paired with pastel accents. */
 :root {
+  --workspace-nav-radius: 32px;
+  --workspace-nav-inset: 16px;
+  --workspace-topbar-radius: 28px;
+  --workspace-topbar-gutter: 24px;
   --workspace-topbar-bg: #fff9f0;
   --workspace-topbar-divider: #e7dcca;
   --workspace-topbar-outline: #22213f;
@@ -218,4 +222,28 @@ html[data-theme='dark'] {
   --student-exam-small-shadow: 3px 3px 0 #07151d;
   --student-exam-sidebar: var(--dark-sidebar);
   --student-exam-sidebar-profile: var(--dark-surface-2);
+}
+
+/* Soft presentation for open and upcoming exams; the page canvas stays shared with Login. */
+:root {
+  --student-exam-soft-ink: #17343c;
+  --student-exam-soft-muted: #4f6b70;
+  --student-exam-soft-line: #d3e5e2;
+  --student-exam-soft-panel: #f2f7f6;
+  --student-exam-soft-open-bg: #ddf3eb;
+  --student-exam-soft-open-ink: #075d4a;
+  --student-exam-soft-upcoming-bg: #fff0d5;
+  --student-exam-soft-upcoming-ink: #8a560e;
+  --student-exam-soft-shadow: 0 4px 18px rgb(23 52 60 / 7%);
+}
+html[data-theme='dark'] {
+  --student-exam-soft-ink: var(--dark-text-primary);
+  --student-exam-soft-muted: var(--dark-text-secondary);
+  --student-exam-soft-line: var(--dark-border-control);
+  --student-exam-soft-panel: var(--dark-surface-2);
+  --student-exam-soft-open-bg: #183d34;
+  --student-exam-soft-open-ink: #9bdfbd;
+  --student-exam-soft-upcoming-bg: #3e3320;
+  --student-exam-soft-upcoming-ink: #f1cd85;
+  --student-exam-soft-shadow: var(--dark-shadow);
 }

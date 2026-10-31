@@ -57,6 +57,8 @@ for (const role of roles) for (const theme of ['light', 'dark'] as const) for (c
     await expect(bell).toBeVisible({ timeout: 30000 });
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
     await expect(badge).toHaveText(areas[role]);
+    await expect(bar).toHaveCSS('border-radius', width < 640 ? '22px' : '28px');
+    if (width >= 1024) await expect(page.locator('.sidebar')).toHaveCSS('border-radius', '32px');
     await expect(badge).toHaveCSS('background-color', 'rgb(201, 241, 228)');
     await expect(bell).toHaveCSS('background-color', 'rgb(255, 224, 138)');
     await expect(bell.locator('.notification-count')).toHaveText('2');
@@ -127,6 +129,7 @@ for (const role of roles) for (const width of [1440, 390]) {
       await page.getByRole('button', { name: 'Mở menu', exact: true }).click();
       const drawer = page.getByRole('dialog', { name: 'Menu điều hướng' });
       await expect(drawer).toBeVisible();
+      await expect(drawer).toHaveCSS('border-radius', '24px');
       await drawer.getByRole('button', { name: 'Đóng menu', exact: true }).click();
       await expect(drawer).toHaveCount(0);
     }
