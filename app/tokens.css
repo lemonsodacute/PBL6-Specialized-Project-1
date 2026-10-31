@@ -136,9 +136,43 @@
   --student-background: var(--background);
 }
 
-.app-shell[data-role='student'] { --role-accent: var(--role-student); --role-soft: var(--primary-soft); --panel-radius:22px; }
-.app-shell[data-role='teacher'] { --role-accent: var(--role-teacher); --role-soft: var(--primary-soft); }
-.app-shell[data-role='admin'] { --role-accent: var(--role-admin); --role-soft: var(--primary-soft); }
+/* One pastel topbar for every workspace. Dark ink stays paired with pastel accents. */
+:root {
+  --workspace-topbar-bg: #fff9f0;
+  --workspace-topbar-divider: #e7dcca;
+  --workspace-topbar-outline: #22213f;
+  --workspace-topbar-ink: #22213f;
+  --workspace-topbar-mint: #c9f1e4;
+  --workspace-topbar-yellow: #ffe08a;
+  --workspace-topbar-yellow-hover: #f7d36d;
+  --workspace-topbar-pink: #ffc9d6;
+  --workspace-topbar-unread: #c92b46;
+  --workspace-topbar-unread-ink: #ffffff;
+  --workspace-topbar-profile: #ffffff;
+  --workspace-topbar-profile-hover: #fff3ef;
+  --workspace-topbar-profile-ink: var(--workspace-topbar-ink);
+  --workspace-topbar-profile-outline: var(--workspace-topbar-outline);
+  --workspace-topbar-muted: #56536e;
+  --workspace-topbar-shadow: rgb(34 33 63 / 8%);
+  --workspace-topbar-focus: #006d77;
+  --workspace-topbar-student-dot: #087f8c;
+  --workspace-topbar-teacher-dot: #b45309;
+  --workspace-topbar-admin-dot: #7050b5;
+}
+html[data-theme='dark'] {
+  --workspace-topbar-bg: var(--dark-surface-1);
+  --workspace-topbar-divider: var(--dark-border-control);
+  --workspace-topbar-profile: var(--dark-surface-2);
+  --workspace-topbar-profile-hover: var(--dark-surface-3);
+  --workspace-topbar-profile-ink: var(--dark-text-primary);
+  --workspace-topbar-profile-outline: #8b9aaf;
+  --workspace-topbar-muted: var(--dark-text-secondary);
+  --workspace-topbar-shadow: rgb(0 0 0 / 18%);
+  --workspace-topbar-focus: var(--dark-focus);
+}
+.app-shell[data-role='student'] { --role-accent: var(--role-student); --role-soft: var(--primary-soft); --panel-radius:22px;  --workspace-topbar-dot: var(--workspace-topbar-student-dot); }
+.app-shell[data-role='teacher'] { --role-accent: var(--role-teacher); --role-soft: var(--primary-soft);  --workspace-topbar-dot: var(--workspace-topbar-teacher-dot); }
+.app-shell[data-role='admin'] { --role-accent: var(--role-admin); --role-soft: var(--primary-soft);  --workspace-topbar-dot: var(--workspace-topbar-admin-dot); }
 .app-shell[data-experience='productivity'] {
   --panel-radius: 16px;
   --panel-padding: 20px;
@@ -152,4 +186,36 @@
   --layout-gap: 16px;
   --table-cell-block: 10px;
   --section-title-size: 18px;
+}
+
+/* Cartoon exam cards. The canvas itself comes exclusively from DottedCanvas. */
+:root {
+  --student-exam-ink: var(--workspace-topbar-ink);
+  --student-exam-muted: #4f6375;
+  --student-exam-outline: var(--workspace-topbar-outline);
+  --student-exam-paper: #ffffff;
+  --student-exam-panel: #edf8f4;
+  --student-exam-mint: #bcebd8;
+  --student-exam-yellow: var(--workspace-topbar-yellow);
+  --student-exam-coral: #ffc1ad;
+  --student-exam-accent-ink: var(--workspace-topbar-ink);
+  --student-exam-button: var(--color-primary);
+  --student-exam-button-hover: var(--color-primary-hover);
+  --student-exam-button-ink: #ffffff;
+  --student-exam-shadow: 5px 5px 0 var(--student-exam-outline);
+  --student-exam-small-shadow: 3px 3px 0 var(--student-exam-outline);
+  --student-exam-sidebar: var(--color-primary);
+  --student-exam-sidebar-profile: #127d83;
+  --student-exam-sidebar-ink: #ffffff;
+}
+html[data-theme='dark'] {
+  --student-exam-ink: var(--dark-text-primary);
+  --student-exam-muted: var(--dark-text-secondary);
+  --student-exam-outline: #7f9ba8;
+  --student-exam-paper: var(--dark-surface-1);
+  --student-exam-panel: var(--dark-surface-2);
+  --student-exam-shadow: 5px 5px 0 #07151d;
+  --student-exam-small-shadow: 3px 3px 0 #07151d;
+  --student-exam-sidebar: var(--dark-sidebar);
+  --student-exam-sidebar-profile: var(--dark-surface-2);
 }

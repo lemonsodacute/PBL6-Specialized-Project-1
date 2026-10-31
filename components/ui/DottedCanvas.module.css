@@ -1,0 +1,6 @@
+/* Extracted from LoginForm: both Login and workspace canvases use this exact paint. */
+.canvas,
+:global(.app-shell[data-role]) .canvas:global(.workspace) {
+  /* Reset the full paint so the dark workspace glow cannot add extra layers. */
+  background: var(--login-canvas-bg) var(--login-canvas-pattern) 0 0 / var(--login-canvas-spacing) repeat;
+}

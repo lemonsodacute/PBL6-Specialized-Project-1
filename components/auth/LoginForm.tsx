@@ -13,6 +13,7 @@ import { PublicBrand } from '@/components/public/PublicBrand';
 import { publicTypography } from '@/components/public/typography';
 import homeStyles from '@/components/public/PublicHome.module.css';
 import styles from './LoginForm.module.css';
+import canvasStyles from '@/components/ui/DottedCanvas.module.css';
 
 type Mode = 'login' | 'register' | 'forgot' | 'reset';
 type FieldName = 'fullName' | 'email' | 'password' | 'confirmPassword' | 'token';
@@ -114,7 +115,7 @@ export default function LoginForm({ initialMode }: { initialMode?: string }) {
   });
   const fieldError = (field: FieldName) => errors[field] && <ErrorMessage id={`auth-${field}-error`}>{errors[field]}</ErrorMessage>;
 
-  return <main className={`${styles.page} ${homeStyles.theme} ${publicTypography}`}>
+  return <main className={`${styles.page} ${homeStyles.theme} ${canvasStyles.canvas} ${publicTypography}`}>
     <div className={`${styles.content} ${mode === 'register' ? styles.register : ''}`}>
     <Link href="/" className={styles.backLink}><ArrowLeft size={18} aria-hidden="true" />Quay lại trang chủ</Link>
     <div className={styles.brand}><PublicBrand /></div>

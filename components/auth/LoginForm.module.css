@@ -4,9 +4,6 @@
   align-items: center;
   justify-content: center;
   padding: 32px 16px;
-  background-color: var(--public-bg);
-  background-image: var(--public-dot-pattern);
-  background-size: var(--public-dot-spacing);
   color: var(--public-ink);
   font: 400 14px/1.7 var(--font-body);
 }

@@ -15,6 +15,8 @@ import { AccountMenu } from './AccountMenu';
 import { SidebarNavGroup } from './SidebarNavGroup';
 import { SidebarHint } from './SidebarHint';
 import sidebarStyles from './Sidebar.module.css';
+import topbarStyles from './WorkspaceTopbar.module.css';
+import canvasStyles from '@/components/ui/DottedCanvas.module.css';
 import { ProfileAvatar, type AvatarUser } from '@/components/profile/ProfileAvatar';
 import { adminNavItems, isAdminNavItemActive } from '@/lib/admin-navigation';
 import { settingsRoute, helpRoute } from '@/lib/settings';
@@ -109,8 +111,8 @@ export function WorkspaceShell({ children, user, navigation, contentClassName = 
       </nav>
       <div className="sidebar-bottom">{navLink(settingsRoute(user.role), 'Cài đặt')}{navLink(helpRoute(user.role), 'Trợ giúp')}</div>
     </aside>
-    <div className="workspace">
-      <header className={`topbar ${student ? 'student-topbar' : ''}`}>
+    <div className={`workspace ${student && pathname === '/student/exams' ? canvasStyles.canvas : ''}`}>
+      <header className={`topbar ${topbarStyles.bar} ${student ? 'student-topbar' : ''}`}>
         <button type="button" className="icon-button shell-menu-button" disabled={!preferenceReady} aria-label="Mở menu" aria-expanded={open} aria-controls="workspace-sidebar" onClick={() => setOpen(true)}>
           <Menu size={20} aria-hidden="true" />
         </button>

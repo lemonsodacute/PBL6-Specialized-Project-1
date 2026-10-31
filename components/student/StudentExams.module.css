@@ -1,0 +1,120 @@
+/* Page decoration is released on client navigation; no route or exam state lives here. */
+:global(.student-app-shell):has(.page) :global(.sidebar) {
+  background: var(--student-exam-sidebar);
+  border-right: 3px solid var(--student-exam-outline);
+}
+:global(.student-app-shell):has(.page) :global(.sidebar .brand)::before {
+  border: 2px solid var(--workspace-topbar-outline);
+  box-shadow: var(--student-exam-small-shadow);
+  transform: rotate(-5deg);
+}
+:global(.student-app-shell):has(.page) :global(.sidebar .student-profile) {
+  border: 3px solid var(--workspace-topbar-outline);
+  border-radius: 18px;
+  background: var(--student-exam-sidebar-profile);
+}
+:global(.student-app-shell):has(.page) :global(.sidebar .student-avatar) {
+  border: 2px solid var(--workspace-topbar-outline);
+  border-radius: 50%;
+  background: var(--student-exam-yellow);
+  color: var(--student-exam-accent-ink);
+}
+:global(.student-app-shell):has(.page) :global(.sidebar :is(nav a, .student-nav-group)) {
+  min-height: 46px;
+  border-radius: 16px;
+  color: var(--student-exam-sidebar-ink);
+  font-weight: 700;
+}
+:global(.student-app-shell):has(.page) :global(.sidebar nav a[aria-current='page']) {
+  border: 3px solid var(--workspace-topbar-outline);
+  background: var(--student-exam-yellow);
+  color: var(--student-exam-accent-ink);
+  box-shadow: var(--student-exam-small-shadow);
+}
+:global(.student-app-shell):has(.page) :global(.sidebar nav a[aria-current='page'] .nav-icon) { color: inherit; }
+:global(.student-app-shell):has(.page) :global(.shell-content),
+:global(.student-app-shell):has(.page) :global(.student-footer) { background: transparent; }
+.page:global(.workspace-page.student-exams-page) {
+  display: grid;
+  align-content: start;
+  gap: 32px;
+  width: 100%;
+  max-width: 1280px;
+  min-width: 0;
+  padding: 28px 36px 64px;
+  background: transparent;
+  color: var(--student-exam-ink);
+}
+.page, .page * { min-width: 0; }
+.hero { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.eyebrow { margin: 0 0 4px; font-size: 14px; font-weight: 800; }
+.page :global(.student-page-heading) { margin: 0; }
+.page :global(.student-page-heading h1) { margin: 0; font-size: clamp(32px, 3.5vw, 46px); line-height: 1.15; font-weight: 800; color: var(--student-exam-ink); }
+.description { margin: 8px 0 0; max-width: 54ch; font-size: 15px; color: var(--student-exam-muted); }
+.heroAside { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex: 0 1 auto; }
+.today { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border: 2px solid var(--student-exam-outline); border-radius: 999px; background: var(--student-exam-paper); box-shadow: var(--student-exam-small-shadow); font-size: 12px; font-weight: 800; }
+.today svg { flex-shrink: 0; }
+.hero .owl { width: 80px; height: 80px; flex: 0 0 80px; }
+.page :global(.student-exam-section) { margin: 0; }
+.page :global(.student-exam-section-heading) { align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.page :global(.student-exam-section-heading h2) { color: var(--student-exam-ink); font-size: 26px; font-weight: 800; }
+.page :global(.student-exam-section-heading > span) { padding: 4px 14px; border: 2px solid var(--student-exam-outline); border-radius: 999px; background: var(--student-exam-paper); color: var(--student-exam-ink); font-size: 13px; font-weight: 800; }
+.page :global(.student-exam-grid) { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+.page :global([data-exam-group='upcoming'] .student-exam-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+:global(.student-app-shell[data-role]) .page .card:global(.student-exam-card),
+.page:global(.workspace-page) > :global(.ui-card) {
+  padding: 24px;
+  border: 3px solid var(--student-exam-outline);
+  border-radius: 26px;
+  background: var(--student-exam-paper);
+  box-shadow: var(--student-exam-shadow);
+  color: var(--student-exam-ink);
+}
+:global(.student-app-shell[data-role]) .page .card:global(.student-exam-card) { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: start; align-items: start; gap: 18px 16px; }
+.page .card :global(.student-exam-card-top) { grid-column: 1; grid-row: 1; align-items: center; gap: 16px; }
+.page .card :global(.student-exam-card-top h3) { font-size: 23px; line-height: 1.25; font-weight: 800; color: var(--student-exam-ink); }
+.page .card :global(.student-exam-card-top p) { font-size: 13px; line-height: 1.6; color: var(--student-exam-muted); overflow-wrap: anywhere; }
+.page .card :global(.study-set-mark) { display: grid; place-items: center; width: 54px; height: 54px; flex: 0 0 54px; border: 3px solid var(--student-exam-outline); border-radius: 16px; background: var(--student-exam-mint); color: var(--student-exam-accent-ink); }
+.page .card:global([data-exam-status='upcoming']) :global(.study-set-mark) { background: var(--student-exam-coral); }
+.page .card > :global(.ui-badge) { grid-column: 2; grid-row: 1; justify-self: end; align-self: start; padding: 5px 12px; border: 2px solid var(--student-exam-outline); border-radius: 999px; background: var(--student-exam-yellow); color: var(--student-exam-accent-ink); font-size: 13px; font-weight: 800; white-space: normal; }
+.page .card:global([data-exam-status='in_progress']) > :global(.ui-badge) { background: var(--student-exam-mint); }
+.page .card:global([data-exam-status='upcoming']) > :global(.ui-badge) { grid-column: 1 / -1; grid-row: 2; justify-self: start; background: var(--student-exam-coral); }
+.page .card:global([data-exam-status='upcoming']) :global(.student-exam-card-top) { grid-column: 1 / -1; }
+.page .card :global(.student-exam-meta) { grid-column: 1 / -1; grid-row: 2; padding: 0; border: 0; gap: 8px; }
+.page .card:global([data-exam-status='upcoming']) :global(.student-exam-meta) { grid-row: 3; }
+.page .card :global(.student-exam-meta > span) { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 2px solid var(--student-exam-outline); border-radius: 999px; background: var(--student-exam-panel); color: var(--student-exam-ink); font-size: 12px; font-weight: 700; white-space: normal; }
+.page .card :global(.student-exam-meta svg) { flex-shrink: 0; }
+.schedule { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.schedule > div { padding: 12px 14px; border: 2px dashed var(--student-exam-outline); border-radius: 16px; background: var(--student-exam-panel); }
+.schedule dt { margin: 0 0 4px; color: var(--student-exam-muted); font-size: 12px; font-weight: 700; }
+.schedule dd { margin: 0; color: var(--student-exam-ink); font-size: 14px; font-weight: 800; overflow-wrap: anywhere; }
+.page .card :global(.student-exam-note), .page .card :global(.student-exam-score) { grid-column: 1 / -1; color: var(--student-exam-muted); }
+.page .card :global(.student-exam-actions) { grid-column: 1 / -1; align-self: end; gap: 12px; }
+.page .card :global(.student-exam-actions .ui-button) { width: 100%; min-height: 54px; padding: 10px 18px; border: 3px solid var(--student-exam-outline); border-radius: 18px; background: var(--student-exam-button); color: var(--student-exam-button-ink); box-shadow: var(--student-exam-shadow); font: 800 17px/1.4 var(--font-heading); white-space: normal; }
+.page .card :global(.student-exam-actions .ui-button:not(:disabled)):hover { background: var(--student-exam-button-hover); }
+.page .card :global(.student-exam-actions .ui-button:disabled) { background: var(--student-exam-panel); color: var(--student-exam-muted); border-style: dashed; box-shadow: none; opacity: 1; }
+.page :global(.ui-field) { min-height: 46px; border: 2px solid var(--student-exam-outline); border-radius: 14px; background: var(--student-exam-paper); }
+.page :is(button, input, select, a):focus-visible { outline: 3px solid var(--workspace-topbar-focus); outline-offset: 4px; }
+@media (max-width: 1199px) {
+  .page:global(.workspace-page.student-exams-page) { padding-inline: 24px; }
+  .heroAside { flex-direction: column-reverse; align-items: flex-end; }
+  .hero .owl { width: 56px; height: 56px; flex-basis: 56px; }
+  .today { max-width: 220px; }
+  .schedule { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 767px) {
+  .page:global(.workspace-page.student-exams-page) { padding: 24px 18px 48px; gap: 28px; }
+  .hero { align-items: flex-start; }
+  .hero .owl { width: 56px; height: 56px; flex-basis: 56px; }
+  .today { display: none; }
+  .description { font-size: 14px; }
+  .page :global([data-exam-group='upcoming'] .student-exam-grid) { grid-template-columns: minmax(0, 1fr); }
+  .page :global(.student-exam-section-heading h2) { font-size: 24px; }
+  :global(.student-app-shell[data-role]) .page .card:global(.student-exam-card) { grid-template-columns: minmax(0, 1fr); padding: 18px; gap: 16px; border-radius: 22px; }
+  .page .card :global(.student-exam-card-top) { grid-column: 1; grid-row: 1; align-items: flex-start; gap: 12px; }
+  .page .card :global(.student-exam-card-top h3) { font-size: 21px; }
+  .page .card :global(.study-set-mark) { width: 46px; height: 46px; flex-basis: 46px; border-radius: 14px; }
+  .page .card > :global(.ui-badge) { grid-column: 1; grid-row: 2; justify-self: start; }
+  .page .card :global(.student-exam-meta) { grid-row: 3; }
+}
+@media (prefers-reduced-motion: reduce) { .page :global(.ui-button) { transition: none; transform: none; } }
