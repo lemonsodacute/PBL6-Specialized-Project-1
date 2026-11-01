@@ -43,7 +43,9 @@ for (const theme of ['light', 'dark'] as const) for (const width of [1440, 1024,
     await page.goto('/student/exams', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: 'Làm kiểm tra', level: 1, exact: true })).toBeVisible({ timeout: 30000 });
     await expect(page.locator('.student-exam-card')).toHaveCount(4);
-    expect(await page.locator('.workspace').evaluate(paint)).toEqual(loginCanvas);
+    expect(await page.locator('.app-shell').evaluate(paint)).toEqual(loginCanvas);
+    await expect(page.locator('.workspace')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(page.locator('.workspace')).toHaveCSS('background-image', 'none');
     await expect(page.locator('.student-exams-page')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     await expect(page.locator('.sidebar')).toHaveCSS('background-image', 'none');
     await expect(page.locator('.student-exam-section h2')).toHaveText(['Đang làm', 'Đang diễn ra', 'Sắp diễn ra']);

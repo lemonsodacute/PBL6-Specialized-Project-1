@@ -82,7 +82,7 @@ export function WorkspaceShell({ children, user, navigation, contentClassName = 
     return <SidebarHint key={href} label={label} enabled={compact && hint}><Link href={href} className={current ? 'current' : ''} aria-current={current ? 'page' : undefined}><NavigationIcon href={href} /><span className="nav-label">{label}</span>{href === '/admin/messages' && chatUnread > 0 && <span className="support-nav-badge" aria-label={`${chatUnread} tin nhắn chưa đọc`}>{chatUnread > 99 ? '99+' : chatUnread}</span>}<NavigationPending /></Link></SidebarHint>;
   };
 
-  return <div className={`app-shell ${sidebarStyles.shell} ${pageTitleStyles.pageTitles} ${student ? 'student-app-shell' : ''} ${student && pathname === '/student' ? `neo-dashboard-shell ${neoStyles.neoShell}` : ''}`} data-role={user.role} data-experience={experience} data-sidebar-collapsed={compact}>
+  return <div className={`app-shell ${sidebarStyles.shell} ${pageTitleStyles.pageTitles} ${student ? `student-app-shell ${canvasStyles.canvas}` : ''} ${student && pathname === '/student' ? `neo-dashboard-shell ${neoStyles.neoShell}` : ''}`} data-role={user.role} data-experience={experience} data-sidebar-collapsed={compact}>
     <a href="#main-content" className="skip-link">Đến nội dung chính</a>
     {open && <button type="button" className="sidebar-backdrop" aria-label="Đóng menu bên ngoài" tabIndex={-1} onClick={() => setOpen(false)} />}
     <aside ref={sidebar} id="workspace-sidebar" className={`sidebar ${student ? 'student-sidebar' : ''} ${open ? 'open' : ''}`}
@@ -112,7 +112,7 @@ export function WorkspaceShell({ children, user, navigation, contentClassName = 
       </nav>
       <div className="sidebar-bottom">{navLink(settingsRoute(user.role), 'Cài đặt')}{navLink(helpRoute(user.role), 'Trợ giúp')}</div>
     </aside>
-    <div className={`workspace ${student ? canvasStyles.canvas : ''}`}>
+    <div className="workspace">
       <header className={`topbar ${topbarStyles.bar} ${student ? 'student-topbar' : ''}`}>
         <button type="button" className="icon-button shell-menu-button" disabled={!preferenceReady} aria-label="Mở menu" aria-expanded={open} aria-controls="workspace-sidebar" onClick={() => setOpen(true)}>
           <Menu size={20} aria-hidden="true" />

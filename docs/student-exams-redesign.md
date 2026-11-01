@@ -6,7 +6,7 @@ The Student “Làm kiểm tra” page follows the supplied HTML's outlined card
 
 The original Login background was in `components/auth/LoginForm.module.css`: `--public-bg`, `--public-dot-pattern` and `--public-dot-spacing`. `PublicHome.module.css` maps these directly to `--procto-bg`, `--procto-dot-pattern` and `--procto-dot-spacing` in `app/proctoowl-theme.css`.
 
-Both Login and every Student workspace now use **the same `DottedCanvas.module.css` class**. The three `--login-canvas-*` aliases resolve the existing tokens at the root. This prevents the Student theme from replacing the Login dots with its smaller cream dots. The shared class also resets the entire background paint so the dark AppShell glow cannot introduce a different layer. The sidebar and cards do not receive this class. The Student footer is transparent so the canvas continues to the bottom of the workspace.
+Both Login and every Student workspace now use **the same `DottedCanvas.module.css` class**. The Student canvas is painted on the outer AppShell so it also covers the gutters around the rounded sidebar; the inner workspace and footer are transparent. The three `--login-canvas-*` aliases resolve the existing tokens at the root. This prevents the Student theme from replacing the Login dots with its smaller cream dots. The shared class also resets the entire background paint so the dark AppShell glow cannot introduce a different layer. The sidebar and cards retain their own opaque backgrounds.
 
 In light mode the existing Login values are `#eaf5f4`, dots `#cce5e7` with 1.7px radius fading to transparent at 2px, repeated every 26px. Dark values come from the existing dark Login tokens. There is no copied approximation in the exam stylesheet.
 

@@ -1,11 +1,16 @@
 /* Extracted from LoginForm: both Login and workspace canvases use this exact paint. */
 .canvas,
-:global(.app-shell[data-role]) .canvas:global(.workspace) {
+.canvas:global(.app-shell)[data-role='student'] {
   /* Reset the full paint so the dark workspace glow cannot add extra layers. */
   background: var(--login-canvas-bg) var(--login-canvas-pattern) 0 0 / var(--login-canvas-spacing) repeat;
 }
 
+/* One continuous canvas also paints the gutters around the rounded sidebar. */
+.canvas:global(.app-shell)[data-role='student'] > :global(.workspace) {
+  background: transparent;
+}
+
 /* The Student footer belongs to the canvas, rather than covering it with a flat fill. */
-:global(.student-app-shell) .canvas:global(.workspace) > :global(.student-footer) {
+.canvas:global(.app-shell)[data-role='student'] > :global(.workspace) > :global(.student-footer) {
   background: transparent;
 }
