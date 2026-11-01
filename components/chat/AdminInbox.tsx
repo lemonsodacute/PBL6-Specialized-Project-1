@@ -56,7 +56,7 @@ export function AdminInbox() {
   };
   if (user?.role !== 'admin') return null;
   return <div className={styles.inboxPage}>
-    <div className={styles.pageHeading}><h1>Tin nhắn hỗ trợ</h1><p>Hộp thư hỗ trợ sinh viên và giảng viên.{count > 0 ? ` ${count} tin nhắn chưa đọc.` : ''}</p></div>
+    <div className={styles.pageHeading}><h1 className="workspace-page-title">Tin nhắn hỗ trợ</h1><p>Hộp thư hỗ trợ sinh viên và giảng viên.{count > 0 ? ` ${count} tin nhắn chưa đọc.` : ''}</p></div>
     <div className={`${styles.inbox} ${selected ? styles.hasSelection : ''}`}>
       <aside className={styles.list} aria-label="Cuộc trò chuyện">
         <div className={styles.listTools}><h2>Cuộc trò chuyện</h2><input type="search" aria-label="Tìm cuộc trò chuyện" placeholder="Tìm tên, email, MSSV..." value={query} onChange={event => setQuery(event.target.value)} />

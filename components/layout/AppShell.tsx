@@ -16,6 +16,7 @@ import { SidebarNavGroup } from './SidebarNavGroup';
 import { SidebarHint } from './SidebarHint';
 import sidebarStyles from './Sidebar.module.css';
 import topbarStyles from './WorkspaceTopbar.module.css';
+import pageTitleStyles from './WorkspacePageTitles.module.css';
 import canvasStyles from '@/components/ui/DottedCanvas.module.css';
 import { ProfileAvatar, type AvatarUser } from '@/components/profile/ProfileAvatar';
 import { adminNavItems, isAdminNavItemActive } from '@/lib/admin-navigation';
@@ -81,7 +82,7 @@ export function WorkspaceShell({ children, user, navigation, contentClassName = 
     return <SidebarHint key={href} label={label} enabled={compact && hint}><Link href={href} className={current ? 'current' : ''} aria-current={current ? 'page' : undefined}><NavigationIcon href={href} /><span className="nav-label">{label}</span>{href === '/admin/messages' && chatUnread > 0 && <span className="support-nav-badge" aria-label={`${chatUnread} tin nhắn chưa đọc`}>{chatUnread > 99 ? '99+' : chatUnread}</span>}<NavigationPending /></Link></SidebarHint>;
   };
 
-  return <div className={`app-shell ${sidebarStyles.shell} ${student ? 'student-app-shell' : ''} ${student && pathname === '/student' ? `neo-dashboard-shell ${neoStyles.neoShell}` : ''}`} data-role={user.role} data-experience={experience} data-sidebar-collapsed={compact}>
+  return <div className={`app-shell ${sidebarStyles.shell} ${pageTitleStyles.pageTitles} ${student ? 'student-app-shell' : ''} ${student && pathname === '/student' ? `neo-dashboard-shell ${neoStyles.neoShell}` : ''}`} data-role={user.role} data-experience={experience} data-sidebar-collapsed={compact}>
     <a href="#main-content" className="skip-link">Đến nội dung chính</a>
     {open && <button type="button" className="sidebar-backdrop" aria-label="Đóng menu bên ngoài" tabIndex={-1} onClick={() => setOpen(false)} />}
     <aside ref={sidebar} id="workspace-sidebar" className={`sidebar ${student ? 'student-sidebar' : ''} ${open ? 'open' : ''}`}

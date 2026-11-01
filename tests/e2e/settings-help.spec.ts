@@ -1,17 +1,18 @@
 import { expect, test, type Page } from '@playwright/test';
 import { uiSession } from './ui-fixtures';
 import type { PersonalSettings, SystemSettings } from '../../lib/settings';
+const base = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
 
 async function setup(page: Page, role: 'student' | 'teacher' | 'admin') {
   await uiSession(page, role);
-  await page.context().addCookies([{ name: 'auth_token', value: `fixture.${Buffer.from(JSON.stringify({ role })).toString('base64url')}.signature`, url: 'http://localhost:3000' }]);
+  await page.context().addCookies([{ name: 'auth_token', value: `fixture.${Buffer.from(JSON.stringify({ role })).toString('base64url')}.signature`, url: base }]);
   const system: SystemSettings = { exam_duration_minutes:60, exam_require_camera:true, exam_require_mic:true, support_text:'Liên hệ văn phòng khoa để được hỗ trợ.', updated_at:'2026-10-12T00:00:00Z' };
   const personal: PersonalSettings = { theme:'light', notification_preferences:role === 'teacher' ? { violation_alert:true, exam_summary:true } : role === 'admin' ? { profile_verification_request:true } : {},
     notification_options:role === 'teacher' ? [{key:'violation_alert',label:'Cảnh báo giám sát'},{key:'exam_summary',label:'Tổng kết kỳ thi'}] : role === 'admin' ? [{key:'profile_verification_request',label:'Yêu cầu xác minh hồ sơ mới'}] : [],
     exam_defaults:role === 'student' ? null : { exam_duration_minutes:60, exam_require_camera:true, exam_require_mic:true },
     exam_overrides:role === 'teacher' ? { exam_duration_minutes:null, exam_require_camera:null, exam_require_mic:null } : null, updated_at:null };
   const state = { personal, system, patches:[] as Record<string,unknown>[], systemPatches:[] as Record<string,unknown>[], status:200, loadStatus:200, gate:null as Promise<void>|null };
-  const headers = { 'access-control-allow-origin':'http://localhost:3000','access-control-allow-credentials':'true','access-control-allow-headers':'authorization,content-type','access-control-allow-methods':'GET,PATCH,OPTIONS' };
+  const headers = { 'access-control-allow-origin':base,'access-control-allow-credentials':'true','access-control-allow-headers':'authorization,content-type','access-control-allow-methods':'GET,PATCH,OPTIONS' };
   await page.route('**/api/v1/settings/me', async route => {
     const method = route.request().method(); if (method === 'OPTIONS') return route.fulfill({status:204,headers});
     if (method === 'PATCH') {
