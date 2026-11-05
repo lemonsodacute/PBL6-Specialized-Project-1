@@ -59,17 +59,18 @@ export function getStudentExamState(exam: ExamLike, studentId?: string, now = Da
   return {...base,status:hasCapacity?'open':'unavailable',label:hasCapacity?'Đang diễn ra':'Hết lượt làm bài',group:hasCapacity?'open':'unavailable',action:hasCapacity?'start':'none',actionLabel:hasCapacity?'Bắt đầu làm bài':'Hết lượt làm bài'};
 }
 
-export const actionableExamGroups = ['current','open','upcoming'] as const;
+export const actionableExamGroups = ['current','open','upcoming','completed'] as const;
 export function groupStudentActionableExams<T extends ExamLike>(exams:T[],studentId?:string,now=Date.now()) {
-  const groups:Record<typeof actionableExamGroups[number],{exam:T;state:StudentExamState}[]>={current:[],open:[],upcoming:[]};
+  const groups:Record<typeof actionableExamGroups[number],{exam:T;state:StudentExamState}[]>={current:[],open:[],upcoming:[],completed:[]};
   for(const exam of exams){
     const state=getStudentExamState(exam,studentId,now);
-    if(state.group==='current'||state.group==='open'||state.group==='upcoming')groups[state.group].push({exam,state});
+    if(state.group==='current'||state.group==='open'||state.group==='upcoming'||state.group==='completed')groups[state.group].push({exam,state});
   }
   const time=(value?:string|null)=>{const result=Date.parse(value??'');return Number.isFinite(result)?result:Infinity;};
   groups.current.sort((a,b)=>time(a.state.attempt?.server_deadline_at??a.exam.end_time)-time(b.state.attempt?.server_deadline_at??b.exam.end_time)||a.exam.id.localeCompare(b.exam.id));
   groups.open.sort((a,b)=>time(a.exam.end_time)-time(b.exam.end_time)||a.exam.id.localeCompare(b.exam.id));
   groups.upcoming.sort((a,b)=>time(a.exam.start_time)-time(b.exam.start_time)||a.exam.id.localeCompare(b.exam.id));
+  groups.completed.sort((a,b)=>(Date.parse(b.state.attempt?.submitted_at??'')||0)-(Date.parse(a.state.attempt?.submitted_at??'')||0)||a.exam.id.localeCompare(b.exam.id));
   return groups;
 }
 
