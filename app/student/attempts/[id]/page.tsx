@@ -381,7 +381,7 @@ function RealStudentAttemptPage() {
         <Button variant="success" disabled={locked} onClick={() => setConfirmOpen(true)}>{submitting ? 'Đang nộp...' : 'Nộp bài'}</Button>
       </div>
     </header>
-    {entryComplete && <StudentWarnings state={studentWarnings} />}
+    {entryComplete && <StudentWarnings state={studentWarnings} visible={!settingsOpen && !confirmOpen && !fullscreenBlocked} />}
     {media.lostMessage && <div className="device-loss-banner" role="alert">{media.lostMessage}<Button variant="outline" onClick={() => setSettingsOpen(true)}>Kiểm tra thiết bị</Button></div>}
     {error && <div className="device-loss-banner" role="alert">{error}{submitError && <Button variant="warning" disabled={submitting} onClick={() => void submitAttempt()}>Thử lại</Button>}</div>}
     <div className="attempt-layout"><aside className="question-sidebar"><p>{answeredCount}/{attempt.questions.length} câu đã làm</p><div className="question-index-list">{attempt.questions.map((item, index) => <button key={item.id} disabled={locked} className={index === currentIndex ? 'active' : ''} onClick={() => setCurrentIndex(index)}><span>{index + 1}</span>{isAnswered(answers[item.id]) && <i><Check className="inline-icon" aria-hidden="true" /></i>}</button>)}</div></aside>
