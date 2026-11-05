@@ -83,7 +83,7 @@ export function ProctorEventDetail({ id, revision, onClose, onReviewed, onStuden
           {item.actor && <span>{item.actor}</span>}{item.note && <p>{item.note}</p>}</div>
       </li>)}</ol></section>
       <label className={styles.note}>Ghi chú giám thị <span className={styles.muted}>(không bắt buộc)</span><Textarea maxLength={1000} rows={3} value={note} disabled={busy} onChange={event => { dirtyNote.current = true; setNote(event.target.value); }} /></label>
-      <div className={styles.detailActions}><Button variant="outline" onClick={() => onStudent(detail.attempt_id)}>Dòng thời gian sinh viên</Button>
+      <div className={styles.detailActions}><Button variant="outline" onClick={() => onStudent(detail.attempt_id)}>Xem cảnh báo của phiên</Button>
         <Button variant="outline" disabled={busy || detail.status === 'DISMISSED'} onClick={() => void decide('DISMISSED')}>Bỏ qua</Button>
         <Button disabled={busy || detail.status === 'CONFIRMED'} onClick={() => void decide('CONFIRMED')}>Xác nhận</Button></div>
     </div>}
