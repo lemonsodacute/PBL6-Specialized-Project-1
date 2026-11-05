@@ -131,14 +131,27 @@ function ConsoleBody({ examId, linkedAttemptId }: { examId: string; linkedAttemp
         {health?.simulator_enabled && <div className={styles.scopeLinks}><Link aria-current={!simulated ? 'page' : undefined} href={`/dashboard/monitor/${examId}`}>Cảnh báo thực tế</Link><Link aria-current={simulated ? 'page' : undefined} href={`/dashboard/monitor/${examId}?simulation=1`}>Mô phỏng</Link></div>}
         {loading && <LoadingSkeleton rows={4} />}
         {!loading && data && (data.data.length ? <ol className={styles.events}>{data.data.map(event => <li key={event.id} data-proctor-event={event.id} className={`${styles.event} ${event.status === 'NEW' ? styles.unread : ''}`}>
-          <div className={styles.eventHeading}><div><strong>{event.student.full_name}</strong>{event.student.student_code && <span className={styles.muted}>{event.student.student_code}</span>}</div><SeverityBadge event={event} /></div>
-          <h3>{eventLabel(event)}</h3><div className={styles.eventMeta}><time dateTime={event.occurred_at}>{eventTime(event.occurred_at)}</time><span>{statusLabels[event.status]}</span>
-            {event.duration_ms > 0 && <span>{(event.duration_ms / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} giây</span>}
-            {event.confidence !== null && <span>Độ tin cậy {Math.round(Number(event.confidence) * 100)}%</span>}{event.is_simulated && <strong>Mô phỏng</strong>}
-            {['BROWSER', 'TAB_SWITCH'].includes(event.source) && <span>Trình duyệt tự báo cáo</span>}
-          </div><div className={styles.eventActions}><Button variant="outline" size="sm" onClick={() => openEvent(event.id)}>Xem</Button>
-            <Button variant="ghost" size="sm" disabled={!!busy || event.status === 'DISMISSED'} onClick={() => void review(event, 'DISMISSED')}>Bỏ qua</Button>
-            <Button variant="ghost" size="sm" disabled={!!busy || event.status === 'CONFIRMED'} onClick={() => void review(event, 'CONFIRMED')}>Xác nhận</Button></div>
+          <div className={styles.compactEventTop}>
+            <div className={styles.eventIdentity} title={`${event.student.full_name}${event.student.student_code ? ` · ${event.student.student_code}` : ''}`}>
+              <strong>{event.student.full_name}</strong>{event.student.student_code && <span className={styles.muted}>{event.student.student_code}</span>}
+            </div>
+            <h3 title={eventLabel(event)}>{eventLabel(event)}</h3>
+            <SeverityBadge event={event} />
+          </div>
+          <div className={styles.compactEventBottom}>
+            <div className={styles.eventMeta}>
+              <time dateTime={event.occurred_at}>{eventTime(event.occurred_at)}</time><span>{statusLabels[event.status]}</span>
+              {event.duration_ms > 0 && <span>{(event.duration_ms / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} giây</span>}
+              {event.confidence !== null && <span>Độ tin cậy {Math.round(Number(event.confidence) * 100)}%</span>}
+              {event.is_simulated && <strong>Mô phỏng</strong>}
+              {['BROWSER', 'TAB_SWITCH'].includes(event.source) && <span title="Tín hiệu do trình duyệt tự báo cáo, không phải kết luận của AI">Trình duyệt tự báo cáo</span>}
+            </div>
+            <div className={styles.eventActions}>
+              <Button variant="outline" size="sm" onClick={() => openEvent(event.id)}>Xem</Button>
+              <Button variant="ghost" size="sm" disabled={!!busy || event.status === 'DISMISSED'} onClick={() => void review(event, 'DISMISSED')}>Bỏ qua</Button>
+              <Button variant="ghost" size="sm" disabled={!!busy || event.status === 'CONFIRMED'} onClick={() => void review(event, 'CONFIRMED')}>Xác nhận</Button>
+            </div>
+          </div>
         </li>)}</ol> : <Card><EmptyState mascot title={selectedAttemptId ? 'Phiên làm bài này chưa có cảnh báo phù hợp.' : term || filter !== 'all' || eventType ? 'Không có cảnh báo phù hợp.' : 'Chưa có cảnh báo.'}>
           {selectedAttemptId ? 'Thử thay đổi bộ lọc hoặc chọn Xem tất cả.' : term || filter !== 'all' || eventType ? 'Thử thay đổi bộ lọc để xem các cảnh báo khác.' : activeModels ? 'Chưa ghi nhận tín hiệu cần xem xét trong phiên thi.' : 'Chưa kết nối module AI giám sát. Các tín hiệu trình duyệt vẫn được ghi nhận.'}
         </EmptyState></Card>)}
