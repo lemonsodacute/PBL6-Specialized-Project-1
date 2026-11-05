@@ -222,7 +222,7 @@ export default function StudentCalendar({ overview = false }: { overview?: boole
         <h3>{event.title}</h3>
         {event.courseNames?.length ? <p className={styles.courseNames}>{event.courseNames.join(' · ')}</p> : null}
         {eventDetails(event)}
-        <Link href={event.href} className="table-link">Xem chi tiết<ArrowRight size={16} aria-hidden="true" /></Link>
+        <Link href={event.href} className="table-link">{event.exam && statusOf(event).canRetry ? 'Làm lại bài thi' : 'Xem chi tiết'}<ArrowRight size={16} aria-hidden="true" /></Link>
       </article>)}
     </aside>, document.body)}
   </div>;
