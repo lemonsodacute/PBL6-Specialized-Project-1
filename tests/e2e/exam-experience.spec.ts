@@ -327,9 +327,15 @@ test('first fullscreen prompt is a requirement, while exit after entry is a viol
   expect(state.calls.filter(call=>call.path.endsWith('/violations'))).toHaveLength(1);
 });
 
-test('device entry shows initial fullscreen requirement, not an exit warning', async ({ page }) => {
+test('device entry shows initial fullscreen requirement only after preflight, not an exit warning', async ({ page }) => {
   await setup(page, true, true);
-  await enter(page);
+  await page.goto(attemptPath);
+  const devices=page.getByRole('dialog',{name:'Cài đặt thiết bị trước khi thi'});
+  await expect(devices).toBeVisible();
+  await expect(page.locator('.fullscreen-overlay')).toHaveCount(0);
+  await devices.getByRole('button',{name:'Tiếp tục',exact:true}).click();
+  await devices.getByRole('button',{name:'Vào phòng thi'}).click();
+  await expect(devices).toHaveCount(0);
   const prompt=page.getByRole('dialog',{name:'Bài thi yêu cầu chế độ toàn màn hình'});
   await expect(prompt).toBeVisible();
   await expect(page.getByRole('dialog',{name:'Bạn đã thoát chế độ toàn màn hình'})).toHaveCount(0);
