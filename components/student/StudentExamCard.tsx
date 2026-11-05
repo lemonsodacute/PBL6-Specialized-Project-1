@@ -59,6 +59,13 @@ export function StudentExamCard({
   const remainingAttempts = Math.max(0, allowedAttempts - attemptsUsed);
 
   const retryHref = `/student/exams/${encodeURIComponent(exam.id)}/verify`;
+  const retryUnavailableReason = remainingAttempts===0
+    ? 'Bạn đã sử dụng hết số lần làm bài được phép.'
+    : exam.status==='closed'
+      ? 'Đề thi đã đóng. Liên hệ giáo viên nếu cần mở lại.'
+      : Date.parse(exam.end_time) < Date.now()
+        ? 'Đã hết hạn làm bài. Liên hệ giáo viên để gia hạn.'
+        : 'Hiện chưa thể làm lại bài thi này.';
 
   const statusBadge = (
     <StatusBadge status={state.status} label={state.label} />
@@ -187,6 +194,9 @@ export function StudentExamCard({
         {' '}Đã dùng {attemptsUsed}/{allowedAttempts} lượt.
         {state.canRetry && ` Còn ${remainingAttempts} lượt làm bài.`}
       </p>
+      {state.action === 'result' && !state.canRetry && (
+        <p className="student-exam-note">{retryUnavailableReason}</p>
+      )}
 
       <div className="student-exam-actions">
         {state.canRetry && (
