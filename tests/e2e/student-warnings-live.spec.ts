@@ -56,9 +56,13 @@ test('real model and browser violations reach the Teacher console and Student wa
     }
     expect(found.has('object_phone')).toBe(true);
     expect(found.has('face_not_detected')).toBe(true);
-    const warnings = studentPage.getByRole('alert', { name: 'Cảnh báo trong bài thi' });
+    const warnings = studentPage.getByRole('dialog', { name: 'Cảnh báo giám sát' });
     await expect(warnings).toContainText('Phát hiện điện thoại');
     await expect(warnings).toContainText('Không thấy khuôn mặt');
+    await studentPage.keyboard.press('Escape');
+    await expect(warnings).toBeVisible();
+    await warnings.getByRole('button', { name: 'Đã hiểu, tiếp tục làm bài' }).click();
+    await expect(warnings).toHaveCount(0);
     for (const label of ['Phát hiện điện thoại', 'Không thấy khuôn mặt']) {
       const row = teacherPage.locator('[data-proctor-event]').filter({ hasText: label }).first();
       await expect(row).toBeVisible();
@@ -68,11 +72,14 @@ test('real model and browser violations reach the Teacher console and Student wa
     await studentPage.evaluate(() => document.dispatchEvent(new Event('copy')));
     await expect(warnings).toContainText('Sao chép');
     await expect(teacherPage.locator('[data-proctor-event]').filter({ hasText: 'Sao chép' }).first()).toBeVisible();
+    await warnings.getByRole('button', { name: 'Đã hiểu, tiếp tục làm bài' }).click();
+    await expect(warnings).toHaveCount(0);
     await studentPage.screenshot({ path: 'artifacts/student-warnings/live-student.png', fullPage: true });
     await teacherPage.screenshot({ path: 'artifacts/student-warnings/live-teacher.png', fullPage: true });
     await teacherPage.reload();
     await expect(teacherPage.locator('[data-proctor-event]').filter({ hasText: 'Phát hiện điện thoại' }).first()).toBeVisible();
     await studentPage.reload();
-    await expect(warnings).toContainText('Phát hiện điện thoại');
+    await expect(studentPage.getByRole('heading', { name: 'Proctor alerts · QA isolated' })).toBeVisible();
+    await expect(warnings).toHaveCount(0); // Acknowledged warnings must not reopen on reload.
   } finally { await student.close(); await teacher.close(); }
 });
