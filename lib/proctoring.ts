@@ -20,15 +20,18 @@ export type ProctorSummary = { total: number; new: number; reviewed: number; dis
 export type ProctorExam = { id: string; title: string; status: string; start_time: string; end_time: string };
 export type ProctorFeed = { data: ProctorEvent[]; meta: { total: number; page: number; limit: number; summary: ProctorSummary; exam: ProctorExam; event_types?: string[] } };
 export type ProctorHealth = { modules: { provider: string; label: string; source: string; status: 'ACTIVE' | 'DEGRADED' | 'UNAVAILABLE' | 'DISABLED'; error_code?: string | null; last_seen?: string | null }[]; simulator_enabled: boolean; message: string | null };
-export type ProctorReport = { exam_id: string; exam_title: string; is_simulated: boolean; summary: ProctorSummary; types: { event_type: string; count: number }[]; students_requiring_review: (ProctorStudent & { count: number })[] };
+export type ProctorAttemptSummary = { id: string; student: ProctorStudent; attempt_number: number; status: string; started_at: string | null; submitted_at: string | null; total: number; highest_severity: ProctorSeverity | null; new: number; reviewed: number; confirmed: number; dismissed: number };
+export type ProctorReport = { exam_id: string; exam_title: string; is_simulated: boolean; summary: ProctorSummary; types: { event_type: string; count: number }[]; students_requiring_review: (ProctorStudent & { count: number })[];
+  exam: ProctorExam & { duration_minutes: number; teacher_name: string | null; classes: { id: string; name: string }[] }; attempts: ProctorAttemptSummary[]; pagination: { total: number; page: number; limit: number }; participating_students: number; total_attempts: number; students_with_alerts: number };
 export type StudentTimeline = { attempt_id: string; exam_id: string; student: ProctorStudent; status: string; started_at: string | null; submitted_at: string | null; recording_url: string | null; total_events: number; truncated: boolean;
+  summary?: { total: number; new: number; reviewed: number; confirmed: number; dismissed: number; highest_severity: ProctorSeverity | null };
   entries: { id: string; kind: 'started' | 'submitted' | 'event' | 'review'; at: string; label?: string; event?: ProctorEvent; event_id?: string; status?: ProctorStatus; actor?: string | null; note?: string | null }[] };
 export type EventFilters = { q?: string; status?: string; priority?: boolean; event_type?: string; attempt_id?: string; simulated?: boolean; page?: number; limit?: number; order?: string };
 export type ProctorChange = { type: string; data?: { id?: string; exam_id?: string; attempt_id?: string; is_simulated?: boolean; provider?: string } };
 
 export const severityLabels: Record<ProctorSeverity, string> = { info: 'Thông tin', low: 'Thấp', medium: 'Trung bình', high: 'Cao', critical: 'Nghiêm trọng' };
 export const statusLabels: Record<ProctorStatus, string> = { NEW: 'Chưa xem', REVIEWED: 'Đã xem', DISMISSED: 'Đã bỏ qua', CONFIRMED: 'Đã xác nhận' };
-export const eventLabels: Record<string, string> = { multiple_faces: 'Nhiều khuôn mặt', face_not_detected: 'Không thấy khuôn mặt', gaze_away: 'Nhìn ra ngoài', head_turned: 'Quay đầu', person_left_frame: 'Rời khung hình', object_phone: 'Phát hiện điện thoại', tab_switched: 'Chuyển thẻ trình duyệt', audio_voice_detected: 'Âm thanh cần xem xét', browser_signal: 'Tín hiệu trình duyệt', window_blur: 'Cửa sổ mất tiêu điểm', copy: 'Sao chép', paste: 'Dán nội dung', fullscreen_exit: 'Thoát toàn màn hình', network_offline: 'Mất kết nối mạng', network_online: 'Kết nối mạng trở lại' };
+export const eventLabels: Record<string, string> = { person_in_background: 'Có thêm người trong khung hình', object_prohibited: 'Vật dụng cần xem xét', object_book: 'Phát hiện sách', multiple_faces: 'Nhiều khuôn mặt', face_not_detected: 'Không thấy khuôn mặt', gaze_away: 'Nhìn ra ngoài', head_turned: 'Quay đầu', person_left_frame: 'Rời khung hình', object_phone: 'Phát hiện điện thoại', tab_switched: 'Chuyển thẻ trình duyệt', audio_voice_detected: 'Âm thanh cần xem xét', browser_signal: 'Tín hiệu trình duyệt', window_blur: 'Cửa sổ mất tiêu điểm', copy: 'Sao chép', paste: 'Dán nội dung', fullscreen_exit: 'Thoát toàn màn hình', network_offline: 'Mất kết nối mạng', network_online: 'Kết nối mạng trở lại' };
 export const eventLabel = (event: ProctorEvent) => eventLabels[event.event_type] ?? event.message ?? event.event_type;
 export function eventTime(value: string) { const date = new Date(value); return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(date) : 'Chưa rõ giờ'; }
 export function eventDate(value: string) { const date = new Date(value); return Number.isFinite(date.getTime()) ? date.toLocaleString('vi-VN') : 'Chưa rõ thời gian'; }
@@ -71,14 +74,14 @@ export const proctorApi = {
     if (!result || !Array.isArray(result.modules) || typeof result.simulator_enabled !== 'boolean' || result.modules.some(module => !['ACTIVE', 'DEGRADED', 'UNAVAILABLE', 'DISABLED'].includes(module.status))) throw new Error('Invalid module health');
     return result;
   },
-  report: async (examId: string, simulated = false) => {
-    const result = (await apiFetch<{ data: ProctorReport }>(`/proctoring/exams/${encodeURIComponent(examId)}/report?simulated=${simulated}`)).data;
+  report: async (examId: string, simulated = false, filters: { q?: string; page?: number; limit?: number; alert_filter?: string; severity?: string } = {}) => {
+    const result = (await apiFetch<{ data: ProctorReport }>(`/proctoring/exams/${encodeURIComponent(examId)}/report?${query({ simulated, ...filters })}`)).data;
     if (!result || result.exam_id !== examId || result.is_simulated !== simulated || !result.summary || !Array.isArray(result.types) || !Array.isArray(result.students_requiring_review)) throw new Error('Invalid monitoring report');
     return result;
   },
-  timeline: async (attemptId: string, simulated = false) => {
-    const result = (await apiFetch<{ data: StudentTimeline }>(`/proctoring/attempts/${encodeURIComponent(attemptId)}/timeline?simulated=${simulated}`)).data;
-    if (!result || result.attempt_id !== attemptId || !result.student || !Array.isArray(result.entries) || result.entries.some(item => item.event && (!validEvent(item.event) || item.event.is_simulated !== simulated || item.event.attempt_id !== attemptId))) throw new Error('Invalid monitoring timeline');
+  timeline: async (attemptId: string, simulated = false, examId?: string, page = 1) => {
+    const result = (await apiFetch<{ data: StudentTimeline }>(`/proctoring/attempts/${encodeURIComponent(attemptId)}/timeline?${query({ simulated, exam_id: examId, page })}`)).data;
+    if (!result || result.attempt_id !== attemptId || (examId && result.exam_id !== examId) || !result.student || !Array.isArray(result.entries) || result.entries.some(item => item.event && (!validEvent(item.event) || item.event.is_simulated !== simulated || item.event.attempt_id !== attemptId))) throw new Error('Invalid monitoring timeline');
     return result;
   },
 };

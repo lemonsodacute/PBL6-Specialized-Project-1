@@ -40,6 +40,10 @@ app.add_middleware(ProctorBodyLimit)
 @app.middleware('http')
 async def private_preview_headers(request: Request, call_next):
     response = await call_next(request)
+    if request.url.path.startswith('/api/v1/recordings/') or (request.url.path.startswith('/api/v1/live-classes/') and '/recording' in request.url.path):
+        response.headers['Cache-Control'] = 'private, no-store'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Referrer-Policy'] = 'no-referrer'
     if request.url.path.startswith(('/uploads/', '/api/v1/chat', '/api/v1/identity', '/api/v1/admin/student-cards', '/api/v1/proctoring')) or (request.url.path.startswith('/api/v1/users/') and '/avatar/' in request.url.path):
         response.headers['Cache-Control'] = 'no-store'
         response.headers['Pragma'] = 'no-cache'

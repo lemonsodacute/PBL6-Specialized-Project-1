@@ -1,0 +1,65 @@
+/* Visual scope only: do not inherit these overrides into the sidebar, topbar,
+   support assistant, or the live classroom media canvas. */
+.app-shell[data-role='teacher'] .workspace { background: var(--teacher-bg); }
+.app-shell[data-role='teacher'] .shell-content,
+body:has(.app-shell[data-role='teacher']) .ui-modal:has(.question-form, .exam-editor) {
+  --surface: var(--teacher-surface);
+  --surface-card: var(--teacher-surface);
+  --surface-muted: var(--teacher-surface-soft);
+  --surface-secondary: var(--teacher-surface-soft);
+  --background: var(--teacher-bg);
+  --border: var(--teacher-border);
+  --border-default: var(--teacher-border);
+  --border-control: var(--teacher-control-border);
+  --text-primary: var(--teacher-ink);
+  --text-secondary: var(--teacher-muted);
+  --text-muted: var(--teacher-muted);
+  --text-placeholder: var(--teacher-muted);
+  --procto-ink: var(--teacher-ink);
+  --procto-muted: var(--teacher-muted);
+  color: var(--teacher-ink);
+}
+/* Cards inherit the surface tokens. Keep each card's semantic border/tint. */
+.app-shell[data-role='teacher'] .shell-content fieldset[role='search'] {
+  background: var(--teacher-surface-soft);
+  border-color: var(--teacher-border);
+}
+/* A filter already inside a white panel needs no second framed panel. */
+.app-shell[data-role='teacher'] .shell-content .ui-card fieldset[role='search'] {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.app-shell[data-role='teacher'] .shell-content :is(fieldset[role='search'], [role='search']) .ui-field {
+  min-height: 48px;
+  height: 48px;
+  background: var(--teacher-field);
+  border-color: var(--teacher-control-border);
+  color: var(--teacher-ink);
+}
+.app-shell[data-role='teacher'] .shell-content .ui-table th {
+  background: var(--teacher-surface-soft);
+  color: var(--teacher-muted);
+}
+.app-shell[data-role='teacher'] .shell-content .ui-table :is(th, td) { border-color: var(--teacher-border); }
+.app-shell[data-role='teacher'] .shell-content .ui-table tbody tr:hover { background: var(--teacher-surface-soft); }
+.app-shell[data-role='teacher'] .shell-content .ui-button-primary,
+body:has(.app-shell[data-role='teacher']) .ui-modal .ui-button-primary,
+body:has(.app-shell[data-role='teacher']) .exam-editor:not(:has(> .modal-actions > .ui-button-success)) > .modal-actions > .ui-button-secondary,
+body:has(.app-shell[data-role='teacher']) .question-form > .modal-actions > .ui-button-success {
+  background: var(--teacher-cta);
+  border-color: var(--teacher-cta);
+  color: var(--text-on-solid);
+  box-shadow: none;
+}
+.app-shell[data-role='teacher'] .shell-content .ui-button-primary:hover:not(:disabled),
+body:has(.app-shell[data-role='teacher']) .ui-modal .ui-button-primary:hover:not(:disabled),
+body:has(.app-shell[data-role='teacher']) .exam-editor:not(:has(> .modal-actions > .ui-button-success)) > .modal-actions > .ui-button-secondary:hover:not(:disabled),
+body:has(.app-shell[data-role='teacher']) .question-form > .modal-actions > .ui-button-success:hover:not(:disabled) {
+  background: var(--teacher-cta-hover);
+  border-color: var(--teacher-cta-hover);
+}
+.app-shell[data-role='teacher'] .shell-content :is(a, button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid var(--teacher-focus);
+  outline-offset: 3px;
+}

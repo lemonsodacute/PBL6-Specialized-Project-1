@@ -77,7 +77,7 @@ export default function StudentProfilePage() {
       : loading ? <Card aria-busy="true"><LoadingSkeleton rows={3} /></Card>
       : error ? <Card className={styles.error} role="alert"><h2>Không tải được hồ sơ</h2><p>{error}</p>
         <Button type="button" variant="warning" onClick={() => setReload((value) => value + 1)}>Thử lại</Button></Card>
-      : profile && <><Card className={styles.profileCard}>
+      : profile && <><Card borderRole="users" className={styles.profileCard}>
         <ProfilePhoto profile={profile} />
         <section className={styles.information} aria-label="Thông tin sinh viên">
           <dl className={styles.summary}>
@@ -91,22 +91,22 @@ export default function StudentProfilePage() {
             {profile.student_card_status === 'VERIFIED' && <div><dt className={styles.visuallyHidden}>Thẻ sinh viên</dt><dd><Badge tone="success">Đã xác minh</Badge></dd></div>}
           </dl>
         </section>
-      </Card><Card className={styles.personal}>
+      </Card><Card borderRole="users" className={styles.personal}>
         <ProfileIdentitySection key={profile.id} verified={profile.identity_profile_status === 'VERIFIED'} />
-      </Card><Card className={styles.personal}>
+      </Card><Card borderRole="users" className={styles.personal}>
         <h2>Thông tin cá nhân</h2>
         <dl className={styles.details}>
           <PhoneEditor key={profile.id} phone={profile.phone ?? null} onSaved={phone => setProfile(current => current?.id === profile.id ? { ...current, phone } : current)} />
           <div><dt>Vai trò</dt><dd>Sinh viên</dd></div>
         </dl>
       </Card><div className={styles.sections}>
-          <Card className={styles.classes}>
+          <Card borderRole="classes" className={styles.classes}>
             <h2>Thông tin học tập</h2><h3>Lớp học phần</h3>
             {classesError ? <div role="alert"><p>{classesError}</p><Button type="button" variant="warning" onClick={() => setReload((value) => value + 1)}>Tải lại lớp học phần</Button></div>
               : classes.length ? <ul>{classes.map((item) => <li key={item.id}><Link href={`/student/classes/${item.id}`}>{display(item.name)}<span aria-hidden="true"> ↗</span></Link></li>)}</ul>
               : <p>Bạn chưa tham gia lớp học phần nào.</p>}
           </Card>
-          <Card className={styles.account}>
+          <Card borderRole="users" className={styles.account}>
             <h2>Thông tin tài khoản</h2>
             <dl className={styles.details}><div><dt>Ngày tạo tài khoản</dt><dd>{dateLabel(profile.created_at)}</dd></div></dl>
             <p>Liên hệ quản trị viên nếu thông tin hồ sơ cần được cập nhật.</p>

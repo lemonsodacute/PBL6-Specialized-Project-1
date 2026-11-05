@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Badge, Button, EmptyState, Input, LoadingSkeleton, Select, Textarea } from '@/components/ui';
+import { useEffect, useId, useRef, useState } from 'react';
+import { CircleCheck, CircleX } from 'lucide-react';
+import { Badge, Button, EmptyState, Input, LoadingSkeleton, Modal, Select, Textarea } from '@/components/ui';
 import { api } from '@/lib/api';
 import { friendlyError } from '@/lib/uiErrors';
 import { normalizeQuestions, unwrap, type Bank, type SelectionDraft, type SelectionQuestion } from '@/lib/question-selection';
 import { QuestionSelector } from './QuestionSelector';
+import styles from './ExamEditor.module.css';
 
 type ClassItem = { id: string; name: string };
 export type ManagedExam = {
@@ -23,9 +25,10 @@ const initial: Form = { title: '', description: '', start_time: '', end_time: ''
   require_camera: true, require_mic: true, require_fullscreen: true, shuffle_questions: false, shuffle_options: false, allow_review: true, violation_auto_lock_threshold: '' };
 function inputDate(value: string) { const date = new Date(value); return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16); }
 
-export function ExamEditor({ examId, initialSelection, onSaved, onCancel, onSavingChange }: {
+export function ExamEditor({ examId, initialSelection, onSaved, onCancel, onSavingChange, confirmSave = false }: {
   examId?: string; initialSelection?: SelectionDraft; onSaved: (exam: ManagedExam) => void; onCancel: () => void;
   onSavingChange?: (saving: boolean) => void;
+  confirmSave?: boolean;
 }) {
   const [form, setForm] = useState<Form>(initial);
   const [exam, setExam] = useState<ManagedExam | null>(null);
@@ -37,7 +40,10 @@ export function ExamEditor({ examId, initialSelection, onSaved, onCancel, onSavi
   const [classIds, setClassIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [bankLoading, setBankLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [savingAction, setSavingAction] = useState<'save' | 'publish' | null>(null);
+  const saving = savingAction !== null;
+  const [saveResult, setSaveResult] = useState<{ kind: 'success'; exam: ManagedExam } | { kind: 'error'; message: string } | null>(null);
+  const saveDescriptionId = useId();
   const [selectorBusy, setSelectorBusy] = useState(false);
   const [error, setError] = useState('');
   const [reload, setReload] = useState(0);
@@ -45,6 +51,7 @@ export function ExamEditor({ examId, initialSelection, onSaved, onCancel, onSavi
   const working = useRef(false);
   const bankRequest = useRef(0);
   const reviewSection = useRef<HTMLElement>(null);
+  const saveActions = useRef<HTMLDivElement>(null);
   const readOnly = !!exam && exam.status !== 'draft';
   useEffect(() => {
     let active = true;
@@ -93,7 +100,7 @@ export function ExamEditor({ examId, initialSelection, onSaved, onCancel, onSavi
   }
   const update = (patch: Partial<Form>) => setForm(current => ({ ...current, ...patch }));
   async function save(publish: boolean) {
-    if (working.current || selectorBusy || bankLoading) return;
+    if (working.current || saveResult || selectorBusy || bankLoading) return;
     const start = new Date(form.start_time), end = new Date(form.end_time);
     if (!form.title.trim()) return setError('Vui lòng nhập tên đề thi.');
     if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return setError('Thời gian kết thúc phải sau thời gian bắt đầu.');
@@ -102,7 +109,7 @@ export function ExamEditor({ examId, initialSelection, onSaved, onCancel, onSavi
     if (!selected.length) return setError('Vui lòng chọn ít nhất một câu hỏi.');
     if (selected.length > 500) return setError('Một đề có thể chọn tối đa 500 câu.');
     if (publish && !classIds.length) return setError('Cần giao đề cho ít nhất một lớp khi xuất bản.');
-    working.current = true; setSaving(true); onSavingChange?.(true); setError('');
+    working.current = true; setSavingAction(publish ? 'publish' : 'save'); onSavingChange?.(true); setError('');
     try {
       const body = { ...form, title: form.title.trim(), description: form.description.trim() || null,
         start_time: start.toISOString(), end_time: end.toISOString(), duration_minutes: Number(form.duration_minutes), max_attempts: Number(form.max_attempts), violation_auto_lock_threshold: form.violation_auto_lock_threshold === '' ? null : Number(form.violation_auto_lock_threshold), status: exam?.status ?? 'draft' };
@@ -114,9 +121,22 @@ export function ExamEditor({ examId, initialSelection, onSaved, onCancel, onSavi
       for (const item of existing) if (!classIds.includes(item.class_id)) await api.examAssignments.delete(item.id);
       for (const classId of classIds) if (!existing.some(item => item.class_id === classId)) await api.examAssignments.create(saved.id, { class_id: classId });
       if (publish && saved.status === 'draft') saved = unwrap<ManagedExam>(await api.exams.update(saved.id, { status: 'published' }));
-      onSaved(saved);
-    } catch (cause) { setError(friendlyError(cause, 'Không thể lưu đề thi.')); }
-    finally { working.current = false; setSaving(false); onSavingChange?.(false); }
+      if (confirmSave && examId && !publish) setSaveResult({ kind: 'success', exam: saved });
+      else onSaved(saved);
+    } catch (cause) {
+      const message = friendlyError(cause, 'Không thể lưu đề thi. Vui lòng thử lại.');
+      if (confirmSave && examId && !publish) setSaveResult({ kind: 'error', message });
+      else setError(message);
+    }
+    finally { working.current = false; setSavingAction(null); onSavingChange?.(false); }
+  }
+  function acknowledgeSave() {
+    if (!saveResult) return;
+    const result = saveResult;
+    setSaveResult(null);
+    // OK and Escape are explicit acknowledgements; there is no timer/backdrop dismissal.
+    if (result.kind === 'success') onSaved(result.exam);
+    else requestAnimationFrame(() => saveActions.current?.querySelector<HTMLButtonElement>('[data-exam-save]')?.focus({ preventScroll: true }));
   }
   if (loading) return <LoadingSkeleton rows={4} />;
   if (!banks.length && error && !exam) return <div role="alert"><p>{error}</p><Button variant="warning" onClick={() => setReload(value => value + 1)}>Thử lại</Button></div>;
@@ -139,6 +159,11 @@ export function ExamEditor({ examId, initialSelection, onSaved, onCancel, onSavi
       <div className="check-grid">{([['require_camera', 'Yêu cầu Camera'], ['require_mic', 'Yêu cầu Microphone'], ['require_fullscreen', 'Bắt buộc toàn màn hình'], ['shuffle_questions', 'Xáo trộn câu hỏi'], ['shuffle_options', 'Xáo trộn đáp án'], ['allow_review', 'Cho xem lại bài']] as const).map(([key, label]) => <label key={key}><input type="checkbox" className="ui-checkbox" checked={form[key]} disabled={saving} onChange={e => update({ [key]: e.target.checked })} />{label}</label>)}</div>
     </div></section>
     <section ref={reviewSection} className="exam-editor-section" aria-labelledby="exam-review"><h3 id="exam-review">4. Kiểm tra và lưu</h3><p><strong>{form.title || 'Chưa nhập tên đề'}</strong> · {selected.length} câu · {form.duration_minutes} phút</p><p>Lớp được giao: {classes.filter(item => classIds.includes(item.id)).map(item => item.name).join(', ') || 'Chưa giao lớp'}</p><Badge>{exam?.status === 'published' ? 'Đã xuất bản' : 'Chưa lưu thay đổi'}</Badge><p>Danh sách xem trước chỉ được lưu khi bạn chọn thao tác dưới đây.</p></section>
-    <div className="modal-actions"><Button variant="outline" disabled={saving} onClick={onCancel}>Huỷ</Button><Button variant="secondary" disabled={saving || bankLoading || selectorBusy} onClick={() => void save(false)}>{exam?.status && exam.status !== 'draft' ? 'Lưu thay đổi' : 'Lưu nháp'}</Button>{(!exam || exam.status === 'draft') && <Button variant="success" disabled={saving || bankLoading || selectorBusy} onClick={() => void save(true)}>{saving ? 'Đang lưu...' : 'Xuất bản'}</Button>}</div>
+    <div ref={saveActions} className="modal-actions"><Button variant="outline" disabled={saving} onClick={onCancel}>Huỷ</Button><Button data-exam-save variant="secondary" loading={savingAction === 'save'} disabled={saving || bankLoading || selectorBusy || !!saveResult} onClick={() => void save(false)}>{savingAction === 'save' ? 'Đang lưu...' : exam?.status && exam.status !== 'draft' ? 'Lưu thay đổi' : 'Lưu nháp'}</Button>{(!exam || exam.status === 'draft') && <Button variant="success" loading={savingAction === 'publish'} disabled={saving || bankLoading || selectorBusy} onClick={() => void save(true)}>{savingAction === 'publish' ? 'Đang lưu...' : 'Xuất bản'}</Button>}</div>
+    <Modal open={!!saveResult} title={saveResult?.kind === 'success' ? 'Lưu thành công!' : 'Lưu thất bại!'} size="small" className={styles.saveFeedback} descriptionId={saveDescriptionId} onClose={acknowledgeSave}>
+      <span className={`${styles.resultIcon} ${saveResult?.kind === 'success' ? styles.success : styles.failure}`} aria-hidden="true">{saveResult?.kind === 'success' ? <CircleCheck size={38} strokeWidth={2} /> : <CircleX size={38} strokeWidth={2} />}</span>
+      <p id={saveDescriptionId} className={styles.saveMessage}>{saveResult?.kind === 'success' ? 'Thông tin đề thi đã được cập nhật thành công.' : saveResult?.message}</p>
+      <div className={styles.saveActions}><Button type="button" onClick={acknowledgeSave}>OK</Button></div>
+    </Modal>
   </div>;
 }

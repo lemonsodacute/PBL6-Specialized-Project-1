@@ -1,0 +1,47 @@
+/* [project]/app/functional-borders.css [app-client] (css) */
+[data-border-role="neutral"] {
+  --card-border-rest: var(--procto-line);
+  --card-border-hover: var(--procto-line-strong);
+}
+
+[data-border-role="users"] {
+  --card-border-rest: var(--border-users);
+  --card-border-hover: var(--border-users-hover);
+}
+
+[data-border-role="classes"] {
+  --card-border-rest: var(--border-classes);
+  --card-border-hover: var(--border-classes-hover);
+}
+
+[data-border-role="exams"] {
+  --card-border-rest: var(--border-exams);
+  --card-border-hover: var(--border-exams-hover);
+}
+
+[data-border-role="warning"] {
+  --card-border-rest: var(--border-warning);
+  --card-border-hover: var(--border-warning-hover);
+}
+
+[data-border-role="success"] {
+  --card-border-rest: var(--border-success);
+  --card-border-hover: var(--border-success-hover);
+}
+
+[data-border-role="danger"] {
+  --card-border-rest: var(--border-danger);
+  --card-border-hover: var(--border-danger-hover);
+}
+
+[data-border-role] {
+  --card-border-color: var(--card-border-rest);
+}
+
+@media (hover: hover) {
+  [data-border-role]:hover {
+    --card-border-color: var(--card-border-hover);
+  }
+}
+
+/*# sourceMappingURL=app_functional-borders_css_bad6b30c._.single.css.map*/

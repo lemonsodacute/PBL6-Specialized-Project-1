@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="272" viewBox="0 0 720 272" fill="none">
+<title>Mã giao diện và cửa sổ trình duyệt</title><path fill="#E45D3D" d="M0 0h720v272H0z"/><circle cx="666" cy="-18" r="130" fill="#FFF" opacity=".07"/><circle cx="60" cy="256" r="166" fill="#FFF" opacity=".07"/>
+<g stroke="#FFF" stroke-width="19" stroke-linecap="round" stroke-linejoin="round"><path d="m203 79-64 57 64 57M334 79l64 57-64 57"/><path d="m288 61-45 150" stroke="#FFE6A6"/></g>
+<rect x="458" y="50" width="205" height="178" rx="20" fill="#FFF"/><path d="M458 70a20 20 0 0 1 20-20h165a20 20 0 0 1 20 20v17H458V70Z" fill="#FFE0D5"/><circle cx="484" cy="68" r="6" fill="#E45D3D"/><circle cx="505" cy="68" r="6" fill="#F18B70"/><circle cx="526" cy="68" r="6" fill="#F6B19B"/><rect x="482" y="108" width="157" height="23" rx="7" fill="#EA795D"/><rect x="482" y="148" width="68" height="55" rx="8" fill="#F4C3B5"/><rect x="563" y="148" width="76" height="55" rx="8" fill="#F4C3B5"/>
+</svg>

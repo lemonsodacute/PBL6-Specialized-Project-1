@@ -32,12 +32,46 @@ if (!(Test-Path -LiteralPath $executable)) {
 $envPath = Join-Path $workspace 'backend\.env'
 $content = if (Test-Path -LiteralPath $envPath) { [IO.File]::ReadAllText($envPath) } else { '' }
 $values = @{}
-foreach ($name in @('LIVEKIT_URL','LIVEKIT_API_URL','LIVEKIT_API_KEY','LIVEKIT_API_SECRET')) {
+foreach ($name in @('LIVEKIT_URL','LIVEKIT_API_URL','LIVEKIT_API_KEY','LIVEKIT_API_SECRET','LIVEKIT_REDIS_ADDRESS','LIVEKIT_NODE_IP')) {
     $match = [regex]::Match($content, "(?m)^${name}=(.*)$")
     $values[$name] = $match.Groups[1].Value.Trim().Trim('"').Trim("'")
 }
 if ($values['LIVEKIT_URL'] -and $values['LIVEKIT_URL'] -notin @('ws://localhost:7880','ws://127.0.0.1:7880')) {
     throw 'An existing remote provider is configured. Use its SFU rather than replacing server credentials.'
+}
+function Test-ClassroomRedis([string]$Address) {
+    $client = [Net.Sockets.TcpClient]::new()
+    try {
+        $endpoint = [Uri]("tcp://" + $Address)
+        if (!$client.ConnectAsync($endpoint.Host, $endpoint.Port).Wait(500)) { return $false }
+        $client.ReceiveTimeout = 500
+        $client.SendTimeout = 500
+        $stream = $client.GetStream()
+        $ping = [Text.Encoding]::ASCII.GetBytes("PING`r`n")
+        $stream.Write($ping, 0, $ping.Length)
+        $reader = [IO.StreamReader]::new($stream)
+        return $reader.ReadLine() -eq '+PONG'
+    } catch { return $false }
+    finally { $client.Dispose() }
+}
+if (!$ConfigureOnly -and $values['LIVEKIT_REDIS_ADDRESS']) {
+    $redisAddress = $values['LIVEKIT_REDIS_ADDRESS']
+    if (!(Test-ClassroomRedis $redisAddress)) {
+        if ($redisAddress -notin @('127.0.0.1:6382','localhost:6382')) {
+            throw 'The configured LIVEKIT_REDIS_ADDRESS is unavailable. Start that Redis service before starting LiveKit.'
+        }
+        $redisHelp = 'Start Docker Desktop, then run: docker compose -f infra/livekit/recording.compose.yaml up -d redis'
+        if (!(Get-Command docker -ErrorAction SilentlyContinue)) { throw "Local recording Redis is unavailable. $redisHelp" }
+        Write-Host 'Local recording Redis is unavailable; starting its Docker Compose service.'
+        & docker compose -f (Join-Path $workspace 'infra\livekit\recording.compose.yaml') up -d redis
+        if ($LASTEXITCODE -ne 0) { throw "Could not start local recording Redis. $redisHelp" }
+        $redisReady = $false
+        for ($redisAttempt = 0; $redisAttempt -lt 40; $redisAttempt++) {
+            if (Test-ClassroomRedis $redisAddress) { $redisReady = $true; break }
+            Start-Sleep -Milliseconds 250
+        }
+        if (!$redisReady) { throw "Local recording Redis did not become ready on port 6382. $redisHelp" }
+    }
 }
 if (!$values['LIVEKIT_API_KEY']) { $values['LIVEKIT_API_KEY'] = 'classroom-' + [guid]::NewGuid().ToString('N') }
 if (!$values['LIVEKIT_API_SECRET']) {
@@ -54,12 +88,18 @@ foreach ($name in @('LIVEKIT_URL','LIVEKIT_API_URL','LIVEKIT_API_KEY','LIVEKIT_A
     else { $content = $content.TrimEnd() + "`r`n" + $line + "`r`n" }
 }
 [IO.File]::WriteAllText($envPath, $content, [Text.UTF8Encoding]::new($false))
+$nodeAddress = if ($values['LIVEKIT_NODE_IP']) { $values['LIVEKIT_NODE_IP'] } else { '127.0.0.1' }
+$bindAddress = if ($nodeAddress -eq '127.0.0.1') { '127.0.0.1' } else { '0.0.0.0' }
+# The Docker recording worker needs the Windows/WSL interface candidate as well
+# as the LAN mapping. Replacing internal candidates can prevent its ICE join.
+$advertiseInternal = if ($values['LIVEKIT_REDIS_ADDRESS']) { 'true' } else { 'false' }
 $configuration = @"
 port: 7880
-bind_addresses: [127.0.0.1]
+bind_addresses: [$bindAddress]
 rtc:
-  node_ip: 127.0.0.1
+  node_ip: $nodeAddress
   use_external_ip: false
+  advertise_internal_ip: $advertiseInternal
   enable_loopback_candidate: true
   tcp_port: 7881
   port_range_start: 50000
@@ -76,6 +116,7 @@ webhook:
 logging:
   level: warn
 "@
+if ($values['LIVEKIT_REDIS_ADDRESS']) { $configuration += "`nredis:`n  address: '$($values['LIVEKIT_REDIS_ADDRESS'])'`n" }
 $configPath = Join-Path $privateDir 'livekit.yaml'
 [IO.File]::WriteAllText($configPath, $configuration, [Text.UTF8Encoding]::new($false))
 Write-Host 'Local classroom SFU configured. Restart FastAPI if its environment values changed.'

@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from app.api.v1 import chat
+from app.api.v1 import class_recordings
 from app.api.v1 import proctor_alerts
 from app.api.v1 import support_assistant
 from app.api.v1 import ai_management
@@ -37,6 +38,7 @@ router.include_router(proctor_alerts.router,prefix='/proctoring',tags=['proctori
 router.include_router(question_banks.router,prefix='/question-banks',tags=['question-banks'])
 router.include_router(classes.router,prefix='/classes',tags=['classes'])
 router.include_router(live_classes.router,prefix='/live-classes',tags=['live-classes'])
+router.include_router(class_recordings.router,tags=['class-recordings'])
 router.include_router(assignments.router,prefix='/exam-assignments',tags=['exam-assignments'])
 router.include_router(answers.router,tags=['answers'])
 router.include_router(notifications.router,tags=['notifications'])

@@ -99,7 +99,7 @@ class ModelConfig(BaseModel):
     label_map: dict[str, str] = Field(default_factory=dict)
     policies: dict[str, EventPolicy] = Field(default_factory=dict)
     endpoint: str | None = None  # Backend only; never serialized to a student/teacher.
-    frame_interval_ms: int | None = Field(default=None, ge=250, le=60000)
+    frame_interval_ms: int | None = Field(default=None, ge=100, le=60000)
 
     @model_validator(mode='after')
     def safe_mapping(self):
@@ -119,6 +119,8 @@ class ModelConfig(BaseModel):
 EVENT_LABELS = {
     'multiple_faces': 'Nhiều khuôn mặt', 'face_not_detected': 'Không thấy khuôn mặt',
     'gaze_away': 'Nhìn ra ngoài', 'head_turned': 'Quay đầu', 'person_left_frame': 'Rời khung hình',
+    'object_book': 'Phát hiện sách', 'person_in_background': 'Có thêm người trong khung hình',
+    'object_prohibited': 'Vật dụng cần xem xét',
     'object_phone': 'Phát hiện điện thoại', 'audio_voice_detected': 'Âm thanh cần xem xét',
     'tab_switched': 'Chuyển thẻ trình duyệt', 'browser_signal': 'Tín hiệu từ trình duyệt',
 }

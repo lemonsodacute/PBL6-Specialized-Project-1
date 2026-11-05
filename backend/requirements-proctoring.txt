@@ -1,0 +1,3 @@
+# Standalone YOLO interpreter only. Production backend connects to the local worker over HTTP.
+# See proctor_worker/README.md for the two isolated environments.
+-r proctor_worker/yolo_runtime/requirements.txt

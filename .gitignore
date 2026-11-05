@@ -2,6 +2,7 @@
 .venv/
 .venv-1/
 .venv-ocr/
+.venv-proctor/
 /backend/models/ocr/
 __pycache__/
 *.py[cod]

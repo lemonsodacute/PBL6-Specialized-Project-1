@@ -1,0 +1,308 @@
+/* [project]/components/notifications/Notifications.module.css [app-client] (css) */
+.Notifications-module__aMJPyW__panel.notification-panel {
+  z-index: var(--z-dropdown);
+  width: 400px;
+  max-width: calc(100vw - 32px);
+  box-shadow: var(--shadow-overlay);
+  flex-direction: column;
+  padding: 0;
+  display: flex;
+  position: fixed;
+  overflow: hidden;
+}
+
+.Notifications-module__aMJPyW__header {
+  border-bottom: 1px solid var(--border);
+  flex: none;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  display: flex;
+}
+
+.Notifications-module__aMJPyW__panel .Notifications-module__aMJPyW__header h2 {
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+  outline-offset: 4px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+}
+
+.Notifications-module__aMJPyW__markAll {
+  min-height: 40px;
+  font: inherit;
+  white-space: nowrap;
+  color: var(--primary);
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.Notifications-module__aMJPyW__markAll:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.Notifications-module__aMJPyW__markAll:disabled {
+  opacity: .55;
+  cursor: default;
+}
+
+.Notifications-module__aMJPyW__list {
+  overscroll-behavior: contain;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.Notifications-module__aMJPyW__item {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  width: 100%;
+  min-width: 0;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  display: flex;
+}
+
+.Notifications-module__aMJPyW__item:last-child {
+  border-bottom: 0;
+}
+
+.Notifications-module__aMJPyW__item:hover {
+  background: var(--surface-muted);
+}
+
+.Notifications-module__aMJPyW__item:focus-visible {
+  background: var(--surface-muted);
+}
+
+.Notifications-module__aMJPyW__item:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.Notifications-module__aMJPyW__item:disabled {
+  cursor: wait;
+}
+
+.Notifications-module__aMJPyW__unread {
+  background: var(--primary-soft);
+}
+
+.Notifications-module__aMJPyW__icon {
+  background: var(--surface-muted);
+  width: 28px;
+  height: 28px;
+  color: var(--primary);
+  border-radius: 50%;
+  flex: 0 0 28px;
+  place-items: center;
+  display: grid;
+}
+
+.Notifications-module__aMJPyW__content {
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+  display: grid;
+}
+
+.Notifications-module__aMJPyW__title {
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  position: relative;
+}
+
+.Notifications-module__aMJPyW__unread .Notifications-module__aMJPyW__title {
+  font-weight: 600;
+}
+
+.Notifications-module__aMJPyW__dot {
+  background: var(--primary);
+  border-radius: 50%;
+  width: 6px;
+  height: 6px;
+  margin: 0 6px 2px 0;
+  display: inline-block;
+}
+
+.Notifications-module__aMJPyW__message {
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-size: 13px;
+  line-height: 20px;
+  display: -webkit-box;
+  overflow: hidden;
+}
+
+.Notifications-module__aMJPyW__meta {
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 18px;
+  display: flex;
+}
+
+.Notifications-module__aMJPyW__footer {
+  border-top: 1px solid var(--border);
+  text-align: center;
+  flex: none;
+  padding: 8px 12px;
+}
+
+.Notifications-module__aMJPyW__footer a {
+  min-height: 40px;
+  color: var(--primary);
+  border-radius: 6px;
+  justify-content: center;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  display: flex;
+}
+
+.Notifications-module__aMJPyW__footer a:hover {
+  background: var(--surface-muted);
+}
+
+.Notifications-module__aMJPyW__empty {
+  color: var(--text-secondary);
+  text-align: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 28px 16px;
+  display: grid;
+}
+
+.Notifications-module__aMJPyW__empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.Notifications-module__aMJPyW__emptyIcon {
+  background: var(--surface-muted);
+  width: 40px;
+  height: 40px;
+  color: var(--primary);
+  border-radius: 50%;
+  place-items: center;
+  display: grid;
+}
+
+.Notifications-module__aMJPyW__skeleton {
+  gap: 0;
+  padding: 0 16px;
+  display: grid;
+}
+
+.Notifications-module__aMJPyW__skeleton div {
+  border-bottom: 1px solid var(--border);
+  gap: 10px;
+  padding: 16px 0;
+  display: grid;
+}
+
+.Notifications-module__aMJPyW__skeleton span {
+  background: var(--surface-muted);
+  border-radius: 4px;
+  height: 12px;
+  animation: 1.2s ease-in-out infinite Notifications-module__aMJPyW__notice-pulse;
+}
+
+.Notifications-module__aMJPyW__skeleton span:first-child {
+  width: 65%;
+}
+
+.Notifications-module__aMJPyW__skeleton span:last-child {
+  width: 35%;
+}
+
+.Notifications-module__aMJPyW__feedback {
+  text-align: center;
+  color: var(--text-secondary);
+  justify-items: center;
+  gap: 12px;
+  padding: 20px 16px;
+  font-size: 13px;
+  display: grid;
+}
+
+.Notifications-module__aMJPyW__feedback p {
+  margin: 0;
+}
+
+.Notifications-module__aMJPyW__page {
+  --stacked-card-spacing: 0px;
+  gap: 24px;
+  display: grid;
+}
+
+.Notifications-module__aMJPyW__page > .page-header {
+  margin-bottom: 0;
+}
+
+.Notifications-module__aMJPyW__listCard.ui-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.Notifications-module__aMJPyW__fullList .Notifications-module__aMJPyW__message {
+  -webkit-line-clamp: unset;
+  display: block;
+}
+
+.Notifications-module__aMJPyW__fullList .Notifications-module__aMJPyW__item {
+  padding: 16px 24px;
+}
+
+.Notifications-module__aMJPyW__page [role="alert"] {
+  color: var(--error);
+}
+
+@keyframes Notifications-module__aMJPyW__notice-pulse {
+  50% {
+    opacity: .5;
+  }
+}
+
+@media (max-width: 767px) {
+  .Notifications-module__aMJPyW__fullList .Notifications-module__aMJPyW__item {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 399px) {
+  .Notifications-module__aMJPyW__header {
+    gap: 8px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .Notifications-module__aMJPyW__skeleton span {
+    animation: none;
+  }
+}
+
+/*# sourceMappingURL=components_notifications_Notifications_module_css_bad6b30c._.single.css.map*/

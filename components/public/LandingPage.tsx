@@ -1,9 +1,11 @@
+import { borderProps } from '@/components/ui/Border';
 import {
   ArrowRight, BookOpen, Check, ClipboardCheck, FileText,
   GraduationCap, Layers3, LibraryBig, MessageCircle,
   Monitor, ScanFace, ScrollText, ShieldCheck, Users, Video, BarChart3,
 } from 'lucide-react';
 import { PublicHero } from './PublicHero';
+import { PublicHomeMotion } from './PublicHomeMotion';
 import { PublicBrand } from './PublicBrand';
 import { PublicHeader } from './PublicHeader';
 import { PublicSessionRedirect } from './PublicSessionRedirect';
@@ -13,12 +15,12 @@ import { publicHomeSessionBootstrap } from '@/lib/public-home-navigation';
 
 const register = '/login?mode=register';
 const features = [
-  { icon: ClipboardCheck, title: 'Thi trực tuyến', description: 'Tạo, giao và tham gia bài thi trong thời gian được quy định.' },
-  { icon: ScanFace, title: 'Xác minh danh tính', description: 'Kiểm tra thẻ sinh viên và khuôn mặt trước những kỳ thi có yêu cầu.' },
-  { icon: Monitor, title: 'Giám sát thi', description: 'Theo dõi phiên thi và xem lại các sự kiện được ghi nhận trong quá trình làm bài.' },
-  { icon: LibraryBig, title: 'Ngân hàng câu hỏi', description: 'Quản lý câu hỏi theo ngân hàng và tạo câu hỏi từ tài liệu để rà soát, sử dụng.' },
-  { icon: Video, title: 'Lớp học trực tuyến', description: 'Quản lý lớp học phần, lên lịch và tổ chức các buổi học trực tuyến.' },
-  { icon: BarChart3, title: 'Kết quả & báo cáo', description: 'Xem lịch sử làm bài, chấm điểm và theo dõi báo cáo theo quyền truy cập.' },
+  { icon: ClipboardCheck, borderRole: 'exams' as const, title: 'Thi trực tuyến', description: 'Tạo, giao và tham gia bài thi trong thời gian được quy định.' },
+  { icon: ScanFace, borderRole: 'users' as const, title: 'Xác minh danh tính', description: 'Kiểm tra thẻ sinh viên và khuôn mặt trước những kỳ thi có yêu cầu.' },
+  { icon: Monitor, borderRole: 'warning' as const, title: 'Giám sát thi', description: 'Theo dõi phiên thi và xem lại các sự kiện được ghi nhận trong quá trình làm bài.' },
+  { icon: LibraryBig, borderRole: 'exams' as const, title: 'Ngân hàng câu hỏi', description: 'Quản lý câu hỏi theo ngân hàng và tạo câu hỏi từ tài liệu để rà soát, sử dụng.' },
+  { icon: Video, borderRole: 'classes' as const, title: 'Lớp học trực tuyến', description: 'Quản lý lớp học phần, lên lịch và tổ chức các buổi học trực tuyến.' },
+  { icon: BarChart3, borderRole: 'success' as const, title: 'Kết quả & báo cáo', description: 'Xem lịch sử làm bài, chấm điểm và theo dõi báo cáo theo quyền truy cập.' },
 ];
 const roles = [
   { icon: GraduationCap, title: 'Sinh viên', description: 'Chủ động theo dõi việc học và các kỳ thi.', items: ['Xem lịch học, lịch thi', 'Tham gia bài kiểm tra', 'Xác minh danh tính', 'Theo dõi kết quả'] },
@@ -38,7 +40,7 @@ export function LandingPage() {
     <script dangerouslySetInnerHTML={{ __html: publicHomeSessionBootstrap }} />
     <PublicSessionRedirect />
     <div className={styles.sessionNotice} role="status">Đang mở không gian làm việc…</div>
-    <div className={`${styles.page} ${styles.theme} ${publicTypography}`}>
+    <PublicHomeMotion className={`${styles.page} ${styles.theme} ${publicTypography}`}>
       <a href="#noi-dung" className={styles.skipLink}>Đến nội dung chính</a>
       <PublicHeader />
       <main id="noi-dung" tabIndex={-1}>
@@ -56,7 +58,7 @@ export function LandingPage() {
 
         <section id="tinh-nang" aria-labelledby="features-title" className={`${styles.container} ${styles.section}`}>
           <div className={styles.sectionHeading}><p className={styles.eyebrow}>TỪ CHUẨN BỊ ĐẾN HOÀN THÀNH</p><h2 id="features-title">Một nền tảng cho toàn bộ quá trình thi</h2><p>Mỗi công việc một không gian rõ ràng. Bạn chỉ cần tập trung vào việc học và giảng dạy.</p></div>
-          <div className={styles.featureGrid}>{features.map(({ icon: Icon, title, description }) => <article className={styles.feature} key={title}>
+          <div className={styles.featureGrid}>{features.map(({ icon: Icon, title, description, borderRole }) => <article className={styles.feature} key={title} {...borderProps(borderRole)}>
             <Icon size={24} strokeWidth={1.7} aria-hidden="true" /><h3>{title}</h3><p>{description}</p>
           </article>)}</div>
         </section>
@@ -109,6 +111,6 @@ export function LandingPage() {
       <footer className={styles.footer}>
         <div className={`${styles.container} ${styles.footerInner}`}><div><PublicBrand /><p>Hệ thống thi trực tuyến<br />hỗ trợ xác minh và giám sát.</p></div><nav aria-label="Liên kết cuối trang"><a href="#trang-chu">Trang chủ</a><a href="/login">Đăng nhập</a><a href={register}>Đăng ký</a><a href="#ho-tro">Trợ giúp</a></nav><small>© 2026 ProctoOwl</small></div>
       </footer>
-    </div>
+    </PublicHomeMotion>
   </>;
 }

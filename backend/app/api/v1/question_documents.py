@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 from threading import BoundedSemaphore
+from time import monotonic
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -21,7 +22,8 @@ from app.api.deps import roles
 from app.api.responses import ok
 from app.core.database import get_db
 from app.models.entities import Question, QuestionBank, User, UserRole
-from app.schemas.question_documents import DraftConfiguration, ImportDrafts
+from app.schemas.question_documents import DraftConfiguration, ImportDrafts, QualityReviewInput
+from app.core.config import get_settings
 from app.services.question_document_extract import DocumentError, MAX_FILE_BYTES, validate_file
 from app.services import question_document_drafts as storage
 from app.services import question_images as attachments
@@ -29,6 +31,7 @@ from app.services.question_generation import generation_available, get_question_
 from app.services.ai_provider import provider_status, ai_trace
 from app.services.ai_metrics import generation as measured_generation
 from app.services.audit import record_audit
+from app.services.question_quality import near_duplicate, review_drafts, summarize
 
 _extract_slots = BoundedSemaphore(2)
 WORKER = Path(__file__).resolve().parents[3] / 'scripts' / 'question_document_worker.py'
@@ -48,8 +51,8 @@ class DocumentRoute(APIRoute):
                           else 413 if exc.code == 'DOCUMENT_TOO_LARGE'
                           else 503 if exc.code in {'AI_NOT_CONFIGURED', 'AI_PROVIDER_UNAVAILABLE', 'GENERATION_NOT_CONFIGURED', 'GENERATION_UNAVAILABLE', 'DOCUMENT_STORAGE_ERROR'}
                           else 429 if exc.code == 'AI_RATE_LIMITED'
-                          else 502 if exc.code in {'AI_REQUEST_FAILED', 'AI_MODEL_UNSUPPORTED', 'AI_AUTH_FAILED', 'AI_INVALID_RESPONSE'}
-                          else 504 if exc.code == 'GENERATION_TIMEOUT' else 422)
+                          else 502 if exc.code in {'AI_REQUEST_FAILED', 'AI_MODEL_UNSUPPORTED', 'AI_AUTH_FAILED', 'AI_INVALID_RESPONSE', 'AI_PARSE_ERROR'}
+                          else 504 if exc.code in {'GENERATION_TIMEOUT', 'AI_TIMEOUT'} else 422)
                 raise HTTPException(status, detail={'code': exc.code, 'message': exc.message, 'details': None},
                                     headers={'Cache-Control': 'no-store'}) from None
             except Exception as exc:
@@ -102,13 +105,14 @@ def extract_in_worker(content, extension):
 
 
 def duplicate_flags(db, bank_id, drafts):
-    existing = {storage.normalized_content(content) for content in db.scalars(
-        select(Question.content).where(Question.question_bank_id == bank_id))}
-    seen = set()
+    existing = list(db.scalars(select(Question.content).where(Question.question_bank_id == bank_id)))
+    seen = []
     for draft in drafts:
-        normalized = storage.normalized_content(draft['content'])
-        draft['duplicate'] = normalized in existing or normalized in seen
-        seen.add(normalized)
+        draft['duplicate'] = any(near_duplicate(draft['content'], content) for content in existing + seen)
+        check = draft.get('quality_check')
+        if check and draft['duplicate']:
+            check.update(status='review', flags=sorted(set(check['flags'] + ['POTENTIAL_DUPLICATE'])))
+        seen.append(draft['content'])
     return drafts
 
 
@@ -211,23 +215,47 @@ def generate_batch(bank_id: UUID, document_id: UUID, batch_index: int,
         batch = session['batches'][batch_index]
         ai_trace('question_batch', chunk_index=batch_index, provider_called=False)
         if not batch['complete']:
-            excluded = [question['content'] for question in session['questions']]
+            requirements = batch.get('pending_requirements') or batch['requirements']
+            sources = [source for source in batch['sources'] if source['id'] in requirements]
+            excluded = list(db.scalars(select(Question.content).where(Question.question_bank_id == bank_id)))
+            excluded.extend(question['content'] for question in session['questions'])
             # No DB transaction is held while the provider runs.
             db.rollback()
             try:
-                generated = measured_generation(db, user, session, storage.generation_sources(session, batch['sources']),
-                    batch['requirements'], excluded, get_question_generation_provider())
+                generated = measured_generation(db, user, session, storage.generation_sources(session, sources),
+                    requirements, excluded, get_question_generation_provider())
             except DocumentError as exc:
                 batch['error'] = {'code': exc.code, 'message': exc.message}
+                if getattr(exc, 'quality_summary', None):
+                    previous = batch.get('quality_summary') or {}
+                    summary = dict(exc.quality_summary)
+                    for key in ('generated', 'rejected', 'duplicate', 'unsupported', 'ambiguous', 'valid', 'needs_review'):
+                        summary[key] = summary.get(key, 0) + previous.get(key, 0)
+                    summary['rejected_reasons'] = {key: previous.get('rejected_reasons', {}).get(key, 0) + exc.quality_summary.get('rejected_reasons', {}).get(key, 0)
+                        for key in ('duplicate', 'unsupported', 'ambiguous')}
+                    batch['quality_summary'] = summary
                 storage.save_session(session)
                 raise
             require_bank(db, bank_id, user)
             session['questions'].extend(generated)
             duplicate_flags(db, bank_id, session['questions'])
-            batch['complete'] = True
-            batch['generated_count'] = len(generated)
-            batch.pop('error', None)
-            if len(generated) < sum(batch['requirements'].values()):
+            batch['complete'] = not bool(getattr(generated, 'pending_requirements', None))
+            batch['generated_count'] = (batch.get('generated_count') or 0) + len(generated)
+            if getattr(generated, 'quality_summary', None):
+                previous = batch.get('quality_summary') or {}
+                summary = dict(generated.quality_summary)
+                for key in ('generated', 'rejected', 'duplicate', 'unsupported', 'ambiguous', 'valid', 'needs_review'):
+                    summary[key] = summary.get(key, 0) + previous.get(key, 0)
+                summary['rejected_reasons'] = {key: previous.get('rejected_reasons', {}).get(key, 0) + generated.quality_summary.get('rejected_reasons', {}).get(key, 0)
+                    for key in ('duplicate', 'unsupported', 'ambiguous')}
+                batch['quality_summary'] = summary
+            if batch['complete']:
+                batch.pop('error', None)
+                batch.pop('pending_requirements', None)
+            else:
+                batch['pending_requirements'] = generated.pending_requirements
+                batch['error'] = generated.partial_error
+            if batch['complete'] and batch['generated_count'] < sum(batch['requirements'].values()):
                 warning = 'Một phần tài liệu chưa đủ căn cứ để tạo số câu yêu cầu. Chỉ giữ các câu có nguồn rõ ràng.'
                 if warning not in session['warnings']:
                     session['warnings'].append(warning)
@@ -238,6 +266,48 @@ def generate_batch(bank_id: UUID, document_id: UUID, batch_index: int,
                          error_code='DOCUMENT_STORAGE_ERROR', error_type='OSError')
                 raise DocumentError('DOCUMENT_STORAGE_ERROR', 'AI đã trả kết quả nhưng máy chủ chưa lưu được bản nháp. Vui lòng thử lại.') from None
             ai_trace('draft_persistence', chunk_index=batch_index, draft_count=len(session['questions']), persist_success=True)
+        return ok(storage.public_session(session))
+
+
+@router.post('/{bank_id}/documents/{document_id}/quality')
+def check_draft_quality(bank_id: UUID, document_id: UUID, payload: QualityReviewInput,
+                       db: Session = Depends(get_db), user: User = Depends(actor)):
+    require_bank(db, bank_id, user)
+    with storage.document_session(document_id, bank_id, user.id) as session:
+        require_editable(session)
+        originals = {draft['id']: draft for draft in session['questions']}
+        incoming_ids = [str(draft.id) for draft in payload.questions]
+        if len(set(incoming_ids)) != len(incoming_ids) or any(id not in originals for id in incoming_ids):
+            raise DocumentError('INVALID_DRAFT', 'Một bản nháp không thuộc phiên tài liệu này.')
+        drafts = []
+        for incoming in payload.questions or [None] * len(originals):
+            if incoming is None:
+                drafts = [dict(draft) for draft in originals.values()]
+                break
+            original = originals[str(incoming.id)]
+            draft = dict(original)
+            for key in ('content', 'type', 'difficulty', 'topic', 'default_points', 'options', 'answers', 'explanation'):
+                draft[key] = incoming.model_dump(mode='json')[key]
+            images = {image['id']: image for image in session.get('images', [])}
+            expected = {image['id'] for image in original.get('images', [])}
+            selected = {str(image.id) for image in incoming.images}
+            if not expected.issubset(selected) or not selected.issubset(images) or len(selected) != len(incoming.images):
+                raise DocumentError('INVALID_DRAFT', 'Hình ảnh đi kèm chưa khớp với tài liệu.')
+            draft['images'] = [images[str(image.id)] for image in incoming.images]
+            drafts.append(draft)
+        excluded = list(db.scalars(select(Question.content).where(Question.question_bank_id == bank_id)))
+        db.rollback()
+        settings = get_settings()
+        deadline = monotonic() + settings.QUESTION_GENERATION_TIMEOUT
+        for offset in range(0, len(drafts), 5):
+            group = drafts[offset:offset + 5]
+            ids = {draft['source_chunk_id'] for draft in group}
+            sources = storage.generation_sources(session, [source for source in session['chunks'] if source['id'] in ids])
+            review_drafts(group, sources=sources, excluded=excluded + [draft['content'] for draft in drafts[:offset]], settings=settings, deadline=deadline)
+        require_bank(db, bank_id, user)
+        session['questions'] = drafts
+        duplicate_flags(db, bank_id, drafts)
+        storage.save_session(session)
         return ok(storage.public_session(session))
 
 
@@ -274,7 +344,8 @@ def import_drafts(bank_id: UUID, document_id: UUID, payload: ImportDrafts,
                   db: Session = Depends(get_db), user: User = Depends(actor)):
     require_bank(db, bank_id, user)
     with storage.document_session(document_id, bank_id, user.id) as session:
-        digest = hashlib.sha256(payload.model_dump_json().encode()).hexdigest()
+        # New preview-only metadata must not change existing import receipts.
+        digest = hashlib.sha256(payload.model_dump_json(exclude={'questions': {'__all__': {'quality_check'}}}).encode()).hexdigest()
         if session['imported']:
             if digest == session['imported']['digest']:
                 return ok(session['imported']['result'])
@@ -290,6 +361,10 @@ def import_drafts(bank_id: UUID, document_id: UUID, payload: ImportDrafts,
         originals = {question['id']: question for question in session['questions']}
         document_image_ids = {image['id'] for image in session.get('images', [])}
         for question in payload.questions:
+            original = originals[str(question.id)]
+            check = original.get('quality_check') or {}
+            if ('POTENTIAL_DUPLICATE' in check.get('flags', []) and storage.normalized_content(question.content) == storage.normalized_content(original['content'])):
+                raise DocumentError('DUPLICATE_QUESTIONS', 'Câu hỏi trùng nội dung đã được đánh dấu. Vui lòng sửa hoặc bỏ chọn câu trùng.')
             expected = {image['id'] for image in originals[str(question.id)].get('images', [])}
             selected_images = {str(image.id) for image in question.images}
             if not expected.issubset(selected_images) or not selected_images.issubset(document_image_ids) or len(question.images) != len(selected_images):
@@ -297,19 +372,20 @@ def import_drafts(bank_id: UUID, document_id: UUID, payload: ImportDrafts,
         normalized = [storage.normalized_content(question.content) for question in payload.questions]
         if len(set(normalized)) != len(normalized):
             raise DocumentError('DUPLICATE_QUESTIONS', 'Có câu hỏi trùng nhau trong danh sách chọn. Vui lòng sửa hoặc bỏ chọn câu trùng.')
+        if any(near_duplicate(question.content, old.content) for index, question in enumerate(payload.questions) for old in payload.questions[:index]):
+            raise DocumentError('DUPLICATE_QUESTIONS', 'Có câu hỏi gần trùng hoặc diễn đạt lại cùng nội dung. Vui lòng sửa hoặc bỏ chọn.')
         committed = False
         creating = False
         try:
             bank = require_bank(db, bank_id, user, lock=True)
             existing_rows = db.scalars(select(Question).where(Question.question_bank_id == bank_id)).all()
             by_id = {question.id: question for question in existing_rows}
-            existing = {storage.normalized_content(question.content) for question in existing_rows}
             # Draft UUIDs become Question UUIDs. A retry after a commit/crash
             # cannot create a second copy even if the private result was not saved.
             already = [question for question in payload.questions if question.id in by_id]
             if already and len(already) != len(payload.questions):
                 raise DocumentError('DOCUMENT_ALREADY_IMPORTED', 'Một phần của lượt nhập đã tồn tại. Vui lòng tải lại ngân hàng.')
-            if not already and any(content in existing for content in normalized):
+            if not already and any(near_duplicate(question.content, row.content) for question in payload.questions for row in existing_rows):
                 raise DocumentError('DUPLICATE_QUESTIONS', 'Một câu hỏi có thể đã tồn tại trong ngân hàng. Vui lòng sửa hoặc bỏ chọn trước khi thêm.')
             if already:
                 committed = True

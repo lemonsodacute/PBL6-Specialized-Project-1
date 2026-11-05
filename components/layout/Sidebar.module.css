@@ -1,4 +1,9 @@
 .shell{--workspace-sidebar-width:260px;--workspace-sidebar-motion:220ms}
+/* Student control dimensions, independent of each role's sidebar paint. */
+.shell:global(.app-shell):where(:not([data-role='student']):not([data-sidebar-collapsed='true'])) :global(.sidebar :is(nav a,.student-nav-group,.sidebar-bottom a)){min-height:var(--shell-nav-item-height);padding:var(--shell-nav-padding-block) var(--shell-nav-padding-inline);font-size:var(--shell-nav-font-size)}
+.shell:global(.app-shell):where(:not([data-sidebar-collapsed='true'])) :global(.sidebar :is(nav a,.sidebar-bottom a)){gap:var(--shell-nav-item-gap)}
+.shell:global(.app-shell):where(:not([data-sidebar-collapsed='true'])) :global(.sidebar .student-nav-group){gap:var(--shell-nav-group-gap)}
+.shell:global(.app-shell):where(:not([data-sidebar-collapsed='true'])) :global(.sidebar .nav-icon){width:var(--shell-nav-icon-size);height:var(--shell-nav-icon-size);flex-basis:var(--shell-nav-icon-size)}
 .shell:global(.app-shell) :global(.sidebar){width:var(--workspace-sidebar-width);flex-basis:var(--workspace-sidebar-width);transition:width var(--workspace-sidebar-motion) ease-out,flex-basis var(--workspace-sidebar-motion) ease-out,padding var(--workspace-sidebar-motion) ease-out}
 /* Keep the brand/role and bottom actions in flow; only navigation scrolls. */
 .shell:global(.app-shell) :global(.sidebar){height:calc(100dvh - 2 * var(--workspace-nav-inset));top:var(--workspace-nav-inset);margin:var(--workspace-nav-inset) 0 var(--workspace-nav-inset) var(--workspace-nav-inset);border-radius:var(--workspace-nav-radius);box-shadow:var(--shadow-medium);overflow:clip}
@@ -49,8 +54,8 @@
   .shell[data-sidebar-collapsed='true'] :global(.sidebar .sidebar-nav-chevron){display:none}
   .shell[data-sidebar-collapsed='true'] :global(.sidebar nav a),
   .shell[data-sidebar-collapsed='true'] :global(.sidebar .student-nav-group),
-  .shell[data-sidebar-collapsed='true'] :global(.sidebar .sidebar-bottom a){justify-content:center;width:100%;height:48px;min-height:48px;padding:8px;gap:0;box-sizing:border-box}
-  .shell[data-sidebar-collapsed='true'] :global(.sidebar .nav-icon){box-sizing:border-box;width:22px;height:22px;flex:0 0 22px;padding:0;border:0;border-radius:0;background:transparent}
+  .shell[data-sidebar-collapsed='true'] :global(.sidebar .sidebar-bottom a){justify-content:center;width:100%;height:var(--shell-collapsed-item-height);min-height:var(--shell-collapsed-item-height);padding:8px;gap:0;box-sizing:border-box}
+  .shell[data-sidebar-collapsed='true'] :global(.sidebar .nav-icon){box-sizing:border-box;width:var(--shell-collapsed-icon-size);height:var(--shell-collapsed-icon-size);flex:0 0 var(--shell-collapsed-icon-size);padding:0;border:0;border-radius:0;background:transparent}
   .shell[data-sidebar-collapsed='true'] :global(.sidebar nav){margin-top:12px;gap:6px}
   .shell[data-sidebar-collapsed='true'] :global(.sidebar-bottom){margin-top:auto;padding-top:16px}
   .shell[data-sidebar-collapsed='true'] :global(.sidebar .support-nav-badge){position:absolute;top:3px;right:3px;min-width:14px;height:14px;padding:0 3px;font-size:9px;line-height:14px}

@@ -6,7 +6,7 @@ import type { DeviceStatus, ExamMedia } from './useExamMedia';
 function message(label: string, status: DeviceStatus, ready: boolean) {
   if (ready) return `${label} đã sẵn sàng`;
   if (status === 'requesting') return `Đang kiểm tra ${label.toLowerCase()}...`;
-  if (status === 'idle') return `Chưa cấp quyền ${label.toLowerCase()}`;
+  if (status === 'idle') return `Chưa kiểm tra ${label.toLowerCase()}`;
   if (status === 'unsupported') return `Trình duyệt chưa hỗ trợ ${label.toLowerCase()}. Vui lòng dùng trình duyệt hỗ trợ thiết bị.`;
   return `Chưa thể truy cập ${label.toLowerCase()}. ${status === 'denied' ? `Vui lòng cấp quyền ${label.toLowerCase()} trong trình duyệt.` : 'Vui lòng kiểm tra kết nối thiết bị và thử lại.'}`;
 }
@@ -14,7 +14,7 @@ function message(label: string, status: DeviceStatus, ready: boolean) {
 export function ExamDeviceSetup({ open, settings = false, media, requireVideo, requireAudio, onEnter, onClose, verifying = false, entryError = '' }: {
   open: boolean; settings?: boolean; media: ExamMedia; requireVideo: boolean; requireAudio: boolean; onEnter: () => void; onClose: () => void; verifying?: boolean; entryError?: string;
 }) {
-  const started = media.cameraStatus !== 'idle' || media.microphoneStatus !== 'idle';
+  const started = (requireVideo && media.cameraStatus !== 'idle') || (requireAudio && media.microphoneStatus !== 'idle');
   return <Modal open={open} size="medium" title={settings ? 'Cài đặt thiết bị' : 'Cài đặt thiết bị trước khi thi'} className="exam-device-modal" onClose={() => { if (!verifying) onClose(); }}>
     <div className="form-stack">
       <p>Đề thi này yêu cầu bật {requireVideo && requireAudio ? 'camera và microphone' : requireVideo ? 'camera' : 'microphone'} để AI hỗ trợ giám sát trong suốt quá trình làm bài.</p>

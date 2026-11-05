@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { ChartNoAxesCombined } from 'lucide-react';
+import { borderProps, type BorderRole } from '@/components/ui/Border';
 
 export type ChartTone = 'brand' | 'blue' | 'purple' | 'positive' | 'warning' | 'critical';
 export type ChartValue = { label: string; value: number; tone?: ChartTone };
@@ -10,9 +11,9 @@ export const formatMetric = (value: number) => value.toLocaleString('vi-VN', { m
 const compact = (value: number) => value.toLocaleString('vi-VN', { notation: 'compact', maximumFractionDigits: 1 });
 const validValues = (items: ChartValue[]) => items.length > 0 && items.every(item => Number.isFinite(item.value) && item.value >= 0);
 
-export function ChartCard({ title, description, action, footer, children, className = '' }: { title: string; description: string; action?: ReactNode; footer?: ReactNode; children: ReactNode; className?: string }) {
+export function ChartCard({ title, description, action, footer, children, className = '', borderRole }: { title: string; description: string; action?: ReactNode; footer?: ReactNode; children: ReactNode; className?: string; borderRole?: BorderRole }) {
   const titleId = useId();
-  return <section className={`an-card ${className}`} aria-labelledby={titleId}>
+  return <section className={`an-card ${className}`} aria-labelledby={titleId} {...borderProps(borderRole)}>
     <header className="an-card-header"><div><h2 id={titleId}>{title}</h2><p>{description}</p></div>{action}</header>
     <div className="an-card-body">{children}</div>
     {footer && <footer className="an-card-footer" data-chat-avoid>{footer}</footer>}
@@ -23,8 +24,8 @@ export function ChartEmpty({ detail = 'Dữ liệu sẽ xuất hiện khi có ho
   return <div className="an-empty" role="status"><span><ChartNoAxesCombined size={24} aria-hidden="true" /></span><strong>Chưa có đủ dữ liệu để hiển thị biểu đồ</strong><p>{detail}</p></div>;
 }
 
-export function KpiCard({ label, value, detail, icon, tone = 'brand' }: { label: string; value: ReactNode; detail: string; icon: ReactNode; tone?: ChartTone }) {
-  return <article className="an-kpi" data-tone={tone}><div><span>{label}</span><span className="an-kpi-icon">{icon}</span></div><strong>{value}</strong><p>{detail}</p></article>;
+export function KpiCard({ label, value, detail, icon, tone = 'brand', borderRole }: { label: string; value: ReactNode; detail: string; icon: ReactNode; tone?: ChartTone; borderRole?: BorderRole }) {
+  return <article className="an-kpi" data-tone={tone} {...borderProps(borderRole)}><div><span>{label}</span><span className="an-kpi-icon">{icon}</span></div><strong>{value}</strong><p>{detail}</p></article>;
 }
 
 export function DonutChart({ items, label, totalLabel = 'Tổng cộng' }: { items: ChartValue[]; label: string; totalLabel?: string }) {

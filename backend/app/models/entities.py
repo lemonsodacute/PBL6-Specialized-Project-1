@@ -3,7 +3,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any
 from uuid import UUID
-from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum as SAEnum, ForeignKey, Index, Integer, JSON, LargeBinary, Numeric, String, Text, UniqueConstraint, func, text
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, Enum as SAEnum, ForeignKey, Index, Integer, JSON, LargeBinary, Numeric, String, Text, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import INET, JSONB, UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base
@@ -23,6 +23,7 @@ class ConsentType(str, Enum): camera_mic = 'camera_mic'; biometric_data = 'biome
 class LiveClassStatus(str, Enum): scheduled = 'scheduled'; ongoing = 'ongoing'; ended = 'ended'; cancelled = 'cancelled'
 class AttendanceStatus(str, Enum): present = 'present'; late = 'late'; absent = 'absent'
 class NotificationType(str, Enum):
+    classroom_activity = 'classroom_activity'
     support_message = 'support_message'
     violation_alert = 'violation_alert'
     exam_summary = 'exam_summary'
@@ -213,9 +214,40 @@ class ExamQuestion(Base):
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, server_default=text('gen_random_uuid()')); exam_id: Mapped[UUID] = mapped_column(ForeignKey('exams.id', ondelete='CASCADE'), nullable=False); question_id: Mapped[UUID] = mapped_column(ForeignKey('questions.id', ondelete='RESTRICT'), nullable=False); draw_rule_id: Mapped[UUID | None] = mapped_column(ForeignKey('exam_question_draw_rules.id', ondelete='SET NULL')); order_index: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('0')); points: Mapped[Decimal] = mapped_column(Numeric(6, 2), nullable=False, server_default=text('1')); created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
 class LiveClass(Base):
+    controls_sync_pending: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
+    classroom_state: Mapped[Any] = mapped_column(JSONB().with_variant(JSON(), 'sqlite'), nullable=False, default=dict, server_default=text("'{}'"))
     provider_close_pending: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
     __tablename__ = 'live_classes'; __table_args__ = (CheckConstraint('scheduled_end > scheduled_start'), Index('idx_live_classes_class', 'class_id'), Index('idx_live_classes_teacher', 'teacher_id'), Index('idx_live_classes_scheduled_start', 'scheduled_start'))
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, server_default=text('gen_random_uuid()')); class_id: Mapped[UUID] = mapped_column(ForeignKey('classes.id', ondelete='CASCADE'), nullable=False); teacher_id: Mapped[UUID] = mapped_column(ForeignKey('users.id'), nullable=False); title: Mapped[str] = mapped_column(String(255), nullable=False); description: Mapped[str | None] = mapped_column(Text); scheduled_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False); scheduled_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False); actual_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True)); actual_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True)); meeting_url: Mapped[str | None] = mapped_column(Text); recording_url: Mapped[str | None] = mapped_column(Text); status: Mapped[LiveClassStatus] = mapped_column(enum_type(LiveClassStatus, 'live_class_status'), nullable=False, server_default=text("'scheduled'")); deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True)); created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now()); updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+class ClassRecording(Base):
+    __tablename__ = 'class_recordings'
+    __table_args__ = (
+        CheckConstraint("status IN ('STARTING','RECORDING','PROCESSING','READY','FAILED','PUBLISHED','UNPUBLISHED','DELETED')", name='ck_class_recording_status'),
+        Index('idx_recording_session_time', 'live_class_id', 'created_at'),
+        Index('uq_class_recording_active', 'live_class_id', unique=True,
+              postgresql_where=text("status IN ('STARTING','RECORDING')"), sqlite_where=text("status IN ('STARTING','RECORDING')")),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    live_class_id: Mapped[UUID] = mapped_column(ForeignKey('live_classes.id', ondelete='CASCADE'), nullable=False)
+    started_by: Mapped[UUID | None] = mapped_column(ForeignKey('users.id', ondelete='SET NULL'))
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    stopped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    stop_requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    provider_recording_id: Mapped[str | None] = mapped_column(String(100), unique=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default='STARTING')
+    storage_key: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    duration_seconds: Mapped[int | None] = mapped_column(Integer)
+    file_size_bytes: Mapped[int | None] = mapped_column(BigInteger)
+    error_code: Mapped[str | None] = mapped_column(String(80))
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    published_by: Mapped[UUID | None] = mapped_column(ForeignKey('users.id', ondelete='SET NULL'))
+    access_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    delete_pending: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
 
 class ClassAttendance(Base):
     active_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

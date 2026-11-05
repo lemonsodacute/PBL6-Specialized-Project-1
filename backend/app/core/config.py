@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Literal
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from app.proctoring.local_policy import local_models
 
 class Settings(BaseSettings):
     DATABASE_URL: str = Field(default='postgresql+psycopg2://postgres:postgres@localhost:5432/ai_proctoring', repr=False)
@@ -12,7 +13,9 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 14
     ENVIRONMENT: str = 'development'
     PROCTOR_MODEL_ENABLED: bool = False
-    PROCTOR_MODELS: dict = Field(default_factory=dict)
+    PROCTOR_GAZE_CALIBRATION: bool = False
+    PROCTOR_DIAGNOSTICS: bool = False
+    PROCTOR_MODELS: dict = Field(default_factory=local_models)
     PROCTOR_INGEST_KEY: str = Field(default='', repr=False)
     PROCTOR_MODEL_TIMEOUT: float = Field(default=5, ge=.1, le=60)
     PROCTOR_MODEL_HEALTH_TIMEOUT_SECONDS: int = Field(default=60, ge=10, le=3600)
@@ -26,6 +29,14 @@ class Settings(BaseSettings):
     LIVEKIT_API_URL: str = ''  # Optional internal http(s) URL.
     LIVEKIT_API_KEY: str = ''
     LIVEKIT_API_SECRET: str = Field(default='', repr=False)
+    CLASS_RECORDING_ENABLED: bool = False
+    LIVEKIT_EGRESS_HEALTH_URL: str = ''
+    LIVEKIT_EGRESS_OUTPUT_ROOT: str = '/out'
+    RECORDING_STORAGE_ROOT: Path = Path(__file__).resolve().parents[2] / 'private' / 'recordings'
+    RECORDING_RETENTION_DAYS: int = Field(default=30, ge=1, le=3650)
+    RECORDING_FRAMERATE: int = Field(default=15, ge=5, le=30)
+    RECORDING_PLAYBACK_TTL_SECONDS: int = Field(default=300, ge=60, le=900)
+    RECORDING_PROCESSING_TIMEOUT_SECONDS: int = Field(default=1800, ge=60, le=86400)
     FACE_MATCH_THRESHOLD: float = Field(default=0.363, gt=0, lt=1)
     CARD_FACE_DEBUG: bool = False
     STUDENT_CARD_OCR_AUTOSTART: bool = True

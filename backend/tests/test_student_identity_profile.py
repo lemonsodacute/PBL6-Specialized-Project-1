@@ -33,6 +33,8 @@ class StudentIdentityProfileTests(TestCase):
         with self.engine.begin() as connection:
             connection.exec_driver_sql('CREATE TABLE exams (id CHAR(32) PRIMARY KEY)')
             connection.exec_driver_sql('CREATE TABLE exam_attempts (id CHAR(32) PRIMARY KEY)')
+            # Notifications also have a nullable FK to persisted proctor events.
+            connection.exec_driver_sql('CREATE TABLE detection_events (id CHAR(32) PRIMARY KEY)')
         from app.models.entities import SupportConversation
         SupportConversation.__table__.create(self.engine)
         Notification.__table__.create(self.engine)

@@ -1,0 +1,1725 @@
+/* [project]/app/student/StudentCalendar.module.css [app-client] (css) */
+.StudentCalendar-module__oIVASa__page {
+  --student-box-outline: var(--workspace-topbar-profile-outline);
+  --student-box-shadow: 3px 3px 0 var(--workspace-topbar-outline);
+  --student-calendar-shadow: 6px 6px 0 var(--workspace-topbar-outline);
+  --student-calendar-day-border: var(--procto-line);
+  gap: 24px;
+  min-width: 0;
+  display: grid;
+}
+
+html[data-theme="dark"] .StudentCalendar-module__oIVASa__page {
+  --student-box-shadow: var(--dark-shadow);
+  --student-calendar-shadow: var(--dark-shadow);
+  --student-calendar-day-border: var(--dark-border-control);
+}
+
+.StudentCalendar-module__oIVASa__page > * {
+  min-width: 0;
+}
+
+.StudentCalendar-module__oIVASa__calendarSection {
+  scroll-margin-top: 88px;
+}
+
+.StudentCalendar-module__oIVASa__page .calendar-card {
+  padding: 0;
+}
+
+.StudentCalendar-module__oIVASa__sectionHeader {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  display: flex;
+}
+
+.StudentCalendar-module__oIVASa__sectionHeader h2 {
+  color: var(--text-primary);
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.4;
+}
+
+.StudentCalendar-module__oIVASa__sectionHeader a {
+  white-space: nowrap;
+}
+
+.StudentCalendar-module__oIVASa__modeSelect {
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  max-width: 100%;
+  min-height: 44px;
+  color: var(--text-primary);
+  font: inherit;
+  padding: 8px 32px 8px 12px;
+}
+
+.StudentCalendar-module__oIVASa__desktopGrid .calendar-grid {
+  min-width: 0;
+}
+
+.StudentCalendar-module__oIVASa__desktopGrid .calendar-grid.week {
+  min-height: 220px;
+}
+
+.StudentCalendar-module__oIVASa__desktopGrid .calendar-grid.month .calendar-day {
+  min-height: 104px;
+  padding: 10px;
+}
+
+.StudentCalendar-module__oIVASa__desktopGrid .calendar-grid.month .calendar-day > span {
+  justify-content: center;
+  align-items: center;
+  min-width: 28px;
+  height: 28px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+}
+
+.StudentCalendar-module__oIVASa__desktopGrid .calendar-grid.month .calendar-day.today > span {
+  background: var(--color-primary);
+  color: var(--text-on-solid);
+  border-radius: 50%;
+}
+
+.StudentCalendar-module__oIVASa__page .calendar-toolbar strong {
+  font-size: 18px;
+}
+
+.StudentCalendar-module__oIVASa__desktopGrid .calendar-event {
+  white-space: normal;
+  font-size: 12px;
+}
+
+.StudentCalendar-module__oIVASa__desktopGrid .calendar-grid.day {
+  grid-template-columns: 1fr;
+}
+
+.StudentCalendar-module__oIVASa__desktopGrid .calendar-grid.day .calendar-weekdays {
+  display: none;
+}
+
+.StudentCalendar-module__oIVASa__eventPopover {
+  z-index: var(--z-dropdown);
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  width: min(360px, 100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-overlay);
+  padding: 16px;
+  position: fixed;
+  overflow: auto;
+}
+
+.StudentCalendar-module__oIVASa__eventPopover > strong {
+  overflow-wrap: anywhere;
+  margin-bottom: 12px;
+  font-size: 14px;
+  display: block;
+}
+
+.StudentCalendar-module__oIVASa__eventPopover small {
+  color: var(--text-secondary);
+  margin-top: 6px;
+  font-size: 12px;
+  display: block;
+}
+
+.StudentCalendar-module__oIVASa__eventPopover a {
+  align-items: center;
+  min-height: 44px;
+  margin-top: 8px;
+  display: inline-flex;
+}
+
+.StudentCalendar-module__oIVASa__statusText, .StudentCalendar-module__oIVASa__eventRow .StudentCalendar-module__oIVASa__statusText {
+  font-size: inherit;
+  font-weight: 600;
+  display: inline;
+}
+
+.StudentCalendar-module__oIVASa__mobileAgenda {
+  display: none;
+}
+
+.StudentCalendar-module__oIVASa__agenda {
+  gap: 20px;
+  padding: 16px;
+  display: grid;
+}
+
+.StudentCalendar-module__oIVASa__agendaDay {
+  min-width: 0;
+}
+
+.StudentCalendar-module__oIVASa__agendaDay h3 {
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.StudentCalendar-module__oIVASa__eventRow {
+  min-width: 0;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  display: flex;
+}
+
+.StudentCalendar-module__oIVASa__eventRow:last-child {
+  border-bottom: 0;
+}
+
+.StudentCalendar-module__oIVASa__eventRow > span:not(.ui-badge) {
+  flex: 1;
+  min-width: 0;
+}
+
+.StudentCalendar-module__oIVASa__eventRow strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 600;
+  display: block;
+}
+
+.StudentCalendar-module__oIVASa__eventRow small {
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-size: 12px;
+  display: block;
+}
+
+.StudentCalendar-module__oIVASa__eventRow > a {
+  flex-shrink: 0;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  display: grid;
+}
+
+.StudentCalendar-module__oIVASa__upcomingList {
+  display: grid;
+}
+
+.StudentCalendar-module__oIVASa__compactCard {
+  padding: 24px;
+}
+
+.StudentCalendar-module__oIVASa__muted {
+  color: var(--text-secondary);
+  margin: 12px 0 0;
+  font-size: 14px;
+}
+
+.StudentCalendar-module__oIVASa__feedback {
+  padding: 20px;
+}
+
+.StudentCalendar-module__oIVASa__page > .recent-activity-card {
+  margin: 0;
+  padding: 20px;
+}
+
+.StudentCalendar-module__oIVASa__page .recent-activity-card .card-toolbar {
+  flex-flow: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 0;
+  display: flex;
+}
+
+.StudentCalendar-module__oIVASa__page .recent-activity-card h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.4;
+}
+
+.StudentCalendar-module__oIVASa__page .activity-row {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 12px 0;
+}
+
+.StudentCalendar-module__oIVASa__page .activity-row:last-child {
+  border-bottom: 0;
+}
+
+.StudentCalendar-module__oIVASa__page .activity-row strong {
+  font-size: 14px;
+}
+
+.StudentCalendar-module__oIVASa__page .activity-row small {
+  font-size: 12px;
+}
+
+.StudentCalendar-module__oIVASa__quickLinks {
+  padding-top: 0;
+}
+
+@media (max-width: 767px) {
+  .StudentCalendar-module__oIVASa__page .calendar-toolbar strong {
+    font-size: 16px;
+  }
+
+  .StudentCalendar-module__oIVASa__desktopGrid {
+    display: none;
+  }
+
+  .StudentCalendar-module__oIVASa__mobileAgenda {
+    display: block;
+  }
+
+  .StudentCalendar-module__oIVASa__sectionHeader h2 {
+    font-size: 18px;
+  }
+
+  .StudentCalendar-module__oIVASa__page .recent-activity-card h2 {
+    font-size: 18px;
+  }
+
+  .StudentCalendar-module__oIVASa__compactCard {
+    padding: 16px;
+  }
+
+  .StudentCalendar-module__oIVASa__page > .recent-activity-card {
+    padding: 16px;
+  }
+
+  .StudentCalendar-module__oIVASa__page .activity-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .StudentCalendar-module__oIVASa__page .activity-result {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    display: flex;
+  }
+
+  .StudentCalendar-module__oIVASa__eventRow {
+    flex-wrap: wrap;
+  }
+
+  .StudentCalendar-module__oIVASa__quickLinks {
+    gap: 8px;
+  }
+}
+
+.StudentCalendar-module__oIVASa__eventRow[data-event-type="exam"] {
+  border-left: 3px solid var(--color-info);
+  padding-left: 12px;
+}
+
+.StudentCalendar-module__oIVASa__eventRow[data-event-type="live"] {
+  border-left: 3px solid var(--color-purple);
+  padding-left: 12px;
+}
+
+.StudentCalendar-module__oIVASa__neoShell {
+  --neo-ink: var(--text-primary);
+  --neo-outline: var(--border);
+  --neo-cream: var(--background);
+  --neo-paper: var(--surface);
+  --neo-muted: var(--text-secondary);
+  --neo-sky: var(--info-soft);
+  --neo-mint: var(--success-soft);
+  --neo-yellow: var(--warning-soft);
+  --neo-lavender: var(--indigo-soft);
+  --neo-coral: var(--error-soft);
+}
+
+.StudentCalendar-module__oIVASa__neoPage {
+  max-width: 1440px;
+  color: var(--text-primary);
+  gap: 28px;
+  padding: 28px 28px 48px;
+}
+
+.StudentCalendar-module__oIVASa__welcome {
+  border: 1px solid var(--border);
+  border-radius: var(--procto-card-radius);
+  background-color: var(--background);
+  background-image: var(--procto-dot-pattern);
+  background-size: var(--procto-dot-spacing);
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  min-width: 0;
+  padding: 24px;
+  display: flex;
+}
+
+.StudentCalendar-module__oIVASa__welcome > div {
+  min-width: 0;
+}
+
+.StudentCalendar-module__oIVASa__welcome p {
+  color: var(--text-secondary);
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.StudentCalendar-module__oIVASa__welcome p strong {
+  color: var(--text-primary);
+}
+
+.StudentCalendar-module__oIVASa__welcome h1 {
+  font: 800 clamp(28px, 3vw, 38px) / 1.12 var(--font-display);
+  letter-spacing: -.015em;
+  color: var(--text-primary);
+  margin: 0 0 10px;
+}
+
+.StudentCalendar-module__oIVASa__welcome > div > span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.StudentCalendar-module__oIVASa__todayNote {
+  background: var(--warning-soft);
+  color: var(--warning);
+  border: 1px solid color-mix(in srgb, var(--warning) 25%, var(--border));
+  border-radius: 12px;
+  align-items: center;
+  gap: 10px;
+  max-width: 240px;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+}
+
+.StudentCalendar-module__oIVASa__todayNote svg {
+  flex-shrink: 0;
+}
+
+.StudentCalendar-module__oIVASa__learningCards {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  display: grid;
+}
+
+.StudentCalendar-module__oIVASa__learningCard {
+  --learning-accent: var(--info);
+  --learning-tint: var(--info-soft);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--learning-accent);
+  border-radius: var(--panel-radius);
+  min-width: 0;
+  box-shadow: var(--shadow-subtle);
+  color: var(--text-primary);
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  padding: 20px;
+  text-decoration: none;
+  transition: transform .2s, box-shadow .2s;
+  display: grid;
+}
+
+.StudentCalendar-module__oIVASa__learningCard[data-kind="live"] {
+  --learning-accent: var(--indigo);
+  --learning-tint: var(--indigo-soft);
+}
+
+.StudentCalendar-module__oIVASa__learningCard[data-kind="result"] {
+  --learning-accent: var(--success);
+  --learning-tint: var(--success-soft);
+}
+
+.StudentCalendar-module__oIVASa__learningCard:hover {
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-2px);
+}
+
+.StudentCalendar-module__oIVASa__learningCard > svg {
+  color: var(--learning-accent);
+  grid-column: 2;
+  justify-self: end;
+}
+
+.StudentCalendar-module__oIVASa__learningIcon {
+  background: var(--learning-tint);
+  width: 44px;
+  height: 44px;
+  color: var(--learning-accent);
+  border-radius: 12px;
+  place-items: center;
+  display: grid;
+}
+
+.StudentCalendar-module__oIVASa__learningCard small {
+  letter-spacing: .04em;
+  color: var(--learning-accent);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.StudentCalendar-module__oIVASa__learningCard h3 {
+  font: 700 17px / 1.4 var(--font-heading);
+  letter-spacing: -.015em;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin: 6px 0 8px;
+  display: -webkit-box;
+  overflow: hidden;
+}
+
+.StudentCalendar-module__oIVASa__learningCard p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.StudentCalendar-module__oIVASa__mainGrid {
+  grid-template-columns: minmax(0, 1.65fr) minmax(280px, 1fr);
+  align-items: start;
+  gap: 24px;
+  display: grid;
+}
+
+.StudentCalendar-module__oIVASa__mainGrid > * {
+  min-width: 0;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__sectionHeader {
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__sectionHeader h2 {
+  font: 700 20px / 1.4 var(--font-heading);
+  letter-spacing: -.015em;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__modeSelect {
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  min-height: 44px;
+  color: var(--text-primary);
+  padding: 8px 26px 8px 10px;
+  font-size: 12px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .calendar-card {
+  border: 1px solid var(--border);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--shadow-subtle);
+  background: var(--surface);
+  padding: 0;
+  overflow: hidden;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .calendar-toolbar {
+  background: var(--surface-muted);
+  border-bottom: 1px solid var(--border);
+  gap: 6px;
+  padding: 12px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .calendar-toolbar strong {
+  font: 700 14px / 1.5 var(--font-heading);
+  flex-basis: 100%;
+  order: -1;
+  margin-left: 0;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .calendar-toolbar button {
+  border: 1px solid var(--border-control);
+  background: var(--surface);
+  color: var(--text-primary);
+  border-radius: 999px;
+  min-height: 44px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .calendar-weekdays span {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  padding: 10px 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__desktopGrid .calendar-grid.month .calendar-day {
+  border-color: var(--border);
+  min-height: 78px;
+  padding: 6px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__desktopGrid .calendar-grid.month .calendar-day > span {
+  min-width: 24px;
+  height: 24px;
+  font-size: 12px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .calendar-day.outside {
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+}
+
+.StudentCalendar-module__oIVASa__neoPage .calendar-day.today {
+  background: var(--warning-soft);
+}
+
+.StudentCalendar-module__oIVASa__neoPage .calendar-legend {
+  border-top: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 12px;
+  font-size: 12px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__compactCard {
+  box-shadow: none;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__upcomingSection .StudentCalendar-module__oIVASa__sectionHeader {
+  min-height: 44px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__upcomingSection .StudentCalendar-module__oIVASa__sectionHeader a {
+  color: var(--primary);
+  white-space: normal;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.StudentCalendar-module__oIVASa__upcomingList {
+  gap: 14px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__upcomingList .StudentCalendar-module__oIVASa__eventRow {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-subtle);
+  border-radius: 16px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 16px;
+  display: flex;
+}
+
+.StudentCalendar-module__oIVASa__upcomingLabel {
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  display: flex;
+}
+
+.StudentCalendar-module__oIVASa__upcomingIcon {
+  background: var(--info-soft);
+  width: 32px;
+  height: 32px;
+  color: var(--info);
+  border-radius: 9px;
+  place-items: center;
+  display: grid;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__upcomingList h3 {
+  font: 700 15px / 1.4 var(--font-heading);
+  overflow-wrap: anywhere;
+  margin: 0 0 10px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__upcomingList small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__upcomingList .StudentCalendar-module__oIVASa__eventRow > a {
+  min-height: 44px;
+  font: 700 13px / 1.5 var(--font-heading);
+  color: var(--primary);
+  justify-content: flex-start;
+  align-self: flex-start;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__upcomingList .ui-badge {
+  white-space: normal;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage > .recent-activity-card {
+  border: 1px solid var(--border);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--shadow-subtle);
+  background: var(--surface);
+  padding: 24px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .recent-activity-card h2 {
+  font: 700 20px / 1.4 var(--font-heading);
+  letter-spacing: -.015em;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .activity-row {
+  padding: 14px 0;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .activity-row strong {
+  font-size: 14px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__quickLinks {
+  gap: 12px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__quickLinks > a {
+  background: var(--surface);
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .table-link {
+  color: var(--primary);
+}
+
+@media (max-width: 1199px) {
+  .StudentCalendar-module__oIVASa__mainGrid {
+    grid-template-columns: minmax(0, 1.4fr) minmax(260px, 1fr);
+    gap: 20px;
+  }
+
+  .StudentCalendar-module__oIVASa__neoPage {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningCards {
+    gap: 16px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningCard {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 10px;
+    padding: 16px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningIcon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningIcon svg {
+    width: 21px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningCard h3 {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .StudentCalendar-module__oIVASa__mainGrid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(250px, 1fr);
+  }
+
+  .StudentCalendar-module__oIVASa__welcome {
+    gap: 16px;
+  }
+
+  .StudentCalendar-module__oIVASa__todayNote {
+    max-width: 210px;
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningCard {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningCard > svg {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 767px) {
+  .StudentCalendar-module__oIVASa__neoPage {
+    gap: 24px;
+    padding: 22px 18px 36px;
+  }
+
+  .StudentCalendar-module__oIVASa__welcome {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  .StudentCalendar-module__oIVASa__welcome h1 {
+    font-size: 31px;
+  }
+
+  .StudentCalendar-module__oIVASa__welcome > div > span {
+    font-size: 12px;
+  }
+
+  .StudentCalendar-module__oIVASa__todayNote {
+    max-width: 100%;
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningCards {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningCard {
+    grid-template-columns: 44px minmax(0, 1fr) 18px;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningIcon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningCard > svg {
+    grid-column: 3;
+  }
+
+  .StudentCalendar-module__oIVASa__learningCard h3 {
+    margin: 5px 0;
+    font-size: 16px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningCard small {
+    font-size: 11px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningCard p {
+    font-size: 12px;
+  }
+
+  .StudentCalendar-module__oIVASa__mainGrid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__sectionHeader h2 {
+    font-size: 19px;
+  }
+
+  .StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__sectionHeader {
+    gap: 8px;
+  }
+
+  .StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__modeSelect {
+    font-size: 12px;
+  }
+
+  .StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__agenda {
+    gap: 18px;
+    padding: 14px;
+  }
+
+  .StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__agendaDay h3 {
+    font: 700 14px / 1.5 var(--font-heading);
+    color: var(--text-primary);
+  }
+
+  .StudentCalendar-module__oIVASa__neoPage > .recent-activity-card {
+    padding: 18px;
+  }
+
+  .StudentCalendar-module__oIVASa__neoPage .activity-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__quickLinks > a {
+    flex: 1;
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .StudentCalendar-module__oIVASa__learningCard {
+    transition: none;
+    transform: none;
+  }
+}
+
+.StudentCalendar-module__oIVASa__eventColor {
+  --event-bg: var(--event-light-bg);
+  --event-border: var(--event-light-border);
+  --event-accent: var(--event-light-accent);
+  --event-ink: #243247;
+}
+
+html[data-theme="dark"] .StudentCalendar-module__oIVASa__eventColor {
+  --event-bg: var(--event-dark-bg);
+  --event-border: var(--event-dark-border);
+  --event-accent: var(--event-dark-accent);
+  --event-ink: #edf2fa;
+}
+
+.StudentCalendar-module__oIVASa__page.workspace-page .StudentCalendar-module__oIVASa__refinedCalendar.calendar-card {
+  border: 3px solid var(--student-box-outline);
+  box-shadow: var(--student-calendar-shadow);
+  background: var(--surface);
+  border-radius: 30px;
+  container-type: inline-size;
+}
+
+.StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__refinedCalendar .calendar-toolbar {
+  background: var(--surface);
+  border-bottom: 0;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 18px 16px 12px;
+}
+
+.StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__refinedCalendar .calendar-toolbar strong {
+  color: var(--text-primary);
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__refinedCalendar .calendar-toolbar button {
+  border: 3px solid var(--student-box-outline);
+  background: var(--surface);
+  width: 48px;
+  height: 48px;
+  min-height: 48px;
+  color: var(--text-primary);
+  box-shadow: none;
+  border-radius: 50%;
+  flex-shrink: 0;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  display: inline-flex;
+}
+
+.StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__refinedCalendar .calendar-toolbar .StudentCalendar-module__oIVASa__todayButton {
+  background: var(--student-yellow);
+  width: auto;
+  color: var(--workspace-topbar-ink);
+  border-radius: 999px;
+  padding-left: 18px;
+  padding-right: 18px;
+  font-weight: 800;
+}
+
+.StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__refinedCalendar .calendar-toolbar button:hover {
+  background: var(--surface-muted);
+}
+
+.StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__refinedCalendar .calendar-toolbar .StudentCalendar-module__oIVASa__todayButton:hover {
+  background: var(--workspace-topbar-yellow-hover);
+}
+
+.StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__refinedCalendar .calendar-toolbar button:focus-visible {
+  outline: 3px solid var(--workspace-topbar-focus);
+  outline-offset: 3px;
+}
+
+.StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__desktopGrid {
+  padding: 0 16px 16px;
+}
+
+.StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__desktopGrid .calendar-grid {
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+
+.StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__refinedCalendar .calendar-weekdays span {
+  text-align: center;
+  background: none;
+  border: 0;
+  padding: 4px 0 6px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__desktopGrid .calendar-grid .calendar-day {
+  border: 2px solid var(--student-calendar-day-border);
+  background: var(--surface);
+  border-radius: 14px;
+  min-height: 82px;
+  padding: 5px;
+  overflow: hidden;
+}
+
+.StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__desktopGrid .calendar-day.outside {
+  border-color: var(--procto-line);
+  background: var(--surface);
+}
+
+.StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__desktopGrid .calendar-day > span {
+  min-width: 0;
+  height: auto;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.4;
+  display: inline-block;
+}
+
+.StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__desktopGrid .calendar-day.outside > span {
+  color: var(--text-placeholder);
+}
+
+.StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__desktopGrid .calendar-day.today {
+  border: 3px solid var(--student-box-outline);
+  background: var(--student-yellow);
+  color: var(--workspace-topbar-ink);
+}
+
+.StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__desktopGrid .calendar-day.today > span {
+  color: var(--workspace-topbar-ink);
+  background: none;
+  border-radius: 0;
+}
+
+.StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__desktopGrid .calendar-grid.week .calendar-day {
+  min-height: 220px;
+}
+
+.StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__desktopGrid .calendar-grid.day .calendar-day {
+  min-height: 220px;
+}
+
+.StudentCalendar-module__oIVASa__dayEntries {
+  gap: 4px;
+  min-width: 0;
+  margin-top: 5px;
+  display: grid;
+}
+
+.StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__eventColor.StudentCalendar-module__oIVASa__eventEntry {
+  border: 1px solid var(--event-border);
+  border-left: 3px solid var(--event-accent);
+  background: var(--event-bg);
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  color: var(--event-ink);
+  text-align: left;
+  white-space: normal;
+  box-shadow: none;
+  cursor: pointer;
+  line-height: 1.3;
+  font-family: var(--font-body, var(--font-inter)), sans-serif;
+  border-radius: 6px;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 5px;
+  display: flex;
+  overflow: hidden;
+}
+
+.StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__eventColor.StudentCalendar-module__oIVASa__eventEntry[data-marker="close"] {
+  background: none;
+  border-style: solid;
+  border-left-width: 1px;
+}
+
+.StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__eventColor.StudentCalendar-module__oIVASa__eventEntry[data-marker="ongoing"] {
+  background: color-mix(in srgb, var(--event-bg) 55%, transparent);
+  border-style: dashed dashed dashed solid;
+}
+
+.StudentCalendar-module__oIVASa__eventEntry:hover {
+  filter: brightness(.97);
+}
+
+.StudentCalendar-module__oIVASa__eventEntry:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  z-index: 1;
+}
+
+.StudentCalendar-module__oIVASa__moreEvents:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  z-index: 1;
+}
+
+.StudentCalendar-module__oIVASa__entryTitle {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  font: 700 11px / 1.3 var(--font-heading, var(--font-inter)), sans-serif;
+  display: block;
+  overflow: hidden;
+}
+
+.StudentCalendar-module__oIVASa__entryTiming {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.3;
+  display: flex;
+}
+
+.StudentCalendar-module__oIVASa__eventEntry[data-marker="ongoing"] .StudentCalendar-module__oIVASa__entryTiming, .StudentCalendar-module__oIVASa__eventEntry[data-open-ended] .StudentCalendar-module__oIVASa__entryTiming {
+  white-space: normal;
+  overflow-wrap: normal;
+}
+
+.StudentCalendar-module__oIVASa__entryMarker {
+  border: 1px solid var(--event-accent);
+  background: var(--event-accent);
+  border-radius: 50%;
+  flex: 0 0 5px;
+  width: 5px;
+  height: 5px;
+}
+
+[data-marker="close"] .StudentCalendar-module__oIVASa__entryMarker {
+  background: none;
+  border-radius: 0;
+}
+
+[data-marker="ongoing"] .StudentCalendar-module__oIVASa__entryMarker {
+  border: 0;
+  border-radius: 0;
+  height: 2px;
+}
+
+.StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__moreEvents {
+  text-align: left;
+  width: 100%;
+  min-height: 28px;
+  color: var(--primary);
+  font: 700 10px / 1.4 var(--font-heading, var(--font-inter)), sans-serif;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  padding: 4px 1px;
+  display: block;
+}
+
+.StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__moreEvents:hover {
+  text-underline-offset: 3px;
+  text-decoration: underline;
+}
+
+.StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__markerLegend {
+  border-top: 1px solid var(--border);
+  gap: 10px 18px;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__markerLegend .StudentCalendar-module__oIVASa__openMarker {
+  background: currentColor;
+  border-radius: 50%;
+  width: 7px;
+  height: 7px;
+}
+
+.StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__markerLegend .StudentCalendar-module__oIVASa__closeMarker {
+  background: none;
+  border: 1px solid;
+  border-radius: 0;
+  width: 7px;
+  height: 7px;
+}
+
+.StudentCalendar-module__oIVASa__markerLegend small {
+  color: var(--text-secondary);
+  flex-basis: 100%;
+  font-size: 11px;
+}
+
+.StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__agendaDay {
+  gap: 8px;
+  display: grid;
+}
+
+.StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__agendaDay h3 {
+  margin: 0 0 2px;
+}
+
+.StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__eventEntry.StudentCalendar-module__oIVASa__agendaEntry {
+  border-radius: 9px;
+  gap: 6px;
+  padding: 12px;
+}
+
+.StudentCalendar-module__oIVASa__agendaEntry .StudentCalendar-module__oIVASa__entryTitle {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+
+.StudentCalendar-module__oIVASa__agendaEntry .StudentCalendar-module__oIVASa__entryTiming {
+  font-size: 12px;
+}
+
+.StudentCalendar-module__oIVASa__agendaSummary {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__agendaDay .StudentCalendar-module__oIVASa__moreEvents {
+  min-height: 44px;
+  font-size: 12px;
+}
+
+.StudentCalendar-module__oIVASa__upcomingList .StudentCalendar-module__oIVASa__upcomingEvent.StudentCalendar-module__oIVASa__eventColor, .StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__upcomingList .StudentCalendar-module__oIVASa__upcomingEvent.StudentCalendar-module__oIVASa__eventColor {
+  border: 1px solid var(--event-border);
+  border-left: 4px solid var(--event-accent);
+  background: var(--event-bg);
+  color: var(--event-ink);
+  box-shadow: none;
+  border-radius: 12px;
+}
+
+.StudentCalendar-module__oIVASa__upcomingEvent .StudentCalendar-module__oIVASa__upcomingIcon {
+  border-color: var(--event-border);
+  color: var(--event-accent);
+  background: none;
+}
+
+.StudentCalendar-module__oIVASa__courseNames {
+  color: inherit;
+  overflow-wrap: anywhere;
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.StudentCalendar-module__oIVASa__timeWindow {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.StudentCalendar-module__oIVASa__eventPopover.StudentCalendar-module__oIVASa__refinedPopover {
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  width: min(380px, 100vw - 24px);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  outline: none;
+  padding: 16px;
+  font-size: 13px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, .16);
+}
+
+.StudentCalendar-module__oIVASa__popoverHeader {
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-weight: 500;
+  display: flex;
+}
+
+.StudentCalendar-module__oIVASa__popoverHeader button {
+  border: 1px solid var(--border);
+  width: 44px;
+  height: 44px;
+  color: inherit;
+  cursor: pointer;
+  background: none;
+  border-radius: 8px;
+  flex-shrink: 0;
+  place-items: center;
+  display: grid;
+}
+
+.StudentCalendar-module__oIVASa__popoverHeader button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.StudentCalendar-module__oIVASa__popoverEvent a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.StudentCalendar-module__oIVASa__popoverEvent {
+  background: var(--event-bg);
+  color: var(--event-ink);
+  border: 1px solid var(--event-border);
+  border-left: 4px solid var(--event-accent);
+  overflow-wrap: anywhere;
+  border-radius: 9px;
+  margin-top: 12px;
+  padding: 14px;
+}
+
+.StudentCalendar-module__oIVASa__popoverEvent h3 {
+  font: 700 16px / 1.45 var(--font-heading), sans-serif;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  margin: 0 0 10px;
+}
+
+.StudentCalendar-module__oIVASa__eventPopover .StudentCalendar-module__oIVASa__popoverEvent small {
+  color: inherit;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.StudentCalendar-module__oIVASa__popoverEvent a {
+  min-height: 44px;
+  color: var(--primary);
+  font-family: var(--font-heading), sans-serif;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  display: inline-flex;
+}
+
+html[data-theme="dark"] .StudentCalendar-module__oIVASa__eventPopover.StudentCalendar-module__oIVASa__refinedPopover {
+  border-color: var(--border-control);
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, .28);
+}
+
+html[data-theme="dark"] .StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__refinedCalendar {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+}
+
+@container (width <= 480px) {
+  .StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__desktopGrid {
+    display: none;
+  }
+
+  .StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__mobileAgenda {
+    display: block;
+  }
+}
+
+@container (width >= 481px) {
+  .StudentCalendar-module__oIVASa__refinedCalendar .calendar-toolbar strong {
+    flex-basis: auto;
+    order: 0;
+    margin-left: auto;
+  }
+}
+
+html[data-theme="dark"] .StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__upcomingList .StudentCalendar-module__oIVASa__upcomingEvent.StudentCalendar-module__oIVASa__eventColor {
+  box-shadow: none;
+}
+
+.StudentCalendar-module__oIVASa__neoPage {
+  gap: 28px;
+}
+
+.StudentCalendar-module__oIVASa__welcome {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  align-items: center;
+  padding: 0 0 4px;
+  position: relative;
+  container-type: inline-size;
+}
+
+.StudentCalendar-module__oIVASa__welcome .StudentCalendar-module__oIVASa__welcomeMascot {
+  display: none;
+  position: absolute;
+  bottom: 0;
+  right: 260px;
+}
+
+@container (width >= 960px) {
+  .StudentCalendar-module__oIVASa__welcome .StudentCalendar-module__oIVASa__welcomeMascot {
+    display: block;
+  }
+}
+
+.StudentCalendar-module__oIVASa__welcome h1 {
+  font-family: var(--font-display);
+  letter-spacing: 0;
+  font-size: max(30px, min(3vw, 42px));
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.StudentCalendar-module__oIVASa__welcome p {
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+.StudentCalendar-module__oIVASa__welcome > div > span {
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.StudentCalendar-module__oIVASa__todayNote {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  max-width: 235px;
+  padding: 8px 14px;
+  font-size: 12px;
+}
+
+.StudentCalendar-module__oIVASa__noNextExam {
+  border: 1px dashed var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+  border-radius: 22px;
+  align-items: center;
+  gap: 14px;
+  padding: 22px;
+  display: flex;
+}
+
+.StudentCalendar-module__oIVASa__noNextExam > svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.StudentCalendar-module__oIVASa__noNextExam strong {
+  font-size: 15px;
+}
+
+.StudentCalendar-module__oIVASa__noNextExam p {
+  color: var(--text-secondary);
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+.StudentCalendar-module__oIVASa__noNextExam a {
+  min-height: 44px;
+  color: var(--primary);
+  white-space: nowrap;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 800;
+  display: inline-flex;
+}
+
+.StudentCalendar-module__oIVASa__learningCards {
+  gap: 18px;
+  margin: 0 0 8px;
+}
+
+.StudentCalendar-module__oIVASa__learningCard {
+  border: 1px solid var(--border);
+  box-shadow: none;
+  --learning-tint: var(--student-coral);
+  --learning-accent: var(--text-primary);
+  border-radius: 22px;
+  grid-template-columns: 48px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  display: grid;
+}
+
+.StudentCalendar-module__oIVASa__learningCard[data-kind="live"] {
+  --learning-tint: var(--student-sky);
+  --learning-accent: var(--text-primary);
+}
+
+.StudentCalendar-module__oIVASa__learningCard[data-kind="result"] {
+  --learning-tint: var(--student-mint);
+  --learning-accent: var(--text-primary);
+}
+
+.StudentCalendar-module__oIVASa__learningIcon {
+  border-radius: 15px;
+  width: 48px;
+  height: 48px;
+}
+
+.StudentCalendar-module__oIVASa__learningCard h3 {
+  font: 700 18px / 1.4 var(--font-body);
+  letter-spacing: 0;
+  margin: 0 0 5px;
+  display: block;
+  overflow: visible;
+}
+
+.StudentCalendar-module__oIVASa__learningCard p {
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-size: 13px;
+  line-height: 1.5;
+  display: -webkit-box;
+  overflow: hidden;
+}
+
+.StudentCalendar-module__oIVASa__learningCard > svg {
+  color: var(--primary);
+  grid-column: 3;
+  width: 18px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__sectionHeader h2 {
+  font-family: var(--font-display);
+  letter-spacing: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .recent-activity-card h2 {
+  font-family: var(--font-display);
+  letter-spacing: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .calendar-toolbar {
+  background: var(--surface);
+  padding: 14px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .calendar-toolbar strong {
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__upcomingList .StudentCalendar-module__oIVASa__upcomingEvent.StudentCalendar-module__oIVASa__eventColor {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--event-accent);
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__upcomingList h3 {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__upcomingList .StudentCalendar-module__oIVASa__eventRow > a, .StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__quickLinks > a {
+  font-family: var(--font-body);
+  font-weight: 800;
+}
+
+.StudentCalendar-module__oIVASa__entryTitle, .StudentCalendar-module__oIVASa__refinedCalendar .StudentCalendar-module__oIVASa__moreEvents, .StudentCalendar-module__oIVASa__agendaDay h3 {
+  font-family: var(--font-body);
+}
+
+.StudentCalendar-module__oIVASa__neoPage .activity-row strong {
+  font-family: var(--font-body);
+  font-weight: 800;
+}
+
+@media (max-width: 1199px) {
+  .StudentCalendar-module__oIVASa__learningCards {
+    gap: 12px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningCard {
+    grid-template-columns: 40px minmax(0, 1fr) 16px;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningIcon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningCard h3 {
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 767px) {
+  .StudentCalendar-module__oIVASa__welcome {
+    align-items: flex-start;
+    padding: 0;
+  }
+
+  .StudentCalendar-module__oIVASa__welcome h1 {
+    font-size: 32px;
+  }
+
+  .StudentCalendar-module__oIVASa__welcome > div > span {
+    font-size: 14px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningCards {
+    gap: 12px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningCard {
+    grid-template-columns: 48px minmax(0, 1fr) 18px;
+    padding: 18px;
+  }
+
+  .StudentCalendar-module__oIVASa__learningIcon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .StudentCalendar-module__oIVASa__noNextExam {
+    flex-wrap: wrap;
+    padding: 18px;
+  }
+
+  .StudentCalendar-module__oIVASa__noNextExam > div {
+    flex: 1;
+    min-width: 180px;
+  }
+
+  .StudentCalendar-module__oIVASa__noNextExam a {
+    margin-left: 36px;
+  }
+
+  .StudentCalendar-module__oIVASa__neoPage .StudentCalendar-module__oIVASa__sectionHeader h2 {
+    font-size: 22px;
+  }
+
+  .StudentCalendar-module__oIVASa__neoPage .recent-activity-card h2 {
+    font-size: 22px;
+  }
+}
+
+.StudentCalendar-module__oIVASa__learningCard:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+html[data-theme="dark"] .StudentCalendar-module__oIVASa__learningCard {
+  background: var(--dark-surface-1);
+  border: 1px solid var(--dark-border);
+  box-shadow: var(--dark-highlight);
+  transition: background-color .18s, border-color .18s, transform .18s;
+}
+
+html[data-theme="dark"] .StudentCalendar-module__oIVASa__learningCard:-webkit-any(:hover, :focus-visible) {
+  background: var(--dark-surface-2);
+  border-color: var(--dark-border-hover);
+  box-shadow: var(--dark-highlight), var(--dark-glow-soft);
+  transform: translateY(-1px);
+}
+
+html[data-theme="dark"] .StudentCalendar-module__oIVASa__learningCard:-moz-any(:hover, :focus-visible) {
+  background: var(--dark-surface-2);
+  border-color: var(--dark-border-hover);
+  box-shadow: var(--dark-highlight), var(--dark-glow-soft);
+  transform: translateY(-1px);
+}
+
+html[data-theme="dark"] .StudentCalendar-module__oIVASa__learningCard:is(:hover, :focus-visible) {
+  background: var(--dark-surface-2);
+  border-color: var(--dark-border-hover);
+  box-shadow: var(--dark-highlight), var(--dark-glow-soft);
+  transform: translateY(-1px);
+}
+
+html[data-theme="dark"] .StudentCalendar-module__oIVASa__learningCard:-webkit-any(:hover, :focus-visible) > svg {
+  color: var(--dark-focus);
+}
+
+html[data-theme="dark"] .StudentCalendar-module__oIVASa__learningCard:-moz-any(:hover, :focus-visible) > svg {
+  color: var(--dark-focus);
+}
+
+html[data-theme="dark"] .StudentCalendar-module__oIVASa__learningCard:is(:hover, :focus-visible) > svg {
+  color: var(--dark-focus);
+}
+
+html[data-theme="dark"] .StudentCalendar-module__oIVASa__learningIcon {
+  background: var(--dark-surface-3);
+  color: var(--primary);
+  border: 1px solid var(--dark-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="dark"] .StudentCalendar-module__oIVASa__learningCard {
+    transition: none;
+    transform: none;
+  }
+}
+
+.StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__todayNote, .StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__noNextExam, .StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__modeSelect, .StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__quickLinks > a {
+  border: 2px solid var(--student-box-outline);
+  box-shadow: var(--student-box-shadow);
+}
+
+.StudentCalendar-module__oIVASa__page.workspace-page .StudentCalendar-module__oIVASa__learningCard {
+  border: 2px solid var(--student-box-outline);
+  box-shadow: var(--student-box-shadow);
+}
+
+.StudentCalendar-module__oIVASa__page.workspace-page > .recent-activity-card.ui-card {
+  border: 2px solid var(--student-box-outline);
+  box-shadow: var(--student-box-shadow);
+}
+
+.StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__upcomingList .StudentCalendar-module__oIVASa__upcomingEvent.StudentCalendar-module__oIVASa__eventColor {
+  border: 2px solid var(--student-box-outline);
+  border-left: 5px solid var(--event-accent);
+  box-shadow: var(--student-box-shadow);
+}
+
+.StudentCalendar-module__oIVASa__eventPopover.StudentCalendar-module__oIVASa__refinedPopover {
+  border: 2px solid var(--workspace-topbar-profile-outline);
+  border-radius: 20px;
+}
+
+@media (max-width: 767px) {
+  .StudentCalendar-module__oIVASa__page.workspace-page .StudentCalendar-module__oIVASa__refinedCalendar.calendar-card {
+    border-radius: 24px;
+  }
+
+  .StudentCalendar-module__oIVASa__page .StudentCalendar-module__oIVASa__refinedCalendar .calendar-toolbar {
+    padding: 16px 12px 12px;
+  }
+}
+
+/*# sourceMappingURL=app_student_StudentCalendar_module_css_bad6b30c._.single.css.map*/

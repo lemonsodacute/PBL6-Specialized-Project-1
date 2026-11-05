@@ -36,7 +36,7 @@ export const errorDescriptions: Record<string, string> = {
   AI_INVALID_RESPONSE:'Dịch vụ AI trả về dữ liệu không đúng định dạng.',
   AI_PROVIDER_UNAVAILABLE:'Dịch vụ AI tạm thời không khả dụng.',
   AI_REQUEST_FAILED:'Yêu cầu AI thất bại. Cần kiểm tra cấu hình kết nối.',
-  AI_MODEL_UNSUPPORTED:'Model chưa được cấp quyền hoặc không hỗ trợ tính năng yêu cầu.',
+  AI_MODEL_UNSUPPORTED:'Mô hình chưa được cấp quyền hoặc không hỗ trợ tính năng yêu cầu.',
 };
 /** Configuration and historical events are not a live provider health probe. */
 export function healthStatus(health: Health): { label: string; tone: Tone; note: string } {
@@ -48,7 +48,7 @@ export function healthStatus(health: Health): { label: string; tone: Tone; note:
     tone:health.last_error_code === 'AI_RATE_LIMITED' ? 'warning' : 'danger', note:'Sự kiện lỗi mới hơn lần thành công được ghi nhận.',
   };
   if (Number.isFinite(success)) return { label:'Lần gọi gần nhất thành công', tone:'success', note:'Theo sự kiện gần nhất; không phải kiểm tra kết nối trực tiếp.' };
-  return { label:'Chưa có hoạt động', tone:'neutral', note:'Đã cấu hình nhưng chưa ghi nhận sự kiện provider.' };
+  return { label:'Chưa có hoạt động', tone:'neutral', note:'Đã cấu hình nhưng chưa ghi nhận sự kiện dịch vụ AI.' };
 }
 export function requestFailure(error: unknown, fallback: string): Failure {
   return { message:friendlyError(error, fallback), code:error instanceof ApiError ? codeOf(error.code) : null,

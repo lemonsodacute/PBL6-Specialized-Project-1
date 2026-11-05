@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///D:/ChauAnh/PBL6%20new/app/not-found.tsx"],"sourcesContent":["export default function NotFound() {\n  return <main className=\"route-error\" role=\"status\"><div className=\"route-error-card\"><p className=\"eyebrow\">404</p><h1>Không tìm thấy trang</h1><p>Đường dẫn này không tồn tại hoặc đã được thay đổi.</p><a className=\"ui-button ui-button-filled-pill\" href=\"/dashboard\">Về trang tổng quan</a></div></main>;\n}\n"],"names":[],"mappings":";;;;;;AAAe,SAAS;IACtB,qBAAO,8OAAC;QAAK,WAAU;QAAc,MAAK;kBAAS,cAAA,8OAAC;YAAI,WAAU;;8BAAmB,8OAAC;oBAAE,WAAU;8BAAU;;;;;;8BAAO,8OAAC;8BAAG;;;;;;8BAAyB,8OAAC;8BAAE;;;;;;8BAAsD,8OAAC;oBAAE,WAAU;oBAAkC,MAAK;8BAAa;;;;;;;;;;;;;;;;;AAC5Q","debugId":null}}]
+}

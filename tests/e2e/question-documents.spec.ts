@@ -160,6 +160,83 @@ test('AI batch retry after reload retains progress and regenerates only one draf
   expect(state.imported).toHaveLength(0);
 });
 
+test('automatic quality flags stay separate from human review and invalidate after editing', async ({ page }) => {
+  const state = await setup(page, true);
+  const pass = { status: 'pass' as const, flags: [], grounded: true, assessed_difficulty: 'medium' as const, fingerprint: 'a'.repeat(64) };
+  state.session.config = { mode: 'generate', count: 3, question_type: 'mcq_single', difficulty: 'medium', topic: null };
+  state.session.batches = [{ index: 0, count: 3, complete: true }];
+  state.session.questions = [draft(1, { quality_check: pass }),
+    draft(2, { quality_check: { ...pass, status: 'review', flags: ['AMBIGUOUS'], grounded: false } }),
+    draft(3, { quality_check: { ...pass, status: 'review', flags: ['POTENTIAL_DUPLICATE'] } })];
+  await page.goto(`${base}?document=${documentId}`);
+  const cards = page.locator('.document-draft-card');
+  await expect(cards.nth(0).getByRole('note', { name: 'Kiểm tra tự động' })).toContainText('Đạt');
+  await expect(cards.nth(1).getByRole('note', { name: 'Kiểm tra tự động' })).toContainText('Cần xem lại');
+  await expect(cards.nth(0).getByRole('checkbox')).toBeChecked();
+  await expect(cards.nth(1).getByRole('checkbox')).not.toBeChecked();
+  await expect(cards.nth(2).getByRole('checkbox')).not.toBeChecked();
+  expect(Object.keys(state.feedback)).toHaveLength(0);
+  expect(state.imported).toHaveLength(0);
+  await cards.nth(0).getByRole('button', { name: 'Sửa', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Sửa câu hỏi đề xuất', exact: true });
+  await dialog.getByRole('textbox', { name: 'Nội dung câu hỏi', exact: true }).fill('Câu hỏi đã sửa, cần kiểm tra lại đáp án');
+  await dialog.getByRole('button', { name: 'Lưu bản nháp', exact: true }).click();
+  await expect(cards.nth(0).getByRole('note', { name: 'Kiểm tra tự động' })).toContainText('Đã sửa nội dung; cần kiểm tra lại');
+  await cards.nth(1).getByRole('checkbox').check();
+  await expect(cards.nth(1).getByRole('checkbox')).toBeChecked();
+  await cards.nth(2).getByRole('checkbox').check();
+  await expect(page.locator('.document-review-actions')).toContainText('câu đang chọn chưa hợp lệ');
+  expect(state.calls.some(call => call.path.endsWith('/import'))).toBe(false);
+});
+
+test('quality recheck sends current edited drafts and deselects newly flagged questions', async ({ page }) => {
+  const state = await setup(page, true);
+  state.session.config = { mode: 'generate', count: 2, question_type: 'mcq_single', difficulty: 'medium', topic: null };
+  state.session.batches = [{ index: 0, count: 2, complete: true }];
+  state.session.questions = [draft(1), draft(2)];
+  let sent: DocumentDraft[] = [];
+  await page.route('**/documents/*/quality', async route => {
+    if (route.request().method() === 'OPTIONS') return respond(route, {});
+    sent = route.request().postDataJSON().questions;
+    state.session.questions = sent.map(question => ({ ...question, quality_check: { status: 'review', flags: ['REVIEW_UNAVAILABLE'],
+      grounded: null, assessed_difficulty: null, fingerprint: 'b'.repeat(64) } }));
+    return respond(route, state.session);
+  });
+  await page.goto(`${base}?document=${documentId}`);
+  await expect(page.locator('.document-review-actions')).toContainText('Đã chọn: 2');
+  await page.getByRole('button', { name: 'Kiểm tra chất lượng', exact: true }).click();
+  await expect(page.locator('.document-review-actions')).toContainText('Đã chọn: 0');
+  expect(sent.map(question => question.id)).toEqual(state.session.questions.map(question => question.id));
+  expect(state.feedback).toEqual({});
+  expect(state.imported).toHaveLength(0);
+});
+
+test('partial batch with HTTP 200 retains drafts and exposes retry for only the remainder', async ({ page }) => {
+  const state = await setup(page, true); state.customPlan = [2];
+  let calls = 0;
+  await page.route('**/documents/*/batches/0', async route => {
+    if (route.request().method() === 'OPTIONS') return respond(route, {});
+    calls++;
+    state.session.questions.push(draft(calls));
+    state.session.batches[0].complete = calls === 2;
+    state.session.batches[0].error = calls === 1 ? { code: 'AI_TIMEOUT', message: 'Một phần chưa hoàn tất. Câu đã tạo được giữ lại.' } : null;
+    return respond(route, state.session);
+  });
+  await page.goto(base); await upload(page);
+  await page.getByRole('combobox', { name: 'Cách xử lý tài liệu', exact: true }).selectOption('generate');
+  await page.getByLabel('Số câu', { exact: true }).fill('2');
+  await page.getByRole('button', { name: 'Tạo bản nháp', exact: true }).click();
+  await expect(page.locator('.document-draft-card')).toHaveCount(1);
+  await expect(page.locator('main').getByRole('alert')).toContainText('Câu đã tạo được giữ lại');
+  const first = state.session.questions[0].id;
+  await page.getByRole('button', { name: 'Thử lại phần lỗi', exact: true }).click();
+  await expect(page.locator('.document-draft-card')).toHaveCount(2);
+  expect(state.session.questions[0].id).toBe(first);
+  expect(calls).toBe(2);
+  expect(state.calls.filter(call => call.path.endsWith('/drafts'))).toHaveLength(1);
+  expect(state.imported).toHaveLength(0);
+});
+
 test('partial success keeps 12 drafts and retries only two failed parts out of five', async ({ page }) => {
   const state = await setup(page, true); state.failBatch = false;
   state.customPlan = [4, 4, 4, 4, 4]; state.failIndices = new Set([1, 3]);
@@ -450,7 +527,7 @@ test('retry failed parts preserves reviewed edits removals selection and the ori
   expect(state.imported).toHaveLength(0);
 });
 
-for (const code of ['AI_PROVIDER_UNAVAILABLE', 'AI_REQUEST_FAILED', 'AI_MODEL_UNSUPPORTED', 'AI_AUTH_FAILED', 'AI_RATE_LIMITED', 'AI_INVALID_RESPONSE'] as const) {
+for (const code of ['AI_PROVIDER_UNAVAILABLE', 'AI_REQUEST_FAILED', 'AI_MODEL_UNSUPPORTED', 'AI_AUTH_FAILED', 'AI_RATE_LIMITED', 'AI_INVALID_RESPONSE', 'AI_TIMEOUT', 'AI_PARSE_ERROR'] as const) {
   test(`configured AI keeps generation enabled and reports ${code} distinctly`, async ({ page }) => {
     const state = await setup(page, true); state.batchError = code;
     state.session.image_count = 1;

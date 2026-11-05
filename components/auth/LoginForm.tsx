@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Input, PasswordInput, PasswordStrength, HelperText, ErrorMessage } from '@/components/ui';
+import { Button, Card, Input, PasswordInput, PasswordStrength, HelperText, ErrorMessage, borderProps } from '@/components/ui';
 import { useAuth } from '@/components/auth/AuthContext';
 import type { User } from '@/types';
 import { api, ApiError } from '@/lib/api';
@@ -120,7 +120,7 @@ export default function LoginForm({ initialMode }: { initialMode?: string }) {
     <div className={`${styles.content} ${mode === 'register' ? styles.register : ''}`}>
     <Link href={PUBLIC_HOME_HREF} className={styles.backLink}><ArrowLeft size={18} aria-hidden="true" />Quay lại trang chủ</Link>
     <div className={styles.brand}><PublicBrand /></div>
-    <Card className={`login-card ${mode === 'register' ? 'register-card' : ''}`}>
+    <Card borderRole="users" className={`login-card ${mode === 'register' ? 'register-card' : ''}`}>
       <div className="login-heading"><p className="eyebrow">Hệ thống thi trực tuyến</p><h1>{titles[mode]}</h1><p>{subtitles[mode]}</p></div>
       <form ref={form} onSubmit={handleSubmit} className="login-form" noValidate aria-busy={pending}>
         {mode === 'register' && <div className="auth-field"><label htmlFor="auth-fullName">Họ và tên</label><Input {...fieldProps('fullName')} required autoComplete="name" />{fieldError('fullName')}</div>}
@@ -132,8 +132,8 @@ export default function LoginForm({ initialMode }: { initialMode?: string }) {
           {newPassword && <PasswordStrength value={values.password} />}
         </div>}
         {newPassword && <div className="auth-field"><label htmlFor="auth-confirmPassword">Xác nhận mật khẩu</label><PasswordInput {...fieldProps('confirmPassword')} required autoComplete="new-password" toggleLabel="mật khẩu xác nhận" />{fieldError('confirmPassword')}</div>}
-        {error && <p role="alert" tabIndex={-1} data-form-error className="auth-message error">{error}</p>}
-        {notice && <p role="status" className="auth-message success">{notice}</p>}
+        {error && <p role="alert" tabIndex={-1} data-form-error className="auth-message error" {...borderProps('danger')}>{error}</p>}
+        {notice && <p role="status" className="auth-message success" {...borderProps('success')}>{notice}</p>}
         <Button type="submit" size="lg" loading={pending} className={`login-submit ${homeStyles.button} ${homeStyles.primaryButton}`}>{pending ? mode === 'register' ? 'Đang đăng ký…' : mode === 'login' ? 'Đang đăng nhập…' : 'Đang xử lý…' : mode === 'forgot' ? 'Yêu cầu đặt lại mật khẩu' : titles[mode]}</Button>
       </form>
       <div className="login-links">

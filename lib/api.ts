@@ -249,6 +249,7 @@ export const api = {
     discardDocument: (id: string, documentId: string) => apiFetch(`/question-banks/${id}/documents/${documentId}`, { method: 'DELETE' }),
     prepareDocumentDrafts: async (id: string, documentId: string, body: DocumentConfiguration) => (await apiFetch<{ data: DocumentSession }>(`/question-banks/${id}/documents/${documentId}/drafts`, { method: 'POST', body })).data,
     generateDocumentBatch: async (id: string, documentId: string, batch: number) => (await apiFetch<{ data: DocumentSession }>(`/question-banks/${id}/documents/${documentId}/batches/${batch}`, { method: 'POST', body: {}, timeoutMs: 195_000 })).data,
+    checkDocumentQuality: async (id: string, documentId: string, questions: DocumentDraft[]) => (await apiFetch<{ data: DocumentSession }>(`/question-banks/${id}/documents/${documentId}/quality`, { method: 'POST', body: { questions }, timeoutMs: 195_000 })).data,
     regenerateDocumentDraft: async (id: string, documentId: string, draftId: string) => (await apiFetch<{ data: DocumentDraft }>(`/question-banks/${id}/documents/${documentId}/drafts/${draftId}/regenerate`, { method: 'POST', body: {}, timeoutMs: 195_000 })).data,
     importDocumentDrafts: async (id: string, documentId: string, questions: DocumentDraft[]) => (await apiFetch<{ data: { imported_count: number; question_ids: string[] } }>(`/question-banks/${id}/documents/${documentId}/import`, { method: 'POST', body: { questions }, timeoutMs: 60_000 })).data,
     list: (params: ListParams={}) => apiFetch<unknown>(`/question-banks${listQuery(params)?'?'+listQuery(params):''}`),
@@ -274,6 +275,15 @@ export const api = {
     unenroll: (id: string, studentId: string) => apiFetch<void>(`/classes/${id}/enrollments/${studentId}`, { method: 'DELETE' }),
   },
   liveClasses: {
+    recordings: (id: string) => apiFetch<{ data: import('./class-recordings').RecordingList }>(`/live-classes/${id}/recordings`),
+    startRecording: (id: string) => apiFetch<{ data: import('./class-recordings').ClassRecording }>(`/live-classes/${id}/recording/start`, { method: 'POST' }),
+    stopRecording: (id: string) => apiFetch<{ data: import('./class-recordings').ClassRecording | null }>(`/live-classes/${id}/recording/stop`, { method: 'POST' }),
+    admission: (id: string) => apiFetch<{ data: { status: string } }>(`/live-classes/${id}/admission`, { method: 'POST' }),
+    cancelAdmission: (id: string) => apiFetch<unknown>(`/live-classes/${id}/admission`, { method: 'DELETE', keepalive: true }),
+    policy: (id: string, body: Partial<import('./classroom').ClassroomPolicy>) => apiFetch<{ data: import('./classroom').ClassroomSession }>(`/live-classes/${id}/policy`, { method: 'POST', body }),
+    action: (id: string, action: string, participant_id?: string) => apiFetch<{ data: import('./classroom').ClassroomSession }>(`/live-classes/${id}/actions`, { method: 'POST', body: { action, participant_id } }),
+    hand: (id: string, raised: boolean) => apiFetch<unknown>(`/live-classes/${id}/hand`, { method: 'POST', body: { raised } }),
+    chat: (id: string, text: string) => apiFetch<{ data: import('./classroom').ClassroomChat }>(`/live-classes/${id}/chat`, { method: 'POST', body: { text } }),
     list: (params:ListParams={}) => apiFetch<unknown>(`/live-classes${listQuery(params)?'?'+listQuery(params):''}`),
     get: (id: string) => apiFetch<unknown>(`/live-classes/${id}`),
     create: (body: unknown) => apiFetch<unknown>('/live-classes', { method: 'POST', body }),
@@ -283,6 +293,17 @@ export const api = {
     join: (id: string, sid: string) => apiFetch<unknown>(`/live-classes/${id}/join`, { method: 'POST', body: { participant_sid: sid } }),
     leave: (id: string, sid: string) => apiFetch<unknown>(`/live-classes/${id}/leave`, { method: 'POST', body: { participant_sid: sid }, keepalive: true }),
     attendance: (id: string) => apiFetch<{ data: import('./classroom').AttendanceRow[] }>(`/live-classes/${id}/attendance`),
+  },
+  recordings: {
+    get: (id: string) => apiFetch<{ data: import('./class-recordings').RecordingDetail }>(`/recordings/${id}`),
+    playback: async (id: string) => {
+      const result = await apiFetch<{ data: { media_path: string; expires_at: string } }>(`/recordings/${id}/playback`);
+      if (!result.data.media_path.startsWith(`/recordings/${id}/media?`)) throw new Error('Invalid playback reference');
+      return { url: API_PREFIX + result.data.media_path, expires_at: result.data.expires_at };
+    },
+    publish: (id: string) => apiFetch<{ data: import('./class-recordings').ClassRecording }>(`/recordings/${id}/publish`, { method: 'POST' }),
+    unpublish: (id: string) => apiFetch<{ data: import('./class-recordings').ClassRecording }>(`/recordings/${id}/unpublish`, { method: 'POST' }),
+    delete: (id: string) => apiFetch<{ data: { deleted: boolean; cleanup_pending: boolean } }>(`/recordings/${id}`, { method: 'DELETE' }),
   },
   examAssignments: {
     list: (params: ListParams & {examId?:string;classId?:string}={}) => apiFetch<unknown>('/exam-assignments?'+listQuery({...params,exam_id:params.examId,class_id:params.classId,examId:undefined,classId:undefined})),

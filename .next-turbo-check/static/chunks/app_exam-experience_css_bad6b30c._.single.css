@@ -1,0 +1,197 @@
+/* [project]/app/exam-experience.css [app-client] (css) */
+.proctor-stream-hidden {
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  position: fixed;
+}
+
+.floating-camera {
+  z-index: 36;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  width: 260px;
+  max-width: calc(100vw - 24px);
+  box-shadow: var(--shadow-medium);
+  border-radius: 14px;
+  position: fixed;
+  overflow: hidden;
+}
+
+.floating-camera-handle {
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  min-height: 48px;
+  color: var(--text-primary);
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+}
+
+.floating-camera-handle:active {
+  cursor: grabbing;
+}
+
+.floating-camera-handle > span {
+  align-items: center;
+  gap: 8px;
+  display: flex;
+}
+
+.floating-camera-handle button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  width: 40px;
+  height: 40px;
+  color: var(--text-primary);
+  cursor: pointer;
+  border-radius: 8px;
+  flex-shrink: 0;
+  font-size: 22px;
+}
+
+.floating-camera video {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--surface-muted);
+  width: 100%;
+  display: block;
+}
+
+.floating-camera-status {
+  color: var(--text-secondary);
+  gap: 8px;
+  padding: 10px 12px 12px;
+  font-size: 12px;
+  display: grid;
+}
+
+.floating-camera-status > span {
+  align-items: center;
+  gap: 6px;
+  display: flex;
+}
+
+.floating-camera.collapsed .floating-camera-status {
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  display: flex;
+}
+
+.exam-media-dot {
+  background: var(--orange);
+  border-radius: 50%;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+}
+
+.exam-media-dot.active {
+  background: var(--success);
+}
+
+.exam-device-modal h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.exam-device-modal section p {
+  margin: 0;
+}
+
+.device-ready {
+  color: var(--success);
+}
+
+.device-pending {
+  color: var(--text-secondary);
+}
+
+.exam-device-preview video {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--surface-muted);
+  border-radius: 12px;
+  width: 100%;
+  max-height: 260px;
+  display: block;
+}
+
+.exam-device-modal .mic-meter {
+  background: var(--surface-muted);
+  border-radius: 12px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.exam-device-modal .mic-meter i {
+  background: var(--primary);
+  height: 100%;
+  display: block;
+}
+
+.attempt-page .attempt-header-actions {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 767px) {
+  .floating-camera {
+    width: 240px;
+  }
+
+  .floating-camera-handle {
+    cursor: default;
+  }
+
+  .attempt-page .attempt-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .attempt-page .attempt-header-actions {
+    gap: 8px;
+    width: 100%;
+  }
+
+  .attempt-page .attempt-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    width: calc(100% - 24px);
+  }
+
+  .attempt-page .question-sidebar {
+    position: static;
+  }
+
+  .attempt-page .attempt-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .attempt-page .attempt-footer > span {
+    display: none;
+  }
+
+  .attempt-page .attempt-footer .ui-button {
+    white-space: normal;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .exam-device-modal .modal-actions {
+    flex-wrap: wrap;
+  }
+}
+
+/*# sourceMappingURL=app_exam-experience_css_bad6b30c._.single.css.map*/

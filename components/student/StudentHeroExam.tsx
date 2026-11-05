@@ -1,4 +1,6 @@
 'use client';
+import { borderProps } from '@/components/ui/Border';
+
 
 import Link from 'next/link';
 import { CalendarDays, Clock3, ShieldCheck, CircleCheck, Circle, ArrowRight, Camera } from 'lucide-react';
@@ -35,7 +37,7 @@ export function StudentHeroExam({ event, user, now }: { event: CalendarEvent; us
   ];
   return <section className={styles.hero} aria-label="Kỳ thi ưu tiên" data-chat-avoid>
     <StudentOwl />
-    <div className={styles.card} data-exam-status={state.status}>
+    <div className={styles.card} data-exam-status={state.status} {...borderProps('exams')}>
       <div className={styles.exam}>
         <span className={styles.status}>{state.canRetry ? `Có thể làm lại · Còn ${Math.max(0,(exam.max_attempts??1)-state.attempts.length)} lượt` : state.status === 'upcoming' ? days > 1 ? `Còn ${days} ngày` : 'Sắp diễn ra' : state.label}</span>
         <p className={styles.context}>Kỳ thi trong khoảng lịch đang xem</p>

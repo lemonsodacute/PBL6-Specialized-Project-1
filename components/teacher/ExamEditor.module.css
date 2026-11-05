@@ -1,0 +1,78 @@
+/* The result is a body portal above the editor and its dropdowns, independent of form scroll. */
+:global(.ui-overlay):has(> .saveFeedback) {
+  z-index: calc(var(--z-modal-dropdown) + 1);
+}
+
+.saveFeedback:global(.ui-modal) {
+  align-items: center;
+  gap: 16px;
+  width: min(420px, 100%);
+  padding: 32px 28px;
+  border: 1px solid var(--procto-ink);
+  border-radius: var(--procto-card-radius);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-overlay);
+  text-align: center;
+}
+
+.saveFeedback :global(.modal-heading) {
+  order: 1;
+  justify-content: center;
+  width: 100%;
+  padding: 0;
+  border: 0;
+}
+
+.saveFeedback :global(.modal-heading h2) {
+  font-size: 23px;
+  line-height: 1.35;
+  color: var(--procto-ink);
+}
+
+.saveFeedback :global(.modal-heading .icon-button) {
+  display: none;
+}
+
+.saveFeedback :global(.modal-body) {
+  display: contents;
+}
+
+.resultIcon {
+  display: grid;
+  flex: 0 0 72px;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+}
+
+.success {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.failure {
+  color: var(--error);
+  background: var(--error-soft);
+}
+
+.saveMessage {
+  order: 2;
+  min-height: 0;
+  margin: 0;
+  overflow: auto;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.saveActions {
+  order: 3;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+.saveActions :global(.ui-button) {
+  min-width: 132px;
+}

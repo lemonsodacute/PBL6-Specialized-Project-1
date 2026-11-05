@@ -1,0 +1,80 @@
+/* [project]/components/brand/ProctoOwlMascot.module.css [app-client] (css) */
+.ProctoOwlMascot-module__LEiYRW__mascot {
+  width: auto;
+  height: var(--mascot-size, 96px);
+  pointer-events: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  flex: none;
+  max-width: 100%;
+  display: block;
+  overflow: hidden;
+}
+
+.ProctoOwlMascot-module__LEiYRW__sm {
+  --mascot-size: 64px;
+}
+
+.ProctoOwlMascot-module__LEiYRW__md {
+  --mascot-size: 96px;
+}
+
+.ProctoOwlMascot-module__LEiYRW__lg {
+  --mascot-size: 120px;
+}
+
+.ProctoOwlMascot-module__LEiYRW__peek {
+  border-bottom: 2px solid var(--border);
+  border-radius: 0 0 12px 12px;
+}
+
+.ProctoOwlMascot-module__LEiYRW__corner {
+  transform-origin: bottom;
+  transform: rotate(-5deg);
+}
+
+.ProctoOwlMascot-module__LEiYRW__compact {
+  --mascot-size: 48px;
+}
+
+.ProctoOwlMascot-module__LEiYRW__watermark {
+  color: var(--primary);
+  opacity: .06;
+}
+
+.ProctoOwlMascot-module__LEiYRW__empty-state {
+  align-self: center;
+}
+
+.app-shell[data-role="admin"] .ProctoOwlMascot-module__LEiYRW__mascot {
+  --owl-body-top: #548b8c;
+  --owl-body: #39767b;
+  --owl-wing: #35656b;
+  --owl-iris: #d5c795;
+  --owl-beak: #c5ad70;
+}
+
+html[data-theme="dark"] .ProctoOwlMascot-module__LEiYRW__mascot {
+  --owl-body-top: #359ba1;
+  --owl-body: #23818b;
+  --owl-wing: #0d626c;
+}
+
+html[data-theme="dark"] .app-shell[data-role="admin"] .ProctoOwlMascot-module__LEiYRW__mascot {
+  --owl-body-top: #639c9e;
+  --owl-body: #43888e;
+  --owl-wing: #316a71;
+}
+
+@media (max-width: 767px) {
+  .ProctoOwlMascot-module__LEiYRW__mascot:not(.ProctoOwlMascot-module__LEiYRW__empty-state):not(.ProctoOwlMascot-module__LEiYRW__compact) {
+    display: none;
+  }
+
+  .ProctoOwlMascot-module__LEiYRW__empty-state {
+    --mascot-size: 64px;
+  }
+}
+
+/*# sourceMappingURL=components_brand_ProctoOwlMascot_module_css_bad6b30c._.single.css.map*/

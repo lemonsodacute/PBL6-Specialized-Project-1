@@ -1,0 +1,19 @@
+/* [project]/components/public/body_c7db1fa3.module.css [app-client] (css) */
+@font-face {
+  font-family: body;
+  src: url("../media/nunito_latin_vietnamese.p.7fcec544.woff2") format("woff2");
+  font-display: swap;
+  font-weight: 200 1000;
+  font-style: normal;
+}
+
+.body_c7db1fa3-module__BzaWYW__className {
+  font-family: body, Arial;
+  font-style: normal;
+}
+
+.body_c7db1fa3-module__BzaWYW__variable {
+  --font-public-body: "body", Arial;
+}
+
+/*# sourceMappingURL=components_public_body_c7db1fa3_module_css_bad6b30c._.single.css.map*/

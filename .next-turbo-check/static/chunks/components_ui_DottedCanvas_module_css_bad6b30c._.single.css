@@ -1,0 +1,18 @@
+/* [project]/components/ui/DottedCanvas.module.css [app-client] (css) */
+.DottedCanvas-module__O3UrGq__canvas {
+  background: var(--login-canvas-bg) var(--login-canvas-pattern) 0 0 / var(--login-canvas-spacing) repeat;
+}
+
+.DottedCanvas-module__O3UrGq__canvas.app-shell[data-role="student"] {
+  background: var(--login-canvas-bg) var(--login-canvas-pattern) 0 0 / var(--login-canvas-spacing) repeat;
+}
+
+.DottedCanvas-module__O3UrGq__canvas.app-shell[data-role="student"] > .workspace {
+  background: none;
+}
+
+.DottedCanvas-module__O3UrGq__canvas.app-shell[data-role="student"] > .workspace > .student-footer {
+  background: none;
+}
+
+/*# sourceMappingURL=components_ui_DottedCanvas_module_css_bad6b30c._.single.css.map*/

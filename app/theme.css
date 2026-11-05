@@ -5,10 +5,16 @@
   --surface-card: var(--procto-paper);
   --surface-muted: var(--procto-tint);
   --border-default: var(--procto-line);
-  --border-control: #718595;
+  --border-control: var(--dark-border-control);
   --text-primary: var(--procto-ink);
   --text-secondary: var(--procto-muted);
-  --text-placeholder: #95a7b7;
+  --text-placeholder: var(--dark-text-tertiary);
+  --sidebar-background: var(--dark-sidebar);
+  --sidebar-text: var(--dark-text-secondary);
+  --sidebar-muted: var(--dark-text-tertiary);
+  --sidebar-active: var(--dark-text-primary);
+  --sidebar-indicator: var(--dark-focus);
+  --overlay-background: rgb(3 12 18 / 76%);
   --primary: color-mix(in srgb, var(--color-primary) 40%, white);
   --role-student: var(--primary);
   --role-teacher: var(--primary);

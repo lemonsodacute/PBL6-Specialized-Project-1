@@ -118,6 +118,75 @@ class DocumentApiTests(TestCase):
             result = self.upload(content, 'pdf')
             self.assertEqual(result.status_code, 422, result.text); self.assertEqual(result.json()['error']['code'], code)
 
+    def test_document_import_blocks_bilingual_duplicates_and_ignores_client_quality_claims(self):
+        document = self.document(); payload = self.import_payload(document); before = self.count()
+        payload['questions'][0]['content'] = 'What is REST API?'
+        payload['questions'][1]['content'] = 'REST API là gì?'
+        url = f"{self.base}/documents/{document['id']}/import"
+        response = self.client.post(url, json=payload, headers=self.headers())
+        self.assertEqual(response.status_code, 409, response.text)
+        self.assertEqual(self.count(), before)
+        state = json.loads((storage.DOCUMENT_ROOT / f"{document['id']}.json").read_text(encoding='utf8'))
+        state['questions'][0]['quality_check'] = {'status': 'review', 'flags': ['POTENTIAL_DUPLICATE'], 'grounded': True,
+            'assessed_difficulty': 'easy', 'fingerprint': 'a' * 64}
+        storage.save_session(state)
+        forged = {'questions': [state['questions'][0]]}
+        forged['questions'][0]['quality_check'] = {**state['questions'][0]['quality_check'], 'status': 'pass', 'flags': []}
+        self.assertEqual(self.client.post(url, json=forged, headers=self.headers()).status_code, 409)
+        self.assertEqual(self.count(), before)
+
+    def test_preview_quality_metadata_does_not_change_import_receipt(self):
+        document = self.document(); payload = self.import_payload(document)
+        url = f"{self.base}/documents/{document['id']}/import"
+        first = self.client.post(url, json=payload, headers=self.headers())
+        self.assertEqual(first.status_code, 200, first.text)
+        before = self.count()
+        payload['questions'][0]['quality_check'] = {'status': 'review', 'flags': ['EDITED_AFTER_CHECK'], 'grounded': None,
+            'assessed_difficulty': None, 'fingerprint': 'a' * 64}
+        retry = self.client.post(url, json=payload, headers=self.headers())
+        self.assertEqual(retry.json(), first.json())
+        self.assertEqual(self.count(), before)
+
+    def test_quality_endpoint_rejects_foreign_ids_and_does_not_write_bank_on_timeout(self):
+        document = self.document(); payload = self.import_payload(document); before = self.count()
+        url = f"{self.base}/documents/{document['id']}/quality"
+        foreign = json.loads(json.dumps(payload)); foreign['questions'][0]['id'] = str(uuid4())
+        self.assertEqual(self.client.post(url, json=foreign, headers=self.headers()).status_code, 422)
+        self.assertEqual(self.client.post(url, json=payload, headers=self.headers(self.other)).status_code, 404)
+        with patch('app.services.question_quality.OpenAICompatibleClient') as client:
+            from app.services.ai_provider import AIProviderError
+            client.return_value.complete.side_effect = AIProviderError('AI_TIMEOUT')
+            response = self.client.post(url, json=payload, headers=self.headers())
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertTrue(all(draft['quality_check']['status'] == 'review' for draft in response.json()['data']['questions']))
+        self.assertEqual(self.count(), before)
+        self.assertIsNone(response.json()['data']['imported_count'])
+
+    def test_partial_source_retry_preserves_pending_requirements_and_success_on_provider_error(self):
+        document = self.document(); payload = self.import_payload(document); before = self.count()
+        path = storage.DOCUMENT_ROOT / f"{document['id']}.json"
+        state = json.loads(path.read_text(encoding='utf8'))
+        # Seed a private draft-session boundary, not a successful AI response.
+        # Only provider exceptions are injected; semantic evaluation uses real AI.
+        source = state['chunks'][0]
+        state['config'] = {'mode': 'generate', 'count': 2, 'question_type': 'mcq_single', 'difficulty': 'easy', 'topic': None}
+        state['questions'] = payload['questions'][:1]
+        state['batches'] = [{'count': 2, 'sources': [source], 'requirements': {source['id']: 2},
+            'pending_requirements': {source['id']: 1}, 'complete': False, 'generated_count': 1}]
+        storage.save_session(state)
+        with patch('app.api.v1.question_documents.get_question_generation_provider') as factory:
+            factory.return_value.generate.side_effect = DocumentError('AI_TIMEOUT', 'Dịch vụ AI quá thời gian chờ.')
+            response = self.client.post(f"{self.base}/documents/{document['id']}/batches/0", headers=self.headers())
+            self.assertEqual(response.status_code, 504)
+            call = factory.return_value.generate.call_args.kwargs
+            self.assertEqual(call['requirements'], {source['id']: 1})
+            self.assertIn(state['questions'][0]['content'], call['excluded'])
+        saved = json.loads(path.read_text(encoding='utf8'))
+        self.assertEqual(saved['questions'], state['questions'])
+        self.assertEqual(saved['batches'][0]['pending_requirements'], {source['id']: 1})
+        self.assertFalse(saved['batches'][0]['complete'])
+        self.assertEqual(self.count(), before)
+
     def test_file_validation_corruption_macro_and_size(self):
         for content, extension, mime, status in [(b'junk', 'pdf', None, 422), (b'junk', 'docx', None, 422), (b'abc', 'txt', None, 422), (docx_bytes(), 'docx', 'application/pdf', 422), (b'x' * (MAX_FILE_BYTES + 1), 'pdf', None, 413)]:
             self.assertEqual(self.upload(content, extension, mime=mime).status_code, status)
@@ -186,7 +255,7 @@ class DocumentApiTests(TestCase):
         document = self.document(); before = self.count()
         with patch('app.api.v1.question_documents.generation_available', return_value=True), patch('app.api.v1.question_documents.get_question_generation_provider') as factory:
             self.assertEqual(self.prepare(document['id'], 'generate', count=1).status_code, 200)
-            for code, status in [('AI_RATE_LIMITED', 429), ('AI_AUTH_FAILED', 502), ('AI_INVALID_RESPONSE', 502), ('AI_MODEL_UNSUPPORTED', 502)]:
+            for code, status in [('AI_RATE_LIMITED', 429), ('AI_AUTH_FAILED', 502), ('AI_INVALID_RESPONSE', 502), ('AI_PARSE_ERROR', 502), ('AI_TIMEOUT', 504), ('AI_MODEL_UNSUPPORTED', 502)]:
                 factory.return_value.generate.side_effect = DocumentError(code, AI_MESSAGES[code])
                 response = self.client.post(f"{self.base}/documents/{document['id']}/batches/0", headers=self.headers())
                 self.assertEqual(response.status_code, status)
@@ -338,7 +407,7 @@ class DocumentContractTests(TestCase):
                 self.assertNotIn('server-test-secret', json.dumps(payload))
                 return httpx.Response(200, json={'choices': [{'finish_reason': finish, 'message': {'content': json.dumps(body), 'refusal': refusal}}]})
             client = httpx.Client(transport=httpx.MockTransport(handler))
-            with patch('app.services.question_generation.httpx.Client', return_value=client):
+            with patch('app.services.question_generation.httpx.Client', return_value=client), patch('app.services.question_generation.review_drafts', side_effect=lambda drafts, **kwargs: drafts):
                 return provider.generate(sources=[source], requirements={'chunk-1': 1}, config=config, excluded=[])
         result = invoke({'questions': [question]})
         self.assertEqual(result[0]['source_page'], 2); self.assertEqual(result[0]['answers'], ['Structure'])

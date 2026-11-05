@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/components/public/body_c7db1fa3.module.css"],"sourcesContent":["@font-face {\n    font-family: 'body';\n    src: url('@vercel/turbopack-next/internal/font/local/font?{%22path%22:%22./fonts/nunito-latin-vietnamese.woff2%22,%22preload%22:true,%22has_size_adjust%22:false}') format('woff2');\n    font-display: swap;\n    font-weight: 200 1000;font-style: normal;\n}\n\n\n.className {\n    font-family: 'body', Arial;\n    font-style: normal;\n\n}\n.variable {\n    --font-public-body: 'body', Arial;\n}\n\n"],"names":[],"mappings":"AAAA;;;;;;;;AAQA;;;;;AAKA"}}]
+}

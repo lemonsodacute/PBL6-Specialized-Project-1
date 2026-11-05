@@ -197,8 +197,17 @@ def document_session(document_id: UUID, bank_id, user_id):
 def public_session(session, *, include_text=False):
     result = {key: session[key] for key in ('id', 'filename', 'expires_at', 'warnings', 'character_count', 'questions')}
     result['batches'] = [{'index': index, 'count': batch['count'], 'complete': batch['complete'],
-                          'error': batch.get('error'), 'generated_count': batch.get('generated_count')}
+                          'error': batch.get('error'), 'generated_count': batch.get('generated_count'),
+                          'quality_summary': batch.get('quality_summary')}
                          for index, batch in enumerate(session['batches'])]
+    if (session.get('config') or {}).get('mode') == 'generate' and (any(draft.get('quality_check') for draft in session['questions']) or any(batch.get('quality_summary') for batch in session['batches'])):
+        from app.services.question_quality import summarize
+        summaries = [batch.get('quality_summary') or {} for batch in session['batches']]
+        result['quality_summary'] = summarize(session['questions'], generated=max(len(session['questions']), sum(value.get('generated', 0) for value in summaries)),
+            rejected=sum(value.get('rejected', 0) for value in summaries),
+            planned_sources={source for batch in session['batches'] for source in batch.get('requirements', {})})
+        for key in ('duplicate', 'unsupported', 'ambiguous'):
+            result['quality_summary'][key] += sum(value.get('rejected_reasons', {}).get(key, 0) for value in summaries)
     result['config'] = session['config']
     result['imported_count'] = session['imported']['result']['imported_count'] if session['imported'] else None
     for key in ('file_type', 'page_count', 'page_count_estimated', 'image_count', 'images', 'preview_text',
@@ -286,6 +295,13 @@ def generation_plan(chunks: list[dict], count: int) -> list[dict]:
     # Stratified indices include both ends of a long document. Every request
     # sees at most five 2400-character chunks, never the whole document.
     chunks = [chunk for chunk in chunks if len(normalized_content(chunk['text'])) >= 10]
+    # A title page is not an assessable source. Keep actual numbered questions
+    # and image sources, including short questions; omit multi-line cover headings.
+    def cover_heading(chunk):
+        lines = [line.strip() for line in chunk['text'].splitlines() if line.strip()]
+        return (not chunk.get('question_number') and not chunk.get('image_ids') and len(lines) >= 3
+            and all(line.isupper() and len(line.split()) <= 20 for line in lines))
+    chunks = [chunk for chunk in chunks if not cover_heading(chunk)]
     if not chunks:
         raise DocumentError('DOCUMENT_HAS_TOO_LITTLE_TEXT', 'Tài liệu chưa có đủ nội dung để tạo câu hỏi có nguồn. Vui lòng tải tài liệu đầy đủ hơn.')
     used = min(len(chunks), count)

@@ -3,3 +3,4 @@ export * from './PasswordInput';
 export * from './PageHeader';
 export * from './ActionMenu';
 export * from './ConfirmDialog';
+export * from './Border';

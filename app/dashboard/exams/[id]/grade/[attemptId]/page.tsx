@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -29,7 +29,7 @@ export default function GradeAttemptPage() {
     <PageHeader mode="context" context="Chi tiết bài làm"  title={result?.exam_title??'Chi tiết kết quả'}  actions={<Button variant="outline" loading={loading} onClick={() => void load()}>Tải lại bài làm</Button>} />
     {loading && <LoadingSkeleton rows={5} />}
     {error && <Card role="alert"><p>{error}</p><Button onClick={() => void load()}>Thử lại</Button></Card>}
-    {result && <><Card><dl className={styles.fields}>
+    {result && <><Card borderRole="exams"><dl className={styles.fields}>
       <div><dt>Sinh viên</dt><dd><strong>{result.student?.full_name ?? '—'}</strong></dd></div>
       <div><dt>MSSV</dt><dd>{result.student?.student_code || '—'}</dd></div>
       <div><dt>Đề thi</dt><dd>{result.exam_title}</dd></div>
@@ -40,7 +40,7 @@ export default function GradeAttemptPage() {
       <div><dt>Lần thi</dt><dd>{result.attempt_number}</dd></div>
     </dl></Card>
       {result.questions.map((question, index) => <QuestionResult key={question.question_id} question={question} index={index} reload={load} />)}
-      {!result.questions.length && <Card><p>Chưa có câu hỏi trong bài làm này.</p></Card>}
+      {!result.questions.length && <Card borderRole="exams"><p>Chưa có câu hỏi trong bài làm này.</p></Card>}
     </>}
   </div>;
 }
@@ -56,7 +56,7 @@ function QuestionResult({ question, index, reload }: { question: ResultQuestion;
     finally { setSaving(false); }
   }
   const status = question.is_correct === true ? 'Đúng' : question.is_correct === false ? 'Sai' : question.student_answer === null ? 'Chưa trả lời' : manual && question.points_awarded !== null ? 'Đã chấm' : 'Chưa chấm';
-  return <Card><div className={styles.detailHeader}><strong>Câu {index + 1}</strong><Badge>{({ mcq_single: 'Trắc nghiệm', mcq_multi: 'Nhiều đáp án', essay: 'Tự luận', oral: 'Hình thức đã ngừng hỗ trợ' } as Record<string, string>)[question.type] ?? question.type}</Badge></div>
+  return <Card borderRole="exams"><div className={styles.detailHeader}><strong>Câu {index + 1}</strong><Badge>{({ mcq_single: 'Trắc nghiệm', mcq_multi: 'Nhiều đáp án', essay: 'Tự luận', oral: 'Hình thức đã ngừng hỗ trợ' } as Record<string, string>)[question.type] ?? question.type}</Badge></div>
     <p className={styles.question}>{question.content}</p><QuestionImages images={question.images} /><dl className={styles.fields}>
       <div><dt>Đáp án sinh viên</dt><dd>{answerText(question.student_answer, question.options_json)}</dd></div>
       <div><dt>Đáp án đúng</dt><dd>{question.correct_answer === null ? 'Chưa có đáp án được lưu' : answerText(question.correct_answer, question.options_json)}</dd></div>

@@ -26,11 +26,11 @@ export function ProctoOwlArtwork({ idPrefix: uid, direction, silhouette, eyeOrig
     <path d="M135 246Q122 336 185 371Q152 309 166 252L135 246ZM385 246Q398 336 335 371Q368 309 354 252L385 246Z" fill="var(--owl-wing, #005B64)" opacity=".65" />
     <path d="M180 301Q260 251 340 301L321 408H199L180 301Z" fill="#D2EAE4" />
     <path d="M198 104Q230 101 260 132Q290 101 322 104Q379 107 379 174Q379 243 315 247Q283 245 260 224Q237 245 205 247Q141 243 141 174Q141 107 198 104Z" fill="#ECF5EB" />
-    <circle ref={node => { if (eyeOrigins) eyeOrigins.current[0] = node; }} data-eye-origin="left" cx="204" cy="173" r="44" fill="#FFFDF4" />
-    <circle ref={node => { if (eyeOrigins) eyeOrigins.current[1] = node; }} data-eye-origin="right" cx="316" cy="173" r="44" fill="#FFFDF4" />
+    <circle cx="204" cy="173" r="44" fill="#FFFDF4" />
+    <circle cx="316" cy="173" r="44" fill="#FFFDF4" />
     {[204, 316].map((cx, index) => <g ref={node => { if (pupils) pupils.current[index] = node; }} data-pupil={index === 0 ? 'left' : 'right'} key={cx} transform={direction ? `translate(${direction === 'left' ? -5 : 5} 2)` : undefined}>
       <circle cx={cx} cy="174" r="28" fill="var(--owl-iris, #E9C777)" />
-      <circle cx={cx} cy="174" r="19" fill="#183D43" />
+      <circle ref={node => { if (eyeOrigins) eyeOrigins.current[index] = node; }} data-eye-origin={index === 0 ? 'left' : 'right'} cx={cx} cy="174" r="19" fill="#183D43" />
       <circle cx={cx + 7} cy="166" r="7" fill="#FFFDF4" />
       <circle cx={cx - 7} cy="182" r="3" fill="#7BB9B3" />
     </g>)}

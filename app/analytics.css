@@ -24,6 +24,8 @@ html[data-theme='dark'] {
 [data-tone='warning'] { --chart-tone: var(--chart-warning); }
 [data-tone='critical'] { --chart-tone: var(--chart-critical); }
 .an-card, .an-kpi { min-width: 0; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); box-shadow: var(--chart-card-shadow); color: var(--text-primary); }
+/* Emphasize the existing boundary without changing geometry or adding motion. */
+.app-shell :is(.an-card, .an-kpi):hover { border-color: var(--border-strong); }
 .an-card { display: flex; flex-direction: column; overflow: hidden; }
 .an-card-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 22px 24px 0; }
 .an-card .an-card-header h2 { font: 650 17px/1.5 var(--font-body); letter-spacing: -.02em; margin: 0; color: var(--text-primary); }

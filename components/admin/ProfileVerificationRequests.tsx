@@ -50,7 +50,7 @@ export function ProfileVerificationRequests({ refresh, onEdit, onApproved }: {
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Chưa xử lý được yêu cầu.'); }
     finally { setBusy(false); }
   }
-  return <Card>
+  return <Card borderRole="warning">
     <div className="card-toolbar"><div><h2>Yêu cầu xác minh hồ sơ</h2><p>{loading ? 'Đang tải yêu cầu...' : `${total} yêu cầu chờ xử lý`}</p></div>
       <Button variant="warning" disabled={busy || loading} onClick={() => { setSelected(null); void load(); }}>Tải lại yêu cầu</Button></div>
     {studentId && <Button variant="outline" onClick={() => { setStudentId(undefined); setPage(1); }}>Xem tất cả yêu cầu</Button>}

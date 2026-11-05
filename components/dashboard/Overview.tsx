@@ -50,19 +50,19 @@ function StandardOverview() {
   return <div className="workspace-page an-page">
     {loading ? <LoadingSkeleton rows={4} /> : error ? <Card role="alert"><h2>Không tải được tổng quan</h2><p>{error}</p><Button variant="warning" onClick={() => setReload(value => value + 1)}>Thử lại</Button></Card> : <>
       <div className="an-kpis" aria-label="Chỉ số tổng quan">
-        {typeof stats?.ongoing_exams === 'number' && <KpiCard label="Đề thi đang diễn ra" value={count(stats.ongoing_exams)} detail="Trong phạm vi quản lý" tone="blue" icon={<ClipboardList size={19} aria-hidden="true" />} />}
-        {typeof stats?.active_attempts === 'number' && <KpiCard label="Lượt thi đang hoạt động" value={count(stats.active_attempts)} detail="Đang làm bài" tone="positive" icon={<Users size={19} aria-hidden="true" />} />}
-        {typeof stats?.classes === 'number' && <KpiCard label="Lớp học" value={count(stats.classes)} detail="Đang quản lý" icon={<GraduationCap size={19} aria-hidden="true" />} />}
-        {typeof stats?.recent_violations === 'number' && <KpiCard label="Vi phạm gần đây" value={count(stats.recent_violations)} detail={typeof stats.recent_window_minutes === 'number' ? `Trong ${stats.recent_window_minutes} phút` : 'Theo dữ liệu máy chủ'} tone="warning" icon={<TriangleAlert size={19} aria-hidden="true" />} />}
+        {typeof stats?.ongoing_exams === 'number' && <KpiCard label="Đề thi đang diễn ra" borderRole="exams" value={count(stats.ongoing_exams)} detail="Trong phạm vi quản lý" tone="blue" icon={<ClipboardList size={19} aria-hidden="true" />} />}
+        {typeof stats?.active_attempts === 'number' && <KpiCard label="Lượt thi đang hoạt động" borderRole="exams" value={count(stats.active_attempts)} detail="Đang làm bài" tone="positive" icon={<Users size={19} aria-hidden="true" />} />}
+        {typeof stats?.classes === 'number' && <KpiCard label="Lớp học" borderRole="classes" value={count(stats.classes)} detail="Đang quản lý" icon={<GraduationCap size={19} aria-hidden="true" />} />}
+        {typeof stats?.recent_violations === 'number' && <KpiCard label="Vi phạm gần đây" borderRole="warning" value={count(stats.recent_violations)} detail={typeof stats.recent_window_minutes === 'number' ? `Trong ${stats.recent_window_minutes} phút` : 'Theo dữ liệu máy chủ'} tone="warning" icon={<TriangleAlert size={19} aria-hidden="true" />} />}
       </div>
       {updated && Number.isFinite(updated.getTime()) && <p className="dashboard-updated">Cập nhật lúc <time dateTime={stats!.as_of}>{updated.toLocaleString('vi-VN')}</time></p>}
       <OverviewAnalytics key={user?.id} refreshKey={reload} />
       <div className="overview-grid">
-        <Card><div className="card-toolbar"><div><h2>Đề thi đang mở</h2><p>Truy cập nhanh đề đã xuất bản và đang diễn ra.</p></div><Link className="table-link" href="/dashboard/exams">Xem tất cả</Link></div>
+        <Card borderRole="exams"><div className="card-toolbar"><div><h2>Đề thi đang mở</h2><p>Truy cập nhanh đề đã xuất bản và đang diễn ra.</p></div><Link className="table-link" href="/dashboard/exams">Xem tất cả</Link></div>
           {openExams.length ? <div className="overview-list">{openExams.slice(0, 3).map(exam => <Link className="overview-list-row" key={exam.id} href={`/dashboard/exams/${exam.id}`}><span><strong>{exam.title}</strong><small>{exam.duration_minutes} phút</small></span><Badge tone="info">{exam.status === 'ongoing' ? 'Đang diễn ra' : 'Đã xuất bản'}</Badge></Link>)}</div>
             : <EmptyState mascot title="Chưa có đề thi đang mở">Các đề đã xuất bản hoặc đang diễn ra sẽ xuất hiện tại đây.</EmptyState>}
         </Card>
-        <Card><div className="card-toolbar"><div><h2>{admin ? 'Quản trị nhanh' : 'Giám sát bài thi'}</h2><p>{admin ? 'Truy cập các khu vực quản lý hệ thống.' : 'Theo dõi từng phòng thi và các cảnh báo đã ghi nhận.'}</p></div><Link className="ui-button ui-button-primary" href={admin ? '/dashboard/users' : '/dashboard/exams'}>{admin ? 'Quản lý người dùng' : 'Mở danh sách đề thi'}</Link></div>
+        <Card borderRole={admin ? 'users' : 'warning'}><div className="card-toolbar"><div><h2>{admin ? 'Quản trị nhanh' : 'Giám sát bài thi'}</h2><p>{admin ? 'Truy cập các khu vực quản lý hệ thống.' : 'Theo dõi từng phòng thi và các cảnh báo đã ghi nhận.'}</p></div><Link className="ui-button ui-button-primary" href={admin ? '/dashboard/users' : '/dashboard/exams'}>{admin ? 'Quản lý người dùng' : 'Mở danh sách đề thi'}</Link></div>
           <div className="activity-list">
             <Link className="activity-row" href={admin ? '/admin/classes' : '/dashboard/classes'}><span>Lớp học</span><ArrowRight size={18} aria-hidden="true" /></Link>
             <Link className="activity-row" href={admin ? '/dashboard/users' : '/dashboard/monitor'}><span>{admin ? 'Người dùng' : 'Mở giám sát'}</span><ArrowRight size={18} aria-hidden="true" /></Link>

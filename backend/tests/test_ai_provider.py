@@ -8,7 +8,7 @@ from unittest.mock import patch
 import httpx
 
 from app.services.ai_provider import (AIProviderError, OpenAICompatibleClient, provider_configured, ai_trace, response_error,
-                                      provider_status, provider_diagnostics, model_for)
+                                      provider_status, provider_diagnostics, model_for, retry_after_seconds)
 from app.services.question_generation import generation_available
 
 
@@ -96,7 +96,7 @@ class SharedProviderTests(TestCase):
             raise httpx.ReadTimeout('secret-never-public', request=request)
         with self.assertRaises(AIProviderError) as error:
             self.invoke(timeout)
-        self.assertEqual(error.exception.code, 'AI_PROVIDER_UNAVAILABLE')
+        self.assertEqual(error.exception.code, 'AI_TIMEOUT')
         self.assertEqual(len(calls), 2)
 
     def test_slow_success_may_use_full_configured_request_budget(self):
@@ -160,12 +160,55 @@ class SharedProviderTests(TestCase):
         self.assertTrue(diag['vision_enabled'])
 
     def test_invalid_json_refusal_and_truncation_have_invalid_response_code(self):
-        for result in [answer('not-json'), answer('x' * 1_000_001), httpx.Response(200, json={'choices': []}),
+        for result in [answer('x' * 1_000_001), httpx.Response(200, json={'choices': []}),
                 httpx.Response(200, json={'choices': [{'finish_reason': 'length', 'message': {'content': '{}'}}]}),
                 httpx.Response(200, json={'choices': [{'finish_reason': 'stop', 'message': {'content': '{}', 'refusal': 'blocked'}}]})]:
             with self.subTest(response=result), self.assertRaises(AIProviderError) as error:
                 self.invoke(lambda request: result)
             self.assertEqual(error.exception.code, 'AI_INVALID_RESPONSE')
+
+    def test_json_extraction_accepts_only_a_complete_json_value_or_one_fence(self):
+        for content in ['{}', '  {}  ', '\ufeff{}', '```json\n{}\n```', '```\n{}\n```']:
+            with self.subTest(content=content):
+                self.assertEqual(json.loads(self.invoke(lambda request: answer(content))), {})
+        for content in ['not-json', 'prefix {"ok":true}', '{"ok":', '```json\n{}\n``` trailing']:
+            with self.subTest(content=content), self.assertRaises(AIProviderError) as error:
+                self.invoke(lambda request: answer(content))
+            self.assertEqual(error.exception.code, 'AI_PARSE_ERROR')
+
+    def test_timeout_connection_and_json_failure_have_distinct_safe_diagnostics(self):
+        cases = [
+            (lambda request: (_ for _ in ()).throw(httpx.ReadTimeout('secret-never-public')), 'AI_TIMEOUT', 'timeout'),
+            (lambda request: (_ for _ in ()).throw(httpx.ConnectError('secret-never-public')), 'AI_PROVIDER_UNAVAILABLE', 'provider_unavailable'),
+            (lambda request: answer('secret-never-public'), 'AI_PARSE_ERROR', 'parsing'),
+            (lambda request: httpx.Response(200, content=b'not-json'), 'AI_PARSE_ERROR', 'parsing'),
+            (lambda request: httpx.Response(200, json={'choices': []}), 'AI_INVALID_RESPONSE', 'invalid_response'),
+        ]
+        for handler, code, category in cases:
+            with self.subTest(code=code), self.assertLogs('uvicorn.error', level='INFO') as logs:
+                with self.assertRaises(AIProviderError) as error:
+                    self.invoke(handler, settings=configured(ENVIRONMENT='development'))
+            self.assertEqual(error.exception.code, code)
+            output = ''.join(logs.output)
+            self.assertIn(f'"error_category": "{category}"', output)
+            self.assertNotIn('secret-never-public', output)
+
+    def test_retry_after_dates_and_nonfinite_delays_do_not_burst_retry(self):
+        from datetime import datetime, timedelta, timezone
+        from email.utils import format_datetime
+        future = format_datetime(datetime.now(timezone.utc) + timedelta(minutes=2), usegmt=True)
+        self.assertGreater(retry_after_seconds(future), 100)
+        self.assertEqual(retry_after_seconds('invalid'), .3)
+        self.assertEqual(retry_after_seconds('-5'), .3)
+        for header in [future, 'NaN', 'Infinity']:
+            calls = []
+            def handler(request):
+                calls.append(request)
+                return httpx.Response(429, headers={'retry-after': header})
+            with self.assertRaises(AIProviderError) as error:
+                self.invoke(handler)
+            self.assertEqual(error.exception.code, 'AI_RATE_LIMITED')
+            self.assertEqual(len(calls), 1)
 
     def test_restart_from_different_working_directories_loads_same_backend_env(self):
         backend = Path(__file__).resolve().parents[1]

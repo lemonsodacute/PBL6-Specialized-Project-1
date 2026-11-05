@@ -4,7 +4,22 @@
   --procto-muted: #4f6b79;
   --procto-bg: #eaf5f4;
   --procto-paper: #fff;
-  --procto-line: #d1e6e8;
+  /* Shared neutral boundaries: cards, panels and container dividers. */
+  --procto-line: #b8cdd2;
+  --procto-line-strong: #8faeb5;
+  /* Functional borders: users, teaching, assessment and explicit status panels. */
+  --border-users: #4d94de;
+  --border-users-hover: #347fcf;
+  --border-classes: #19a69c;
+  --border-classes-hover: #148d85;
+  --border-exams: #a184df;
+  --border-exams-hover: #8b6ecc;
+  --border-warning: #e6a545;
+  --border-warning-hover: #cc8b2c;
+  --border-success: #4caf78;
+  --border-success-hover: #37965f;
+  --border-danger: #dc7474;
+  --border-danger-hover: #c75e5e;
   --procto-tint: #eaf5f6;
   --procto-dot: #cce5e7;
   --procto-review: #d8f2ef;
@@ -31,8 +46,8 @@
   --dark-surface-2: #1c343b;
   --dark-surface-3: #213d44;
   --dark-field: #11232b;
-  --dark-border: rgb(130 210 210 / 16%);
-  --dark-border-hover: rgb(100 230 220 / 30%);
+  --dark-border: #3e5c66;
+  --dark-border-hover: #60858f;
   --dark-border-active: rgb(80 235 220 / 45%);
   --dark-border-control: rgb(156 194 201 / 58%);
   --dark-text-primary: #edf6f7;
@@ -50,6 +65,19 @@
   --procto-bg: var(--dark-bg);
   --procto-paper: var(--dark-surface-1);
   --procto-line: var(--dark-border);
+  --procto-line-strong: var(--dark-border-hover);
+  --border-users: #7eb0e8;
+  --border-users-hover: #a4c7ef;
+  --border-classes: #62c4bb;
+  --border-classes-hover: #8ad7d0;
+  --border-exams: #b6a0e8;
+  --border-exams-hover: #d0bff2;
+  --border-warning: #e9b96d;
+  --border-warning-hover: #f2ce98;
+  --border-success: #7cc79b;
+  --border-success-hover: #a2dbb8;
+  --border-danger: #e6a0a0;
+  --border-danger-hover: #f0bdbd;
   --procto-tint: var(--dark-surface-2);
   --procto-dot: #28434c;
   --procto-review: var(--dark-surface-3);

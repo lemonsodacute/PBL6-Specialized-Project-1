@@ -17,6 +17,7 @@ from app.models.entities import (AttemptStatus, DetectionEvent, ExamAttempt, Exa
 from app.proctoring.contracts import ModelConfig, NormalizedProctorEvent, ReviewEvent
 from app.services import proctor_events as domain, proctor_realtime as realtime
 from app.proctoring.adapters import configured_models, runtime, AdapterContext, MonitoringFrame
+from app.proctoring.diagnostics import diagnostic
 
 router = APIRouter()
 
@@ -189,26 +190,33 @@ async def review_event(event_id: UUID, payload: ReviewEvent, db: Session = Depen
 
 
 @router.get('/exams/{exam_id}/report')
-def event_report(exam_id: UUID, simulated: bool = False, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def event_report(exam_id: UUID, simulated: bool = False, page: int = Query(1, ge=1), limit: int = Query(30, ge=1, le=100),
+    q: str = Query('', max_length=120), alert_filter: Literal['all','with_alerts','unresolved','new','confirmed','dismissed'] = 'all',
+    severity: Literal['info','low','medium','high','critical'] | None = None,
+    db: Session = Depends(get_db), user: User = Depends(current_user)):
     exam = domain.exam_access(db,exam_id,user)
     scope = event_scope(exam_id,simulated)
     types = db.execute(select(DetectionEvent.event_type,func.count()).where(*scope).group_by(DetectionEvent.event_type).order_by(func.count().desc(),DetectionEvent.event_type)).all()
     pending = db.execute(select(User.id,User.full_name,User.student_code,func.count()).join(DetectionEvent,DetectionEvent.student_id==User.id)
         .where(*scope,DetectionEvent.status.in_(['NEW','REVIEWED'])).group_by(User.id,User.full_name,User.student_code).order_by(func.count().desc(),User.full_name,User.id)).all()
+    from app.services.monitoring_reports import attempt_report
     return ok({'exam_id':exam.id,'exam_title':exam.title,'is_simulated':simulated,'summary':operational_summary(db,exam,simulated),
+        **attempt_report(db,exam,simulated,page=page,limit=limit,q=q,alert_filter=alert_filter,severity=severity),
         'types':[{'event_type':kind,'count':count} for kind,count in types],
         'students_requiring_review':[{'id':sid,'full_name':name,'student_code':code,'count':count} for sid,name,code,count in pending]})
 
 
 @router.get('/attempts/{attempt_id}/timeline')
-def timeline(attempt_id: UUID, simulated: bool = False, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def timeline(attempt_id: UUID, simulated: bool = False, exam_id: UUID | None = None, page: int = Query(1, ge=1),
+    db: Session = Depends(get_db), user: User = Depends(current_user)):
     attempt=db.get(ExamAttempt,attempt_id)
     if not attempt: domain.fail(404,'NOT_FOUND','Attempt not found.')
+    if exam_id and attempt.exam_id != exam_id: domain.fail(404,'NOT_FOUND','Attempt does not belong to this exam.')
     exam=domain.exam_access(db,attempt.exam_id,user)
     student=db.get(User,attempt.student_id)
-    query=select(DetectionEvent).where(DetectionEvent.attempt_id==attempt.id,DetectionEvent.is_simulated==simulated)
+    query=select(DetectionEvent).where(DetectionEvent.exam_id==exam.id,DetectionEvent.attempt_id==attempt.id,DetectionEvent.is_simulated==simulated)
     total=db.scalar(select(func.count()).select_from(query.subquery())) or 0
-    rows=db.scalars(query.order_by(DetectionEvent.occurred_at.desc(),DetectionEvent.id).limit(100)).all()
+    rows=db.scalars(query.order_by(DetectionEvent.occurred_at.asc(),DetectionEvent.id).offset((page-1)*100).limit(100)).all()
     entries=[]
     if attempt.started_at: entries.append({'id':'started','kind':'started','at':attempt.started_at,'label':'Bắt đầu bài thi'})
     if attempt.submitted_at: entries.append({'id':'submitted','kind':'submitted','at':attempt.submitted_at,'label':'Nộp bài' if attempt.status!=AttemptStatus.terminated else 'Lượt thi đã kết thúc'})
@@ -222,10 +230,22 @@ def timeline(attempt_id: UUID, simulated: bool = False, db: Session = Depends(ge
             entries.append({'id':audit.id,'kind':'review','at':audit.created_at,'event_id':audit.entity_id,
                 'status':(audit.metadata_json or {}).get('to'),'actor':name,'note':(audit.metadata_json or {}).get('note')})
     entries.sort(key=lambda item:(domain.utc(item['at']),str(item['id'])))
+    summary={'total':total,'new':0,'reviewed':0,'confirmed':0,'dismissed':0,'highest_severity':None}
+    priorities={'info':1,'low':2,'medium':3,'high':4,'critical':5}
+    for status,severity,count in db.execute(select(DetectionEvent.status,DetectionEvent.severity,func.count()).where(
+        DetectionEvent.exam_id==exam.id,DetectionEvent.attempt_id==attempt.id,DetectionEvent.is_simulated==simulated
+    ).group_by(DetectionEvent.status,DetectionEvent.severity)):
+        summary[status.lower()]+=count
+        value=severity.value
+        if priorities[value]>priorities.get(summary['highest_severity'],0):summary['highest_severity']=value
     session=db.scalar(select(ProctoringSession).where(ProctoringSession.attempt_id==attempt.id,ProctoringSession.deleted_at.is_(None)))
+    from app.api.v1.proctoring import RECORDING_DIR
+    recording_path=RECORDING_DIR / f'{attempt.id}.webm'
+    recording_url=(session.full_recording_url if session and session.full_recording_url==f'/uploads/recordings/{attempt.id}.webm'
+        and recording_path.is_file() and recording_path.stat().st_size>0 else None)
     return ok({'attempt_id':attempt.id,'exam_id':exam.id,'student':{'id':student.id,'full_name':student.full_name,'student_code':student.student_code},
         'status':attempt.status,'started_at':attempt.started_at,'submitted_at':attempt.submitted_at,
-        'recording_url':session.full_recording_url if session else None,'entries':entries,'total_events':total,'truncated':total>100})
+        'recording_url':recording_url,'entries':entries,'total_events':total,'truncated':page*100<total,'page':page,'summary':summary})
 
 
 @router.websocket('/ws')
@@ -249,11 +269,35 @@ def student_attempt(db, attempt_id, user, *, active=True):
 def input_capabilities(attempt_id: UUID, db: Session = Depends(get_db), user: User = Depends(current_user)):
     _,exam=student_attempt(db,attempt_id,user)
     models=configured_models() if exam.require_camera else []
-    return ok({'enabled':bool(models),'frame_interval_ms':min(config.frame_interval_ms for _,config,_ in models) if models else None})
+    calibration_enabled=settings.ENVIRONMENT.lower() in {'development','dev','local'} and settings.PROCTOR_GAZE_CALIBRATION
+    diagnostic('capabilities', camera_required=exam.require_camera, model_enabled=settings.PROCTOR_MODEL_ENABLED,
+        providers=[provider for provider,_,_ in models])
+    result={'enabled':bool(models),'frame_interval_ms':min(profile.frame_interval_ms for _,profile,_ in models) if models else None,
+        'gaze_calibration_enabled':calibration_enabled}
+    if settings.PROCTOR_DIAGNOSTICS: result['diagnostics_enabled']=True
+    return ok(result)
+
+
+@router.get('/sessions/{attempt_id}/warnings')
+def student_warnings(attempt_id: UUID, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    """Owner-only feedback; evidence, confidence and teacher review notes stay private."""
+    student_attempt(db, attempt_id, user)
+    rows = db.scalars(select(DetectionEvent).where(
+        DetectionEvent.attempt_id == attempt_id,
+        DetectionEvent.is_simulated.is_(False),
+        DetectionEvent.provider != 'browser_signals',
+        DetectionEvent.status != 'DISMISSED',
+    ).order_by(DetectionEvent.last_seen.desc(), DetectionEvent.id).limit(20)).all()
+    return ok([{'id': str(row.id), 'event_type': row.event_type,
+                'occurred_at': row.last_seen or row.occurred_at,
+                'occurrence_count': row.occurrence_count} for row in rows])
 
 
 @router.post('/sessions/{attempt_id}/frame')
-async def camera_frame(attempt_id: UUID, frame: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(current_user)):
+async def camera_frame(attempt_id: UUID, request: Request, frame: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(current_user)):
+    # An ephemeral correlation ID never contains an attempt/student identifier.
+    try: trace=str(UUID(request.headers.get('x-proctor-trace','')))
+    except ValueError: trace=str(uuid4())
     def prepare():
         attempt,exam=student_attempt(db,attempt_id,user)
         session=db.scalar(select(ProctoringSession).where(ProctoringSession.attempt_id==attempt.id,ProctoringSession.deleted_at.is_(None)))
@@ -263,7 +307,10 @@ async def camera_frame(attempt_id: UUID, frame: UploadFile = File(...), db: Sess
         context=AdapterContext(attempt.exam_id,attempt.id,attempt.student_id)
         db.rollback()  # No transaction/connection while awaiting inference.
         return context
-    context=await run_in_threadpool(prepare)
+    try: context=await run_in_threadpool(prepare)
+    except HTTPException as error:
+        diagnostic('frame_rejected', trace=trace, status=error.status_code, code=error.detail.get('code') if isinstance(error.detail,dict) else None)
+        raise
     try: content=await frame.read(1024*1024+1)
     finally: await frame.close()
     if len(content)>1024*1024: domain.fail(413,'FRAME_TOO_LARGE','Frame exceeds the input limit.')
@@ -276,18 +323,22 @@ async def camera_frame(attempt_id: UUID, frame: UploadFile = File(...), db: Sess
             image.verify()
     except Exception:
         domain.fail(422,'INVALID_FRAME','Invalid monitoring image.')
-    events,states=await runtime.process_frame(context,MonitoringFrame(content,frame.content_type,datetime.now(timezone.utc)))
+    diagnostic('frame_received', trace=trace, content_type=frame.content_type, bytes=len(content))
+    events,states=await runtime.process_frame(context,MonitoringFrame(content,frame.content_type,datetime.now(timezone.utc),trace))
     def save():
         changes=[]
         try:
             _,exam=student_attempt(db,attempt_id,user)  # Recheck submit/expiry during inference.
             for event in events[:32]:
                 result=domain.ingest(db,event)
+                diagnostic('event_persistence', trace=trace, event_type=event.event_type, created=result.created,
+                    duplicate=result.duplicate, suppressed=result.suppressed)
                 if result.event and not result.duplicate:
                     changes.append(realtime.change(db,result.event,'proctor_event_created' if result.created else 'proctor_event_updated'))
             for provider,state,code in states:
                 if provider and domain.touch_health(db,provider,state,code): changes.append(realtime.health_change(db,provider,exam))
             db.commit()
+            diagnostic('frame_committed', trace=trace, changes=len(changes))
             return changes
         except Exception:
             db.rollback(); raise
@@ -297,7 +348,11 @@ async def camera_frame(attempt_id: UUID, frame: UploadFile = File(...), db: Sess
         raise
     for message in changes: await realtime.after_commit(db,message)
     # A student receives transport acknowledgement only, never alerts/confidence/review state.
-    return ok({'processed':not any(code for _,_,code in states)})
+    response={'processed':not states or any(state == 'ACTIVE' for _,state,_ in states)}
+    diagnostic('frame_ack', trace=trace, processed=response['processed'], states=[(provider,state,code) for provider,state,code in states])
+    if settings.ENVIRONMENT.lower() in {'development','dev','local'} and settings.PROCTOR_GAZE_CALIBRATION:
+        response['gaze_calibration_sample']=runtime.calibration_sample(attempt_id)
+    return ok(response)
 
 
 @router.delete('/sessions/{attempt_id}/input')

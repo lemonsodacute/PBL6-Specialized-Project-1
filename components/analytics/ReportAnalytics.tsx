@@ -17,7 +17,7 @@ export function ReportAnalytics({ data, detailed = false }: { data: ReportsOverv
       <ChartCard title="Nhịp độ nộp bài" description="Lượt nộp theo ngày · giờ Việt Nam" action={<span className="an-range">Dữ liệu đang hiển thị</span>} footer={<><span>{scope}. Chỉ tính bài hoàn tất có thời gian nộp.</span><span>Biểu đồ thay đổi theo bộ lọc và trang kết quả.</span></>}>
         <AreaChart points={points} label="Bài đã nộp" />
       </ChartCard>
-      <ChartCard title="Nguồn cảnh báo" description="Trong toàn bộ phạm vi báo cáo đã chọn" footer="Cảnh báo cần được xem xét trước khi kết luận vi phạm.">
+      <ChartCard borderRole="warning" title="Nguồn cảnh báo" description="Trong toàn bộ phạm vi báo cáo đã chọn" footer="Cảnh báo cần được xem xét trước khi kết luận vi phạm.">
         <DonutChart label="Phân bố nguồn cảnh báo" totalLabel="Cảnh báo" items={[{ label: 'Trình duyệt', value: data.summary.browser_violation_count, tone: 'brand' }, { label: 'Phát hiện AI', value: data.summary.detection_count, tone: 'blue' }]} />
       </ChartCard>
     </div>
@@ -43,8 +43,8 @@ export function OverviewAnalytics({ refreshKey }: { refreshKey: number }) {
     <div className="an-section-heading"><div><span className="an-eyebrow">PHÂN TÍCH BÀI THI</span><h2>Hoạt động & chất lượng giám sát</h2><p>Tổng hợp bài làm và cảnh báo trong phạm vi quản lý.</p></div><Link className="ui-button ui-button-outline" href="/dashboard/reports">Mở báo cáo<ArrowUpRight size={16} aria-hidden="true" /></Link></div>
     {loading ? <LoadingSkeleton rows={3} /> : error ? <div className="an-inline-error" role="alert"><p>{error}</p><Button variant="outline" size="sm" onClick={() => setVersion(value => value + 1)}>Tải lại phân tích</Button></div> : data && <>
       <div className="an-kpis an-kpis-compact">
-        <KpiCard label="Bài hoàn tất" value={data.summary.completed_attempts.toLocaleString('vi-VN')} detail="Theo thống kê báo cáo" icon={<ClipboardCheck size={19} aria-hidden="true" />} />
-        <KpiCard label="Cảnh báo đã ghi nhận" value={data.summary.total_violations.toLocaleString('vi-VN')} detail="Trong phạm vi quản lý" tone="warning" icon={<ShieldAlert size={19} aria-hidden="true" />} />
+        <KpiCard label="Bài hoàn tất" borderRole="success" value={data.summary.completed_attempts.toLocaleString('vi-VN')} detail="Theo thống kê báo cáo" icon={<ClipboardCheck size={19} aria-hidden="true" />} />
+        <KpiCard label="Cảnh báo đã ghi nhận" borderRole="warning" value={data.summary.total_violations.toLocaleString('vi-VN')} detail="Trong phạm vi quản lý" tone="warning" icon={<ShieldAlert size={19} aria-hidden="true" />} />
       </div>
       <ReportAnalytics data={data} />
     </>}

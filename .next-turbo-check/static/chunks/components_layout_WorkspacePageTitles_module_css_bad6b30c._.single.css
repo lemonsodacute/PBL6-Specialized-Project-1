@@ -1,0 +1,110 @@
+/* [project]/components/layout/WorkspacePageTitles.module.css [app-client] (css) */
+.WorkspacePageTitles-module__x555vG__pageTitles.app-shell .workspace-page-title {
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  position: absolute;
+  overflow: hidden;
+}
+
+.WorkspacePageTitles-module__x555vG__pageTitles.app-shell .workspace-page:not(.student-calendar-page) > header:not(.page-context) h1 {
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  position: absolute;
+  overflow: hidden;
+}
+
+.WorkspacePageTitles-module__x555vG__pageTitles.app-shell .workspace-page > div:has( > nav[aria-label="Phân hệ hỗ trợ AI"]) > header h1 {
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  position: absolute;
+  overflow: hidden;
+}
+
+.WorkspacePageTitles-module__x555vG__pageTitles.app-shell #question-banks-title {
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  position: absolute;
+  overflow: hidden;
+}
+
+.WorkspacePageTitles-module__x555vG__pageTitles.app-shell #teaching-classes-title {
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  position: absolute;
+  overflow: hidden;
+}
+
+.WorkspacePageTitles-module__x555vG__pageTitles.app-shell #teaching-live-title {
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  position: absolute;
+  overflow: hidden;
+}
+
+.WorkspacePageTitles-module__x555vG__pageTitles.app-shell .workspace-page:not(.student-calendar-page) > header:not(.page-context) h1 + p {
+  margin-top: 0;
+}
+
+.WorkspacePageTitles-module__x555vG__pageTitles.app-shell .workspace-page > div:has( > nav[aria-label="Phân hệ hỗ trợ AI"]) > header h1 + p {
+  margin-top: 0;
+}
+
+.WorkspacePageTitles-module__x555vG__pageTitles.app-shell .workspace-page-title + p {
+  margin-top: 0;
+}
+
+.WorkspacePageTitles-module__x555vG__pageTitles.app-shell #question-banks-title + p {
+  margin-top: 0;
+}
+
+.WorkspacePageTitles-module__x555vG__pageTitles.app-shell #teaching-classes-title + p {
+  margin-top: 0;
+}
+
+.WorkspacePageTitles-module__x555vG__pageTitles.app-shell #teaching-live-title + p {
+  margin-top: 0;
+}
+
+.WorkspacePageTitles-module__x555vG__pageTitles.app-shell section[aria-labelledby="question-banks-title"] {
+  min-height: 0;
+}
+
+.WorkspacePageTitles-module__x555vG__pageTitles.app-shell section[aria-labelledby="teaching-classes-title"] {
+  min-height: 0;
+}
+
+.WorkspacePageTitles-module__x555vG__pageTitles.app-shell section[aria-labelledby="teaching-live-title"] {
+  min-height: 0;
+}
+
+/*# sourceMappingURL=components_layout_WorkspacePageTitles_module_css_bad6b30c._.single.css.map*/

@@ -1,0 +1,186 @@
+/* This marker scopes shell styling to this page, including client navigation. */
+:global(.app-shell[data-role='student']):has(.page) {
+  --student-bg: var(--student-online-canvas);
+  --student-paper: var(--student-online-surface);
+  --student-ink: var(--student-online-ink);
+  --student-muted: var(--student-online-muted);
+  --student-line: var(--student-online-border);
+}
+:global(.app-shell[data-role='student']):has(.page) :global(.sidebar) { background: var(--student-online-sidebar); }
+:global(.app-shell[data-role='student']):has(.page) :global(.sidebar .student-profile) {
+  background: var(--student-online-profile);
+  border-radius: 18px;
+}
+:global(.app-shell[data-role='student']):has(.page) :global(.sidebar :is(nav a, .student-nav-group, .sidebar-bottom a)) {
+  min-height: 48px;
+  border-radius: 16px;
+  color: var(--student-online-sidebar-ink);
+  font-size: 15px;
+  font-weight: 700;
+}
+:global(.app-shell[data-role='student']):has(.page) :global(.sidebar nav a[aria-current='page']) {
+  background: var(--student-online-yellow);
+  color: var(--student-online-accent-ink);
+  border-color: transparent;
+  box-shadow: none;
+}
+:global(.app-shell[data-role='student']):has(.page) :global(.sidebar nav a[aria-current='page'] .nav-icon) { color: inherit; }
+
+:global(.student-app-shell) .page:global(.workspace-page) {
+  display: grid;
+  gap: 28px;
+  padding: 24px 40px 64px;
+  color: var(--student-online-ink);
+}
+.page, .page * { min-width: 0; }
+.page :global(.student-page-heading) { margin: 0; }
+.page :global(.student-page-heading h1) { color: var(--student-online-ink); font-size: clamp(28px, 3vw, 38px); line-height: 1.2; }
+.page :is(button, a, input, select):focus-visible { outline: 3px solid var(--student-online-focus); outline-offset: 3px; }
+:global(.student-app-shell) .page .toolbarCard:global(.ui-card) {
+  padding: 22px;
+  border: 1px solid var(--student-online-border);
+  border-radius: 24px;
+  background: var(--student-online-surface);
+  box-shadow: var(--student-online-shadow);
+}
+.toolbarCard > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: end; }
+.toolbarCard :global(fieldset[role='search']) {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, .9fr) minmax(0, 1.1fr);
+  gap: 18px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+}
+.toolbarCard :global(fieldset > label) { min-width: 0; color: var(--student-online-ink); font-size: 14px; font-weight: 800; }
+.toolbarCard :global(fieldset > button) { grid-column: 1 / -1; justify-self: start; }
+.page .toolbarCard :global(.ui-field) {
+  width: 100%;
+  height: 48px;
+  min-height: 48px;
+  border: 1.5px solid var(--student-online-control-line);
+  border-radius: 16px;
+  background: var(--student-online-surface);
+  color: var(--student-online-ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+.toolbarCard :global(input::placeholder) { color: var(--student-online-placeholder); opacity: 1; }
+.toolbarCard :global(input[type='search'] + button) { width: 44px; height: 44px; }
+.page .refresh:global(.ui-button) {
+  min-height: 48px;
+  padding: 10px 24px;
+  border: 1.5px solid var(--student-online-accent-ink);
+  background: var(--student-online-mint);
+  color: var(--student-online-accent-ink);
+  box-shadow: var(--student-online-small-shadow);
+  font-weight: 800;
+  white-space: nowrap;
+}
+.page .refresh:global(.ui-button):hover:not(:disabled) { background: var(--student-online-mint-hover); }
+.page .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+.page .sessionCard:global(.ui-card) {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 18px;
+  padding: 26px;
+  border: 1px solid var(--student-online-border);
+  border-radius: 24px;
+  background: var(--student-online-surface);
+  box-shadow: var(--student-online-shadow);
+}
+.page .sessionCard:global(.ui-card):hover { transform: none; border-color: var(--student-online-border); box-shadow: var(--student-online-shadow); }
+.sessionContent { flex: 1; }
+.sessionIcon {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  color: var(--student-online-accent-ink);
+  box-shadow: var(--student-online-small-shadow);
+}
+.sessionIcon[data-accent='yellow'] { background: var(--student-online-yellow); }
+.sessionIcon[data-accent='pink'] { background: var(--student-online-pink); }
+.sessionIcon[data-accent='purple'] { background: var(--student-online-purple); }
+.sessionIcon[data-accent='mint'] { background: var(--student-online-mint); }
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: calc(100% - 60px);
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--student-online-scheduled);
+  color: var(--student-online-accent-ink);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.statusDot { width: 10px; height: 10px; flex: 0 0 10px; border: 1.5px solid var(--student-online-accent-ink); border-radius: 50%; background: var(--student-online-scheduled-dot); }
+.statusBadge[data-status='ongoing'] { background: var(--student-online-ongoing); }
+.statusBadge[data-status='ongoing'] .statusDot { background: var(--student-online-ongoing-dot); }
+.statusBadge[data-status='ended'] { background: var(--student-online-ended); }
+.statusBadge[data-status='ended'] .statusDot { background: var(--student-online-ended-dot); }
+.statusBadge[data-status='cancelled'] { background: var(--student-online-cancelled); }
+.statusBadge[data-status='cancelled'] .statusDot { background: var(--student-online-cancelled-dot); }
+.page .sessionCard:global(.ui-card) h2 { margin: 14px 0 10px; padding-right: 42px; color: var(--student-online-ink); font-size: 24px; font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
+.page .sessionCard:global(.ui-card) p { margin: 0 0 8px; color: var(--student-online-muted); font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; }
+.page .sessionCard .course { font-weight: 500; }
+.page .sessionCard .description { margin-top: 10px; }
+.page .sessionCard .teacher { font-weight: 800; }
+.recordingBadge { margin-bottom: 10px; }
+.schedule { display: inline-flex; align-items: flex-start; gap: 9px; max-width: 100%; margin-top: 6px; padding: 10px 12px; border-radius: 14px; background: var(--student-online-time); color: var(--student-online-time-ink); font-size: 14px; font-weight: 800; line-height: 1.4; }
+.schedule > svg { flex-shrink: 0; }
+.scheduleRange { display: flex; flex-wrap: wrap; gap: 2px 4px; }
+.schedule time { white-space: nowrap; }
+.page .sessionCard .action {
+  align-self: flex-start;
+  min-height: 48px;
+  max-width: 100%;
+  margin-top: auto;
+  padding: 10px 26px;
+  border: 1.5px solid var(--student-online-accent-ink);
+  border-radius: 999px;
+  background: var(--student-online-yellow);
+  color: var(--student-online-accent-ink);
+  box-shadow: var(--student-online-small-shadow);
+  font-size: 15px;
+  font-weight: 800;
+  text-align: center;
+  white-space: normal;
+}
+.page .sessionCard .action:global(.ui-button):hover { background: var(--student-online-yellow-hover); }
+.page .sessionCard[data-status='ongoing'] .action { background: var(--student-online-mint); }
+.page .sessionCard[data-status='ongoing'] .action:hover { background: var(--student-online-mint-hover); }
+@media (max-width: 1199px) {
+  :global(.student-app-shell) .page:global(.workspace-page) { padding-inline: 24px; }
+  .page .grid { gap: 20px; }
+  .page .sessionCard:global(.ui-card) { padding: 22px; }
+  .page .sessionCard:global(.ui-card) h2 { font-size: 22px; }
+}
+@media (max-width: 1023px) {
+  .toolbarCard > div { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .toolbarCard > div > div { margin-left: 0; }
+}
+@media (max-width: 767px) {
+  :global(.student-app-shell) .page:global(.workspace-page) { padding: 20px 16px 64px; gap: 24px; }
+  .toolbarCard :global(fieldset[role='search']) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .toolbarCard :global(fieldset > label:first-child) { grid-column: 1 / -1; }
+  .toolbarCard > div > div { width: 100%; }
+  .page .refresh { width: 100%; }
+  .page .grid { grid-template-columns: minmax(0, 1fr); }
+  .page .sessionCard .action { width: auto; }
+}
+@media (max-width: 359px) {
+  .toolbarCard :global(fieldset[role='search']) { grid-template-columns: minmax(0, 1fr); }
+  :global(.student-app-shell) .page .toolbarCard:global(.ui-card), .page .sessionCard:global(.ui-card) { padding: 18px; }
+  .page .sessionCard:global(.ui-card) h2 { font-size: 21px; padding-right: 32px; }
+  .sessionIcon { width: 40px; height: 40px; right: 16px; top: 16px; border-radius: 13px; }
+}

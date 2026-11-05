@@ -157,7 +157,7 @@ class ProctorAlertsTests(TestCase):
     def test_student_input_has_no_fake_model_or_monitoring_details(self):
         f=self.fixture
         cap=self.call('GET',f'/sessions/{f.progress.id}/input-capabilities',actor=f.active).json()['data']
-        self.assertEqual(cap,{'enabled':False,'frame_interval_ms':None})
+        self.assertEqual(cap,{'enabled':False,'frame_interval_ms':None,'gaze_calibration_enabled':False})
         self.ingest()
         timeline=self.client.get(f'/api/v1/attempts/{f.progress.id}/timeline',headers=f.headers(f.active)).json()['data']
         self.assertEqual(timeline,[])

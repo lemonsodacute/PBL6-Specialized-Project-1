@@ -122,7 +122,10 @@ def _attempt_summaries(db: Session, attempts: list[ExamAttempt], user: User) -> 
         result['sessions'].setdefault(session.attempt_id, session)
     result['students'] = {student.id: student for student in db.scalars(select(User).where(User.id.in_({item.student_id for item in attempts})))}
     for model in (ViolationLog, DetectionEvent):
-        for attempt_id, count in db.execute(select(model.attempt_id, func.count()).where(model.attempt_id.in_(ids)).group_by(model.attempt_id)):
+        # Normalized browser envelopes reference the original ViolationLog;
+        # academic summaries count that signal once, as the detail endpoint does.
+        source_scope = [DetectionEvent.source == 'LEGACY'] if model is DetectionEvent else []
+        for attempt_id, count in db.execute(select(model.attempt_id, func.count()).where(model.attempt_id.in_(ids), *source_scope).group_by(model.attempt_id)):
             result['violations'][attempt_id] = result['violations'].get(attempt_id, 0) + count
     if user.role == UserRole.student:
         result['metadata'] = student_result_metadata_many(db, attempts)

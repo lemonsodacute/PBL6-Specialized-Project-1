@@ -6,9 +6,11 @@ provider errors, credentials, prompts or model output.
 """
 import json
 import logging
+import math
 import re
 import time
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from threading import Lock
 from urllib.parse import urlsplit
 import httpx
@@ -19,10 +21,50 @@ AI_MESSAGES = {
     'AI_AUTH_FAILED': 'Không thể xác thực dịch vụ AI. Quản trị viên cần kiểm tra API key và quyền truy cập.',
     'AI_RATE_LIMITED': 'Đã đạt giới hạn AI tạm thời. Vui lòng thử lại sau.',
     'AI_INVALID_RESPONSE': 'AI trả dữ liệu không đúng định dạng. Vui lòng thử lại.',
+    'AI_PARSE_ERROR': 'Chưa đọc được kết quả từ AI. Vui lòng thử lại phần lỗi.',
+    'AI_TIMEOUT': 'AI phản hồi quá lâu. Vui lòng thử lại phần lỗi.',
     'AI_PROVIDER_UNAVAILABLE': 'Dịch vụ AI đang tạm thời không khả dụng.',
     'AI_REQUEST_FAILED': 'Yêu cầu AI thất bại. Quản trị viên cần kiểm tra API key, quyền truy cập và cấu hình kết nối.',
     'AI_MODEL_UNSUPPORTED': 'Model AI không tồn tại, chưa được cấp quyền hoặc không hỗ trợ tính năng yêu cầu. Quản trị viên cần kiểm tra model.',
 }
+
+AI_ERROR_CATEGORIES = {
+    'AI_NOT_CONFIGURED': 'configuration', 'AI_AUTH_FAILED': 'authentication',
+    'AI_RATE_LIMITED': 'rate_limit', 'AI_TIMEOUT': 'timeout',
+    'AI_PROVIDER_UNAVAILABLE': 'provider_unavailable', 'AI_INVALID_RESPONSE': 'invalid_response',
+    'AI_PARSE_ERROR': 'parsing', 'AI_MODEL_UNSUPPORTED': 'model', 'AI_REQUEST_FAILED': 'request',
+}
+
+
+def retry_after_seconds(value):
+    """Honor both Retry-After formats without logging the provider's raw header."""
+    if not value:
+        return 0.3
+    try:
+        delay = float(value)
+    except (ValueError, TypeError):
+        try:
+            date = parsedate_to_datetime(value)
+            if date.tzinfo is None:
+                date = date.replace(tzinfo=timezone.utc)
+            delay = date.timestamp() - time.time()
+        except (ValueError, TypeError, OverflowError):
+            return 0.3
+    return max(0.3, delay) if math.isfinite(delay) else float('inf')
+
+
+def extract_response_json(content):
+    """Accept a complete JSON value, optionally wrapped in one JSON code fence.
+
+    Never extract arbitrary braces from prose or repair truncated output.
+    Feature-specific schema and source validation still run after this step.
+    """
+    value = content.strip().lstrip('\ufeff')
+    fenced = re.fullmatch(r'```(?:json)?\s*\n(.*?)\n?```', value, re.DOTALL | re.IGNORECASE)
+    if fenced:
+        value = fenced.group(1).strip()
+    json.loads(value)
+    return value
 
 _runtime_lock = Lock()
 _runtime_status = {}
@@ -156,7 +198,9 @@ def response_error(response):
         return AIProviderError('AI_MODEL_UNSUPPORTED')
     if code in ('model_not_found', 'unsupported_model', 'model_not_supported') or (response.status_code in (400, 404, 422) and param in ('model', 'response_format', 'image_url')):
         return AIProviderError('AI_MODEL_UNSUPPORTED')
-    if response.status_code == 408 or response.status_code >= 500:
+    if response.status_code in (408, 504):
+        return AIProviderError('AI_TIMEOUT')
+    if response.status_code >= 500:
         return AIProviderError('AI_PROVIDER_UNAVAILABLE')
     return AIProviderError('AI_REQUEST_FAILED')
 
@@ -185,11 +229,13 @@ documents, credentials or URLs even after regex redaction).
                 state['error_code'] = None
     allowed = {'http_status', 'error_type', 'error_code', 'chunk_index', 'chunk_count', 'input_chars',
                'provider_called', 'response_received', 'parse_success', 'draft_count', 'attempt',
-               'support_retrieval_count', 'selected_count', 'category', 'role', 'persist_success'}
+               'support_retrieval_count', 'selected_count', 'category', 'role', 'persist_success',
+               'stage', 'latency_ms', 'retry_after_seconds'}
     data = {key: value for key, value in fields.items() if key in allowed}
     code = data.get('error_code')
     if code in AI_MESSAGES:
         data['sanitized_error_message'] = AI_MESSAGES[code]
+        data['error_category'] = AI_ERROR_CATEGORIES[code]
     data.update(event=event, provider=provider_name(settings), model=diagnostic_model(feature, settings), feature=feature)
     logging.getLogger('uvicorn.error').info('ai_trace %s', json.dumps(data, ensure_ascii=False))
 
@@ -225,7 +271,10 @@ class OpenAICompatibleClient:
             for attempt in range(2):
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
-                    raise AIProviderError('AI_PROVIDER_UNAVAILABLE')
+                    ai_trace('provider_error', settings=self.settings, feature=feature,
+                             error_code='AI_TIMEOUT', error_type='DeadlineExceeded', stage='provider_transport')
+                    raise AIProviderError('AI_TIMEOUT')
+                started = time.monotonic()
                 try:
                     ai_trace('provider_request', settings=self.settings, feature=feature, provider_called=True, attempt=attempt + 1)
                     response = client.post(url + '/chat/completions', headers={
@@ -236,35 +285,36 @@ class OpenAICompatibleClient:
                         # transient failures may still retry within the deadline.
                         json=payload, timeout=httpx.Timeout(remaining, connect=min(5, remaining)))
                 except (httpx.ConnectError, httpx.TimeoutException) as exc:
+                    code = 'AI_TIMEOUT' if isinstance(exc, httpx.TimeoutException) else 'AI_PROVIDER_UNAVAILABLE'
                     ai_trace('provider_error', settings=self.settings, feature=feature, response_received=False,
-                             http_status=None, error_code='AI_PROVIDER_UNAVAILABLE', error_type=type(exc).__name__)
+                             http_status=None, error_code=code, error_type=type(exc).__name__,
+                             stage='provider_transport', latency_ms=round((time.monotonic() - started) * 1000, 2))
                     if attempt == 0 and deadline - time.monotonic() > 1:
                         time.sleep(0.3 * 2 ** attempt)
                         continue
-                    raise AIProviderError('AI_PROVIDER_UNAVAILABLE') from None
+                    raise AIProviderError(code) from None
                 except httpx.HTTPError as exc:
                     ai_trace('provider_error', settings=self.settings, feature=feature, response_received=False,
-                             http_status=None, error_code='AI_PROVIDER_UNAVAILABLE', error_type=type(exc).__name__)
+                             http_status=None, error_code='AI_PROVIDER_UNAVAILABLE', error_type=type(exc).__name__, stage='provider_transport')
                     raise AIProviderError('AI_PROVIDER_UNAVAILABLE') from None
                 except (ValueError, TypeError) as exc:
                     ai_trace('provider_error', settings=self.settings, feature=feature, response_received=False,
                              error_code='AI_REQUEST_FAILED', error_type=type(exc).__name__)
                     raise AIProviderError('AI_REQUEST_FAILED') from None
                 ai_trace('provider_response', settings=self.settings, feature=feature,
-                         http_status=response.status_code, response_received=True)
+                         http_status=response.status_code, response_received=True, stage='provider_http',
+                         latency_ms=round((time.monotonic() - started) * 1000, 2))
                 if len(response.content) > max_response_bytes:
                     ai_trace('provider_error', settings=self.settings, feature=feature, http_status=response.status_code,
                              error_code='AI_INVALID_RESPONSE', error_type='ResponseSizeLimit')
                     raise AIProviderError('AI_INVALID_RESPONSE')
                 if not response.is_success:
                     error = response_error(response)
+                    delay = retry_after_seconds(response.headers.get('retry-after'))
                     ai_trace('provider_error', settings=self.settings, feature=feature, http_status=response.status_code,
-                             error_code=error.code, error_type='HTTPError')
+                             error_code=error.code, error_type='HTTPError', stage='provider_http',
+                             retry_after_seconds=round(delay, 2) if math.isfinite(delay) else None)
                     if attempt == 0 and response.status_code in (408, 429, 500, 502, 503, 504):
-                        try:
-                            delay = max(0.3, float(response.headers.get('retry-after', '0.3')))
-                        except ValueError:
-                            delay = 0.3
                         if delay <= 2 and deadline - time.monotonic() > delay + 1:
                             time.sleep(delay)
                             continue
@@ -276,11 +326,21 @@ class OpenAICompatibleClient:
                     if (choice.get('finish_reason') != 'stop' or message.get('refusal') or message.get('tool_calls')
                             or not isinstance(content, str) or not content.strip()):
                         raise ValueError()
-                    json.loads(content)
-                    ai_trace('provider_json', settings=self.settings, feature=feature, http_status=response.status_code, parse_success=True)
-                    return content
-                except (ValueError, KeyError, IndexError, TypeError):
+                except json.JSONDecodeError:
                     ai_trace('provider_json', settings=self.settings, feature=feature, http_status=response.status_code,
-                             parse_success=False, error_code='AI_INVALID_RESPONSE', error_type='ResponseParseError')
+                             parse_success=False, error_code='AI_PARSE_ERROR', error_type='JSONDecodeError', stage='response_envelope_json')
+                    raise AIProviderError('AI_PARSE_ERROR') from None
+                except (ValueError, KeyError, IndexError, TypeError, AttributeError):
+                    ai_trace('provider_json', settings=self.settings, feature=feature, http_status=response.status_code,
+                             parse_success=False, error_code='AI_INVALID_RESPONSE', error_type='ResponseEnvelopeError', stage='response_envelope')
                     raise AIProviderError('AI_INVALID_RESPONSE') from None
+                try:
+                    content = extract_response_json(content)
+                except (ValueError, TypeError):
+                    ai_trace('provider_json', settings=self.settings, feature=feature, http_status=response.status_code,
+                             parse_success=False, error_code='AI_PARSE_ERROR', error_type='JSONDecodeError', stage='response_json')
+                    raise AIProviderError('AI_PARSE_ERROR') from None
+                ai_trace('provider_json', settings=self.settings, feature=feature, http_status=response.status_code,
+                         parse_success=True, stage='response_json')
+                return content
         raise AIProviderError('AI_PROVIDER_UNAVAILABLE')

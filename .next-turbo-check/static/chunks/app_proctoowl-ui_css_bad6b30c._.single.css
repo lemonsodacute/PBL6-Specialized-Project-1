@@ -1,0 +1,417 @@
+/* [project]/app/proctoowl-ui.css [app-client] (css) */
+body {
+  font-family: var(--font-body);
+  font-weight: 400;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  letter-spacing: -.015em;
+  font-weight: 700;
+}
+
+button, input, select, textarea {
+  font-family: var(--font-body);
+}
+
+.modal-heading h2, .empty-state-box strong {
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+.ui-card :-webkit-any(h2, h3) {
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+.ui-card :-moz-any(h2, h3) {
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+.ui-card :is(h2, h3) {
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+.app-shell :-webkit-any(.ui-card, .workspace-page) :-webkit-any(h2, h3) {
+  font-weight: 700;
+}
+
+.app-shell :-moz-any(.ui-card, .workspace-page) :-moz-any(h2, h3) {
+  font-weight: 700;
+}
+
+.app-shell :is(.ui-card, .workspace-page) :is(h2, h3) {
+  font-weight: 700;
+}
+
+.ui-button {
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-weight: 700;
+  transition-duration: .2s;
+}
+
+.ui-button-primary, .ui-button-filled-pill {
+  box-shadow: 0 5px 14px rgba(0, 109, 119, .14);
+}
+
+.ui-button-primary:not(:disabled):hover, .ui-button-filled-pill:not(:disabled):hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  box-shadow: 0 7px 20px rgba(0, 109, 119, .2);
+}
+
+.ui-button:active:not(:disabled) {
+  box-shadow: none;
+}
+
+.ui-button-icon, .icon-button {
+  border-radius: var(--radius-sm);
+}
+
+.ui-field {
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-weight: 400;
+}
+
+.ui-field:not([aria-invalid="true"]):focus {
+  border-color: var(--color-primary);
+}
+
+.ui-field:focus-visible {
+  outline-color: var(--primary);
+}
+
+.app-shell :-webkit-any(input:not(:-webkit-any([type="radio"], [type="checkbox"])), select, textarea):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-color: var(--color-primary);
+}
+
+.app-shell :-moz-any(input:not(:-moz-any([type="radio"], [type="checkbox"])), select, textarea):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-color: var(--color-primary);
+}
+
+.app-shell :is(input:not(:is([type="radio"], [type="checkbox"])), select, textarea):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-color: var(--color-primary);
+}
+
+.field-helper, .field-error, .ui-table {
+  font-family: var(--font-body);
+}
+
+.ui-table {
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-table th {
+  letter-spacing: .015em;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.ui-table :-webkit-any(td, th) {
+  line-height: 1.6;
+}
+
+.ui-table :-moz-any(td, th) {
+  line-height: 1.6;
+}
+
+.ui-table :is(td, th) {
+  line-height: 1.6;
+}
+
+.ui-modal {
+  border-radius: var(--procto-card-radius);
+}
+
+.ui-badge {
+  font-family: var(--font-body);
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.app-shell[data-experience="analytics"] .ui-badge {
+  border-radius: 8px;
+}
+
+.empty-state-icon {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-radius: var(--radius-md);
+}
+
+.empty-state-box {
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+.empty-state-box strong {
+  font-size: 18px;
+}
+
+.page-context h1, .app-shell[data-experience="analytics"] .page-context h1 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+.app-shell[data-experience] .page-context h1 {
+  font-size: 16px;
+}
+
+.app-shell .sidebar {
+  background: var(--color-primary);
+  border-right: 1px solid rgba(255, 255, 255, .12);
+}
+
+.app-shell .sidebar .brand {
+  width: 100%;
+  height: 64px;
+  font: 700 24px / 1 var(--font-heading);
+  color: #fff;
+  -webkit-text-fill-color: currentColor;
+  letter-spacing: -.045em;
+  box-shadow: none;
+  background: none;
+  border: 0;
+  border-radius: 14px;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 16px;
+  padding: 10px;
+  display: flex;
+}
+
+.app-shell .sidebar .brand:before {
+  content: "";
+  background: var(--logo-surface) url("/proctoowl-mark.svg") center / 30px 30px no-repeat;
+  border-radius: 10px;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  display: block;
+}
+
+.app-shell .sidebar :is(nav a, .student-nav-group, .sidebar-bottom a) {
+  font-family: var(--font-body);
+  box-shadow: none;
+  border: 1px solid rgba(0, 0, 0, 0);
+  border-radius: 11px;
+  font-weight: 400;
+}
+
+.app-shell .sidebar .nav-icon {
+  stroke-width: 1.8px;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+}
+
+.app-shell .sidebar nav a[aria-current="page"] {
+  background: var(--sidebar-selected);
+  color: #fff;
+  box-shadow: inset 3px 0 var(--sidebar-indicator);
+  border-color: rgba(255, 255, 255, .24);
+  font-weight: 500;
+}
+
+.app-shell .sidebar nav a[aria-current="page"] .nav-icon {
+  color: inherit;
+  background: none;
+  border: 0;
+}
+
+.app-shell .sidebar .student-profile {
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 14px;
+}
+
+.app-shell .sidebar-bottom {
+  border-top: 1px solid rgba(255, 255, 255, .18);
+}
+
+.app-shell .sidebar :-webkit-any(a, button, [tabindex]):focus-visible {
+  outline-color: #fff;
+}
+
+.app-shell .sidebar :-moz-any(a, button, [tabindex]):focus-visible {
+  outline-color: #fff;
+}
+
+.app-shell .sidebar :is(a, button, [tabindex]):focus-visible {
+  outline-color: #fff;
+}
+
+.app-shell .sidebar .student-avatar {
+  background: var(--logo-surface);
+  color: var(--color-primary);
+  border: 1px solid rgba(255, 255, 255, .45);
+  border-radius: 12px;
+}
+
+.student-footer {
+  border-top: 1px solid var(--border);
+  background: var(--background);
+}
+
+.ui-card {
+  box-shadow: var(--shadow-subtle);
+}
+
+.app-shell[data-experience="analytics"] .ui-card {
+  box-shadow: none;
+}
+
+.app-shell[data-role="student"] .student-exam-card {
+  border-top: 3px solid var(--color-info);
+}
+
+.app-shell[data-role="student"] .student-exam-card[data-exam-status="upcoming"] {
+  border-top-color: var(--color-warning);
+}
+
+.app-shell[data-role="student"] .student-exam-card[data-exam-status="ended"] {
+  border-top-color: var(--border-control);
+}
+
+.student-exam-card .study-set-mark {
+  background: var(--info-soft);
+  color: var(--info);
+  border-radius: 12px;
+}
+
+.student-exam-card[data-exam-status="upcoming"] .study-set-mark, .student-exam-card[data-exam-status="upcoming"] > .ui-badge {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.student-app-shell [aria-label="Điểm số / Kết quả"] td[data-label="Điểm"] {
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.app-shell[data-role="student"] .student-exam-card:-webkit-any([data-exam-status="submitted"], [data-exam-status="auto_submitted"], [data-exam-status="completed"], [data-exam-status="graded"], [data-exam-status="finalized"]) {
+  border-top-color: var(--color-success);
+}
+
+.app-shell[data-role="student"] .student-exam-card:-moz-any([data-exam-status="submitted"], [data-exam-status="auto_submitted"], [data-exam-status="completed"], [data-exam-status="graded"], [data-exam-status="finalized"]) {
+  border-top-color: var(--color-success);
+}
+
+.app-shell[data-role="student"] .student-exam-card:is([data-exam-status="submitted"], [data-exam-status="auto_submitted"], [data-exam-status="completed"], [data-exam-status="graded"], [data-exam-status="finalized"]) {
+  border-top-color: var(--color-success);
+}
+
+.student-exam-card:-webkit-any([data-exam-status="submitted"], [data-exam-status="auto_submitted"], [data-exam-status="completed"], [data-exam-status="graded"], [data-exam-status="finalized"]) .study-set-mark {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.student-exam-card:-moz-any([data-exam-status="submitted"], [data-exam-status="auto_submitted"], [data-exam-status="completed"], [data-exam-status="graded"], [data-exam-status="finalized"]) .study-set-mark {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.student-exam-card:is([data-exam-status="submitted"], [data-exam-status="auto_submitted"], [data-exam-status="completed"], [data-exam-status="graded"], [data-exam-status="finalized"]) .study-set-mark {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.app-shell[data-role="student"] .student-exam-card[data-exam-status="terminated"] {
+  border-top-color: var(--color-danger);
+}
+
+.student-exam-score strong {
+  color: var(--success);
+  font-family: var(--font-heading);
+  font-size: 24px;
+}
+
+.student-exam-note {
+  line-height: 1.7;
+}
+
+.attempt-page, .verify-page, .classroom-page {
+  font-family: var(--font-body);
+}
+
+.identity-card {
+  border-radius: var(--panel-radius);
+}
+
+.attempt-page :-webkit-any(.attempt-header, .question-card, .question-sidebar) {
+  border-radius: var(--panel-radius);
+}
+
+.attempt-page :-moz-any(.attempt-header, .question-card, .question-sidebar) {
+  border-radius: var(--panel-radius);
+}
+
+.attempt-page :is(.attempt-header, .question-card, .question-sidebar) {
+  border-radius: var(--panel-radius);
+}
+
+.question-content, .answer-option {
+  font-family: var(--font-body);
+}
+
+.ui-alert, .ui-toast, .action-menu-panel {
+  border-radius: var(--radius-md);
+}
+
+@media (min-width: 1024px) {
+  .app-shell[data-sidebar-collapsed="true"] .sidebar .brand {
+    background-color: var(--logo-surface);
+    background-position: center;
+    background-repeat: no-repeat;
+    justify-content: center;
+    gap: 0;
+    font-size: 0;
+  }
+
+  .app-shell[data-sidebar-collapsed="true"] .sidebar .brand:before {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .ui-modal {
+    border-radius: 18px;
+  }
+
+  .ui-table :-webkit-any(td, th) {
+    line-height: 1.5;
+  }
+
+  .ui-table :-moz-any(td, th) {
+    line-height: 1.5;
+  }
+
+  .ui-table :is(td, th) {
+    line-height: 1.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-button {
+    transition: none;
+  }
+}
+
+/*# sourceMappingURL=app_proctoowl-ui_css_bad6b30c._.single.css.map*/

@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthContext';
 import { Button } from '@/components/ui/Button';
+import { borderProps } from '@/components/ui/Border';
 import { ApiError } from '@/lib/api';
 import { chatDay, chatTime, supportChat, supportRole, type SupportConversation as Conversation, type SupportMessage } from '@/lib/support-chat';
 import { useSupportChat } from './SupportChatProvider';
@@ -118,7 +119,7 @@ export function SupportConversation({ conversation, onBack, headerAction, suppor
       {admin && <Link className={styles.profileLink} href={`/dashboard/users?edit_user=${encodeURIComponent(conversation.owner.id)}`}>Xem hồ sơ</Link>}
       {headerAction}
     </header>
-    {conversation.support_case && <div className={styles.caseContext}>
+    {conversation.support_case && <div className={styles.caseContext} {...borderProps(closed ? 'success' : 'users')}>
       {!admin && <p>Yêu cầu của bạn đã được chuyển đến quản trị viên hệ thống.</p>}
       <details className={styles.caseSummary}><summary>Tóm tắt từ AI</summary><div>
         <strong>{conversation.support_case.summary.category}</strong><p>{conversation.support_case.summary.issue}</p>

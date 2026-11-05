@@ -2,9 +2,11 @@ import { apiFetch } from './api';
 import type { AIError } from './ai-provider';
 import type { SupportCase } from './support-chat';
 
-export type SupportSource = { id: string; title: string; route: string; steps: string[] };
+export type SupportSource = { id: string; title: string; route: string; steps: string[];
+  kind?: 'system_data'; choices?: { label: string; value: string }[];
+  links?: { label: string; route: string }[] };
 export type AssistantSession = {
-  id: string; status: SupportCase['status']; phase: 'CATEGORY' | 'DETAIL' | 'FEEDBACK' | 'ESCALATE' | 'UNAVAILABLE';
+  id: string; status: SupportCase['status']; phase: 'CATEGORY' | 'DETAIL' | 'FEEDBACK' | 'ESCALATE' | 'UNAVAILABLE' | 'DATA';
   provider_configured: boolean;
   provider_error?: AIError | null;
   ai_error?: AIError | null;

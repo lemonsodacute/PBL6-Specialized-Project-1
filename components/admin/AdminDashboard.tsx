@@ -61,10 +61,10 @@ export default function AdminDashboard() {
   const refresh = () => setVersion(value => value + 1);
   const pending = stats.loading || roles.loading || exams.loading || cards.loading;
   const metrics = [
-    { label: 'Tổng người dùng', value: roles.data?.total ?? null, detail: 'Sinh viên, giảng viên và quản trị viên', icon: <Users size={18} aria-hidden="true" />, tone: 'brand' as const },
-    { label: 'Lớp học', value: countValue(stats.data?.classes), detail: 'Trong phạm vi quản lý', icon: <BookOpen size={18} aria-hidden="true" />, tone: 'blue' as const },
-    { label: 'Đề thi', value: countValue(exams.data?.meta?.total), detail: 'Tất cả trạng thái đề thi', icon: <ClipboardList size={18} aria-hidden="true" />, tone: 'purple' as const },
-    { label: 'Thẻ chờ xác nhận', value: countValue(cards.data?.meta?.total), detail: 'Hồ sơ cần kiểm tra', icon: <CreditCard size={18} aria-hidden="true" />, tone: 'warning' as const },
+    { label: 'Tổng người dùng', value: roles.data?.total ?? null, detail: 'Sinh viên, giảng viên và quản trị viên', icon: <Users size={18} aria-hidden="true" />, tone: 'brand' as const, borderRole: 'users' as const },
+    { label: 'Lớp học', value: countValue(stats.data?.classes), detail: 'Trong phạm vi quản lý', icon: <BookOpen size={18} aria-hidden="true" />, tone: 'blue' as const, borderRole: 'classes' as const },
+    { label: 'Đề thi', value: countValue(exams.data?.meta?.total), detail: 'Tất cả trạng thái đề thi', icon: <ClipboardList size={18} aria-hidden="true" />, tone: 'purple' as const, borderRole: 'exams' as const },
+    { label: 'Thẻ chờ xác nhận', value: countValue(cards.data?.meta?.total), detail: 'Hồ sơ cần kiểm tra', icon: <CreditCard size={18} aria-hidden="true" />, tone: 'warning' as const, borderRole: 'warning' as const },
   ];
   const liveMetrics = [
     { label: 'Đề thi đang diễn ra', value: countValue(stats.data?.ongoing_exams) },
@@ -73,7 +73,7 @@ export default function AdminDashboard() {
   ].filter((item): item is { label: string; value: number } => item.value != null);
   return <div className={`workspace-page ${styles.page}`}>
     <header className={styles.header}><div><h1>Tổng quan hệ thống</h1><p>Theo dõi người dùng, bài thi và các hồ sơ cần quản trị viên kiểm tra.</p></div><div className={styles.headerActions}><Button variant="outline" disabled={pending} onClick={refresh}><RefreshCw size={16} aria-hidden="true" />Làm mới</Button></div></header>
-    {pending ? <LoadingSkeleton rows={2} /> : <div className="an-kpis" aria-label="Chỉ số tổng quan">{metrics.filter(item => item.value != null).map(item => <KpiCard key={item.label} label={item.label} value={format(item.value!)} detail={item.detail} tone={item.tone} icon={item.icon} />)}</div>}
+    {pending ? <LoadingSkeleton rows={2} /> : <div className="an-kpis" aria-label="Chỉ số tổng quan">{metrics.filter(item => item.value != null).map(item => <KpiCard key={item.label} label={item.label} value={format(item.value!)} detail={item.detail} tone={item.tone} borderRole={item.borderRole} icon={item.icon} />)}</div>}
     {!pending && (roles.error || stats.error || exams.error || cards.error) && <ReadError retry={refresh}>Một số chỉ số chưa tải được. Các số liệu hiện có vẫn được hiển thị.</ReadError>}
     <div className={styles.mainGrid}>
       <ChartCard title={points.length >= 4 ? 'Nhịp độ nộp bài' : 'Hoạt động hệ thống'} description={points.length >= 4 ? 'Bài hoàn tất theo ngày · giờ Việt Nam' : 'Tình hình thi và các đề thi mới nhất'} action={<Link className={styles.link} href="/dashboard/reports">Báo cáo chi tiết<ArrowUpRight size={15} aria-hidden="true" /></Link>}
@@ -85,12 +85,12 @@ export default function AdminDashboard() {
           {report.error && <Button variant="outline" size="sm" onClick={refresh}>Tải lại phân tích</Button>}
         </div>}
       </ChartCard>
-      <ChartCard title="Phân bố người dùng" description="Theo vai trò tài khoản trong hệ thống" footer="Số lượng tài khoản, bao gồm cả tài khoản đang ngừng hoạt động.">
+      <ChartCard borderRole="users" title="Phân bố người dùng" description="Theo vai trò tài khoản trong hệ thống" footer="Số lượng tài khoản, bao gồm cả tài khoản đang ngừng hoạt động.">
         {roles.loading ? <LoadingSkeleton rows={3} /> : roles.error || !roles.data ? <ReadError retry={refresh}>Chưa tải được số lượng người dùng theo vai trò.</ReadError> : <DonutChart label="Phân bố vai trò người dùng" totalLabel="Người dùng" items={[{label:'Sinh viên',value:roles.data.student,tone:'brand'},{label:'Giảng viên',value:roles.data.teacher,tone:'blue'},{label:'Quản trị viên',value:roles.data.admin,tone:'purple'}]} />}
       </ChartCard>
     </div>
     <div className={styles.bottomGrid}>
-      <ChartCard title="Cần xử lý" description="Thẻ sinh viên đang chờ xác nhận" action={<Link className={styles.link} href="/admin/student-cards?status=PENDING_CONFIRMATION">Xem danh sách<ArrowUpRight size={15} aria-hidden="true" /></Link>} footer={cards.data?.meta?.total != null ? `${cards.data.meta.total} thẻ chờ xác nhận · hiển thị tối đa 3 hồ sơ.` : undefined}>
+      <ChartCard borderRole="warning" title="Cần xử lý" description="Thẻ sinh viên đang chờ xác nhận" action={<Link className={styles.link} href="/admin/student-cards?status=PENDING_CONFIRMATION">Xem danh sách<ArrowUpRight size={15} aria-hidden="true" /></Link>} footer={cards.data?.meta?.total != null ? `${cards.data.meta.total} thẻ chờ xác nhận · hiển thị tối đa 3 hồ sơ.` : undefined}>
         {cards.loading ? <LoadingSkeleton rows={2} /> : cards.error ? <ReadError retry={refresh}>Chưa tải được hồ sơ cần kiểm tra.</ReadError> : cards.data?.data.length ? <ul className={styles.list}>{cards.data.data.map((card:ManagedCard) => <li key={card.student_id}><span className={styles.listIcon}><CreditCard size={17} aria-hidden="true" /></span><span className={styles.listCopy}><strong>{card.full_name}</strong><small>{card.student_code ?? card.email}</small></span><Badge tone="warning">Chờ xác nhận</Badge></li>)}</ul> : <EmptyList>Không có thẻ sinh viên đang chờ xác nhận.</EmptyList>}
       </ChartCard>
       <ChartCard title="Hoạt động gần đây" description="Những thao tác quản trị đã được ghi nhận" action={<Link className={styles.link} href="/dashboard/action-logs?role=admin">Nhật ký<ArrowUpRight size={15} aria-hidden="true" /></Link>}>

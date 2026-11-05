@@ -1,0 +1,19 @@
+/* [project]/components/public/display_4f9d4349.module.css [app-client] (css) */
+@font-face {
+  font-family: display;
+  src: url("../media/baloo2_latin_vietnamese.p.742e6564.woff2") format("woff2");
+  font-display: swap;
+  font-weight: 400 800;
+  font-style: normal;
+}
+
+.display_4f9d4349-module__912RWW__className {
+  font-family: "display", var(--font-public-body), Arial;
+  font-style: normal;
+}
+
+.display_4f9d4349-module__912RWW__variable {
+  --font-public-heading: "display", var(--font-public-body), Arial;
+}
+
+/*# sourceMappingURL=components_public_display_4f9d4349_module_css_bad6b30c._.single.css.map*/

@@ -13,7 +13,7 @@ Place these in **backend/.env**, not a frontend env file:
 ```dotenv
 QUESTION_GENERATION_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
 QUESTION_GENERATION_API_KEY=
-QUESTION_GENERATION_MODEL=gemini-3.8-flash
+QUESTION_GENERATION_MODEL=gemini-3.5-flash-lite
 SUPPORT_ASSISTANT_MODEL=gemini-3.5-flash-lite
 QUESTION_GENERATION_SUPPORTS_VISION=true
 QUESTION_GENERATION_TIMEOUT=90
@@ -35,7 +35,7 @@ The protocol stays OpenAI-compatible; diagnostics identify Google's endpoint as
 The application has no hard-coded model ID or credential. Models above are
 configuration recommendations, not provider access guarantees.
 
-The selected models are Gemini 3.8 Flash for document questions and Gemini 3.5
+The selected models are Gemini 3.5 Flash-Lite for document questions and Gemini 3.5
 Flash-Lite for Support. Both support structured output; the question model accepts
 image input. Google's [compatibility API](https://ai.google.dev/gemini-api/docs/openai)
 supports the existing `response_format: json_schema` and multimodal `image_url`
@@ -74,8 +74,10 @@ credentials, billing or model access have been verified remotely.
 | `AI_NOT_CONFIGURED` | Missing/placeholder base URL, API key or default model |
 | `AI_AUTH_FAILED` | Invalid/expired API key or denied API permissions |
 | `AI_RATE_LIMITED` | Provider rate limit or exhausted quota |
-| `AI_PROVIDER_UNAVAILABLE` | Network timeout/connection failure or provider outage |
-| `AI_INVALID_RESPONSE` | Malformed, refused, truncated or schema-invalid provider output |
+| `AI_PROVIDER_UNAVAILABLE` | Connection failure or provider outage |
+| `AI_TIMEOUT` | Transport deadline or HTTP 408/504 timeout |
+| `AI_INVALID_RESPONSE` | Invalid envelope, refused, truncated or schema-invalid provider output |
+| `AI_PARSE_ERROR` | Response envelope or completion content is not valid JSON |
 | `AI_REQUEST_FAILED` | Invalid URL, redirect or other rejected request |
 | `AI_MODEL_UNSUPPORTED` | Provider reports unknown/inaccessible model or unsupported model capability |
 
@@ -86,9 +88,13 @@ Provider error bodies are never returned to the browser. The client never follow
 redirects or logs credentials/prompts/model output. Each call has at most one retry
 for connection failures, timeouts or HTTP 408/429/500/502/503/504, with a small
 bounded backoff (300 ms for the single retry). A Retry-After exceeding two seconds
-is returned to the caller instead of sleeping through it. Auth/model/schema errors
+is returned to the caller instead of sleeping through it. Both numeric and HTTP-date
+Retry-After values are honored. Auth/model/schema errors
 are not retried. Feature-specific timeout settings are shared across attempts as
-a remaining-time budget; the first attempt reserves time for the possible retry.
+a remaining-time budget; a slow successful first attempt may use the full budget.
+The JSON extractor accepts a complete value or one JSON code fence; it does not
+extract arbitrary braces from prose or repair incomplete responses. Logs classify
+the transport, envelope, JSON and schema stages without recording their contents.
 
 Question Generation validates structured output, exact source citations, answer
 structure, image mapping and duplicate content before exposing drafts. No question
@@ -101,7 +107,8 @@ questions without fabricating material; completed batches include the actual
 generated count and a warning. Source excerpts are capped at 600 characters.
 Independent failed batches do not discard successful drafts. The UI shows actual
 batch/question counts, allows review of partial results, and retries only unfinished
-batches. Import remains blocked until all planned batches finish. Regeneration
+batches. Import requires explicit review/confirmation and valid selected drafts;
+the UI warns when unfinished batches will not be included. Regeneration
 uses only the selected question's source/configuration and preserves other drafts;
 an empty replacement keeps the original draft.
 
@@ -133,7 +140,7 @@ and `connection_tested: false`. It never prints keys, base URL or raw replies.
 Credential-like model values are redacted. Expected configured diagnostics:
 
 ```json
-{"provider":"gemini-openai-compatible","configured":true,"question_model":"gemini-3.8-flash","support_model":"gemini-3.5-flash-lite","vision_enabled":true}
+{"provider":"gemini-openai-compatible","configured":true,"question_model":"gemini-3.5-flash-lite","support_model":"gemini-3.5-flash-lite","vision_enabled":true}
 ```
 
 Exit code 2 means configuration

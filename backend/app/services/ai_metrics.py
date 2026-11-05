@@ -67,6 +67,10 @@ def generation(db, user, session, sources, requirements, excluded, provider, rep
         questions_with_source=sum(bool(d.get('source_chunk_id') and d.get('source_excerpt')) for d in drafts),
         grounded_questions=grounded, image_questions=sum(bool(d.get('images')) for d in drafts),
         image_analysis_success=None)
+    quality = getattr(drafts, 'quality_summary', None) or getattr(failure, 'quality_summary', None)
+    if quality:
+        metrics.update({f'quality_{key}': quality.get(key, 0) for key in
+            ('generated', 'valid', 'needs_review', 'rejected', 'duplicate', 'unsupported', 'ambiguous')})
     # Grounding means server source-ID/excerpt/image validation, not semantic truth.
     row = AIActivity(id=uuid4(), feature='question', actor_id=user.id, role=user.role.value,
         document_id=UUID(str(session['id'])), metrics=metrics, created_at=datetime.now(timezone.utc))

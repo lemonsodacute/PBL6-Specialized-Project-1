@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="272" viewBox="0 0 720 272" fill="none">
+<title>Nhánh phiên bản và kiến trúc ứng dụng</title><path fill="#535DC0" d="M0 0h720v272H0z"/><circle cx="45" cy="-30" r="150" fill="#FFF" opacity=".08"/><circle cx="654" cy="274" r="194" fill="#FFF" opacity=".09"/>
+<path d="M161 46v180" stroke="#E2E5FF" stroke-width="9" stroke-linecap="round"/><path d="M161 118c93 0 110 26 110 71" stroke="#FFD075" stroke-width="9" stroke-linecap="round"/><g fill="#FFF"><circle cx="161" cy="46" r="18"/><circle cx="161" cy="118" r="18"/><circle cx="161" cy="226" r="18"/></g><circle cx="271" cy="189" r="19" fill="#F6BC4D"/>
+<rect x="399" y="36" width="236" height="61" rx="18" fill="#FFF"/><path d="M430 66h88" stroke="#A0A7E2" stroke-width="14" stroke-linecap="round"/><rect x="431" y="116" width="236" height="61" rx="18" fill="#FFF" opacity=".72"/><rect x="463" y="196" width="236" height="61" rx="18" fill="#FFF" opacity=".45"/>
+</svg>

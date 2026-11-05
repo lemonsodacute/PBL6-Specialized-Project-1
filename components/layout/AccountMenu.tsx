@@ -70,7 +70,7 @@ export function AccountMenu({ user, onLogout }: {
       <ProfileAvatar user={user} className="topbar-avatar" decorative />
       <ChevronDown size={14} aria-hidden="true" />
     </button>
-    {open && <Card className={styles.panel}>
+    {open && <Card borderRole="users" className={styles.panel}>
       <div className={styles.summary}><strong>{user.full_name || 'Tài khoản'}</strong><span>{user.email || 'Chưa cập nhật'}</span><span>{user.role === 'student' ? 'Sinh viên' : user.role === 'teacher' ? 'Giảng viên' : 'Quản trị viên'}</span></div>
       <div ref={menu} id={menuId} role="menu" aria-label="Tài khoản" onKeyDown={navigateMenu}>
         {['student', 'teacher'].includes(user.role) && <Link href={user.role === 'teacher' ? '/teacher/profile' : '/student/profile'} role="menuitem" tabIndex={-1} className={styles.item} onClick={() => setOpen(false)}>

@@ -164,7 +164,7 @@ test('submitted exams appear only in results while history describes individual 
   await expect(row.getByRole('link',{name:'Xem kết quả',exact:true})).toHaveAttribute('href','/student/attempts/attempt-C/result');
   await expect(page.getByRole('row').filter({hasText:'Đề B đang làm'})).toHaveCount(0);
   await page.goto('/student/history');
-  await expect(page.getByRole('columnheader')).toHaveText(['Đề thi','Lớp','Lần làm','Bắt đầu lúc','Nộp lúc','Thời lượng','Trạng thái','Thao tác']);
+  await expect(page.getByRole('columnheader')).toHaveText(['Đề thi','Lần làm','Bắt đầu lúc','Nộp lúc','Thời lượng','Trạng thái','Thao tác']);
   await expect(page.getByRole('row').filter({hasText:'Đề B đang làm'}).getByRole('link',{name:'Tiếp tục làm bài'})).toBeVisible();
   await expect(page.getByRole('columnheader',{name:'Điểm',exact:true})).toHaveCount(0);
 });

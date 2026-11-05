@@ -4,13 +4,14 @@ import { uiSession } from './ui-fixtures';
 test.use({ launchOptions: { args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] } });
 declare global {
   interface Window {
-    examMediaAudit: { tracks: MediaStreamTrack[]; requests: MediaStreamConstraints[]; denied: string; wait: boolean; release: (() => void) | null };
+    examMediaAudit: { tracks: MediaStreamTrack[]; requests: MediaStreamConstraints[]; denied: string; wait: boolean; release: (() => void) | null;
+      permissions: { camera: PermissionState; microphone: PermissionState }; permissionTargets: { camera: EventTarget; microphone: EventTarget } };
   }
 }
 const attemptId = 'attempt-ux', examId = 'exam-ux';
 const attemptPath = `/student/attempts/${attemptId}`, resultPath = `${attemptPath}/result`;
 async function respond(route: Route, json: unknown, status = 200) {
-  const headers = { 'access-control-allow-origin': route.request().headers().origin ?? 'http://localhost:3100', 'access-control-allow-credentials': 'true', 'access-control-allow-headers': 'authorization,content-type', 'access-control-allow-methods': 'GET,POST,PUT,OPTIONS' };
+  const headers = { 'access-control-allow-origin': route.request().headers().origin ?? 'http://localhost:3100', 'access-control-allow-credentials': 'true', 'access-control-allow-headers': 'authorization,content-type,x-proctor-trace', 'access-control-allow-methods': 'GET,POST,PUT,DELETE,OPTIONS' };
   return route.fulfill({ status: route.request().method() === 'OPTIONS' ? 204 : status, headers, ...(route.request().method() === 'OPTIONS' ? {} : { json }) });
 }
 
@@ -18,11 +19,18 @@ async function setup(page: Page, devices = true, requireFullscreen = false) {
   await uiSession(page);
   await page.routeWebSocket('**/api/v1/ws/call/**', () => {});
   const questions = [0, 1].map(index => ({ id: `question-${index}`, content: `Câu hỏi ${index + 1}`, type: 'mcq_single', options_json: { options: ['A', 'B'] }, default_points: 1, topic: 'HTML' }));
-  const state = { status: 'in_progress', submits: 0, submitStatus: 200, submitCode: '', calls: [] as { path: string; method: string }[], answers: [] as { question_id: string; answer_content: string }[], submitGate: null as Promise<void> | null, saveGate: null as Promise<void> | null, locked: false, deadline: new Date(Date.now() + 3_600_000).toISOString() };
+  const state = { status: 'in_progress', submits: 0, submitStatus: 200, submitCode: '', calls: [] as { path: string; method: string }[], answers: [] as { question_id: string; answer_content: string }[], submitGate: null as Promise<void> | null, saveGate: null as Promise<void> | null, locked: false, deadline: new Date(Date.now() + 3_600_000).toISOString(),
+    requireCamera: devices, requireMic: devices, requireFullscreen: false, entryVerified: true, entryChecks: 0, starts: [] as Record<string, unknown>[], violations: [] as string[] };
   const attempt = () => ({ id: attemptId, exam_id: examId, status: state.status, remaining_seconds: 3600, started_at: new Date().toISOString(), server_deadline_at: state.deadline, questions, answers: state.answers });
-  await page.route('**/api/v1/identity/exams/exam-ux/verify-entry', route => respond(route, { data: { id: 'entry-ux', verified: true, status: 'verified', threshold: .363 } }));
-  await page.route('**/api/v1/attempts', route => respond(route, { data: attempt() }));
-  await page.route('**/api/v1/exams/exam-ux', route => respond(route, { data: { id: examId, title: 'Bài thi kiểm tra trải nghiệm', duration_minutes: 60, require_camera: devices, require_mic: devices, require_fullscreen: requireFullscreen } }));
+  await page.route('**/api/v1/identity/exams/exam-ux/verify-entry', route => {
+    if (route.request().method() !== 'OPTIONS') state.entryChecks++;
+    return respond(route, { data: { id: 'entry-ux', verified: state.entryVerified, status: state.entryVerified ? 'verified' : 'rejected', threshold: .363 } });
+  });
+  await page.route('**/api/v1/attempts', route => {
+    if (route.request().method() !== 'OPTIONS') state.starts.push(route.request().postDataJSON());
+    return respond(route, { data: attempt() });
+  });
+  await page.route('**/api/v1/exams/exam-ux', route => respond(route, { data: { id: examId, title: 'Bài thi kiểm tra trải nghiệm', duration_minutes: 60, require_camera: state.requireCamera, require_mic: state.requireMic, require_fullscreen: state.requireFullscreen } }));
   await page.route('**/api/v1/attempts/attempt-ux**', async route => {
     const path = new URL(route.request().url()).pathname, method = route.request().method();
     if (method === 'OPTIONS') return respond(route, {});
@@ -36,7 +44,7 @@ async function setup(page: Page, devices = true, requireFullscreen = false) {
       if (state.saveGate) await state.saveGate;
       state.answers.push(route.request().postDataJSON()); return respond(route, { data: { saved_at: new Date().toISOString() } });
     }
-    if (path.endsWith('/violations')) return respond(route, { data: { locked: state.locked } });
+    if (path.endsWith('/violations')) { state.violations.push(route.request().postDataJSON().type); return respond(route, { data: { locked: state.locked } }); }
     if (path.endsWith('/result')) {
       if (state.status === 'in_progress') return respond(route, { error: { code: 'ATTEMPT_NOT_SUBMITTED', message: 'Not submitted' } }, 409);
       return respond(route, { data: { id: attemptId, exam_id: examId, exam_title: 'Bài thi kiểm tra trải nghiệm', status: state.status, score: 1, max_score: 2, submitted_at: new Date().toISOString(), started_at: new Date().toISOString(), show_answers: false,
@@ -44,9 +52,19 @@ async function setup(page: Page, devices = true, requireFullscreen = false) {
     }
     return respond(route, { data: attempt() });
   });
-  await page.route('**/api/v1/proctoring/**', route => respond(route, { data: {} }));
+  await page.route('**/api/v1/proctoring/**', route => respond(route, { data: route.request().url().endsWith('/warnings') ? [] : {} }));
   await page.addInitScript(() => {
-    window.examMediaAudit = { tracks: [], requests: [], denied: '', wait: false, release: null };
+    const saved = JSON.parse(sessionStorage.getItem('fixture-device-grants') || '{}');
+    window.examMediaAudit = { tracks: [], requests: [], denied: sessionStorage.getItem('fixture-device-denied') || '', wait: false, release: null,
+      permissions: { camera: saved.camera || 'prompt', microphone: saved.microphone || 'prompt' },
+      permissionTargets: { camera: new EventTarget(), microphone: new EventTarget() } };
+    const originalQuery = navigator.permissions.query.bind(navigator.permissions);
+    navigator.permissions.query = async descriptor => {
+      if (!['camera', 'microphone'].includes(descriptor.name)) return originalQuery(descriptor);
+      const kind = descriptor.name as 'camera' | 'microphone', target = window.examMediaAudit.permissionTargets[kind];
+      Object.defineProperty(target, 'state', { configurable: true, get: () => window.examMediaAudit.denied === (kind === 'camera' ? 'video' : 'audio') ? 'denied' : window.examMediaAudit.permissions[kind] });
+      return target as PermissionStatus;
+    };
     // Use real MediaStreamTracks with deterministic sources: Chrome's native fake
     // camera can disconnect intermittently on Windows, independent of the UI.
     const videoSource = () => {
@@ -70,6 +88,10 @@ async function setup(page: Page, devices = true, requireFullscreen = false) {
       const kind = constraints.video ? 'video' : 'audio';
       if (audit.denied === kind) throw new DOMException('Synthetic technical getUserMedia error', 'NotAllowedError');
       const stream = kind === 'video' ? videoSource() : audioSource();
+      const permission = kind === 'video' ? 'camera' : 'microphone';
+      audit.permissions[permission] = 'granted';
+      sessionStorage.setItem('fixture-device-grants', JSON.stringify(audit.permissions));
+      audit.permissionTargets[permission].dispatchEvent(new Event('change'));
       stream.getTracks().forEach(track => {
         audit.tracks.push(track);
         const source = track.getSettings.bind(track), config = kind === 'video' ? constraints.video : constraints.audio;
@@ -107,6 +129,167 @@ async function stopped(page: Page) {
   await expect.poll(() => page.evaluate(() => window.examMediaAudit.tracks.every(track => track.readyState === 'ended'))).toBe(true);
 }
 
+// Synthetic live MediaStreamTracks and mocked HTTP responses test the production exam hook.
+// These regressions do not establish physical-webcam/model accuracy.
+test('Student warnings: browser violations appear immediately and report delivery failures honestly', async ({ page }) => {
+  test.setTimeout(90000);
+  const state = await setup(page, false);
+  let release!: () => void;
+  const pending = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/attempts/attempt-ux/violations', async route => {
+    if (route.request().method() === 'OPTIONS') return respond(route, {});
+    await pending;
+    return respond(route, { data: { locked: false, attempt_status: 'in_progress' } });
+  });
+  await page.goto(attemptPath);
+  await expect(page.getByRole('heading', { name: 'Câu hỏi 1' })).toBeVisible();
+  await page.evaluate(() => document.dispatchEvent(new Event('copy')));
+  const warning = page.getByRole('alert', { name: 'Cảnh báo trong bài thi' });
+  await expect(warning).toContainText('Sao chép');
+  await expect(warning).toContainText('Đang gửi cảnh báo');
+  release();
+  await expect(warning).toContainText('Đã ghi nhận để giáo viên xem xét.');
+  await page.route('**/attempts/attempt-ux/violations', route => respond(route, { error: { message: 'offline' } }, 503));
+  await page.evaluate(() => document.dispatchEvent(new Event('paste')));
+  await expect(warning).toContainText('Dán nội dung');
+  await expect(warning).toContainText('Chưa gửi được cảnh báo tới máy chủ');
+  await page.getByRole('radio').first().check();
+  await expect.poll(() => state.answers.length).toBe(1);
+  await page.getByRole('button', { name: 'Câu tiếp theo' }).click();
+  await expect(page.getByRole('heading', { name: 'Câu hỏi 2' })).toBeVisible();
+  await page.screenshot({ path: 'artifacts/student-warnings/browser-delivery.png', fullPage: true });
+});
+
+test('Student warnings: AI alerts persist, dismiss without reopening, recover and fit mobile dark mode', async ({ page }) => {
+  test.setTimeout(90000);
+  await setup(page, false);
+  const warning = { id: 'phone-event', event_type: 'object_phone', occurred_at: new Date().toISOString(), occurrence_count: 1 };
+  let items = [warning, { ...warning, id: 'face-event', event_type: 'face_not_detected' }], failed = false, reads = 0;
+  await page.route('**/proctoring/sessions/attempt-ux/warnings', route => {
+    if (route.request().method() !== 'OPTIONS') reads++;
+    return respond(route, failed ? { error: { message: 'unavailable' } } : { data: items }, failed ? 503 : 200);
+  });
+  await page.goto(attemptPath);
+  const alerts = page.getByRole('alert', { name: 'Cảnh báo trong bài thi' });
+  await expect(alerts).toContainText('Phát hiện điện thoại');
+  await expect(alerts).toContainText('Không thấy khuôn mặt');
+  await expect(alerts).toContainText('Vui lòng cất điện thoại');
+  await page.screenshot({ path: 'artifacts/student-warnings/desktop.png', fullPage: true });
+  await page.getByRole('button', { name: 'Đóng cảnh báo Phát hiện điện thoại', exact: true }).click();
+  const previous = reads;
+  await expect.poll(() => reads).toBeGreaterThan(previous);
+  await expect(alerts).not.toContainText('Phát hiện điện thoại');
+  items = [{ ...warning, occurrence_count: 2 }];
+  await expect(alerts).toContainText('Phát hiện điện thoại');
+  await expect(alerts).not.toContainText('Không thấy khuôn mặt');
+  failed = true;
+  await expect(page.getByRole('status').filter({ hasText: 'Chưa cập nhật được cảnh báo' })).toBeVisible();
+  failed = false;
+  await expect(page.getByText('Chưa cập nhật được cảnh báo giám sát.', { exact: false })).toHaveCount(0);
+  await page.reload();
+  await expect(alerts).toContainText('Phát hiện điện thoại');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => document.documentElement.dataset.theme = 'dark');
+  await expect(alerts).toBeVisible();
+  const box = (await alerts.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(391);
+  await page.screenshot({ path: 'artifacts/student-warnings/mobile-dark.png', fullPage: true });
+});
+
+test('AI sampling: recovers from capability errors and delayed camera session startup', async ({ page }) => {
+  test.setTimeout(90000);
+  await setup(page);
+  let capabilities = 0, frames = 0;
+  const warnings: string[] = [];
+  page.on('console', message => { if (message.type() === 'warning' && message.text().includes('[proctor-input]')) warnings.push(message.text()); });
+  await page.route('**/proctoring/sessions/attempt-ux/input-capabilities', route => {
+    if (route.request().method() === 'OPTIONS') return respond(route, {});
+    capabilities++;
+    return capabilities === 1 ? respond(route, {}, 500) : respond(route, { data: { enabled: true, frame_interval_ms: 100 } });
+  });
+  await page.route('**/proctoring/sessions/attempt-ux/frame', route => {
+    if (route.request().method() === 'OPTIONS') return respond(route, {});
+    frames++;
+    expect(route.request().headers()['content-type']).toContain('multipart/form-data');
+    expect(route.request().postDataBuffer()?.includes(Buffer.from('image/jpeg'))).toBe(true);
+    return frames === 1 ? respond(route, { error: { code: 'CAMERA_SESSION_REQUIRED' } }, 409) : respond(route, { data: { processed: true } });
+  });
+  await enter(page);
+  await expect.poll(() => frames, { timeout: 20000 }).toBeGreaterThanOrEqual(3);
+  expect(capabilities).toBe(2);
+  expect(warnings.some(message => message.includes('capabilities_unavailable'))).toBe(true);
+  expect(warnings.some(message => message.includes('camera_session_pending'))).toBe(true);
+  expect(warnings.join(' ')).not.toMatch(/synthetic-token|attempt-ux|Bearer/);
+});
+
+test('AI sampling: slow single-flight frames leave navigation and answer saving responsive', async ({ page }) => {
+  test.setTimeout(90000);
+  const state = await setup(page);
+  let frames = 0, concurrent = 0, maximum = 0, capabilities = 0;
+  let release!: () => void;
+  const pending = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/proctoring/sessions/attempt-ux/input-capabilities', route => {
+    if (route.request().method() !== 'OPTIONS') capabilities++;
+    return respond(route, { data: { enabled: true, frame_interval_ms: 100 } });
+  });
+  await page.route('**/proctoring/sessions/attempt-ux/frame', async route => {
+    if (route.request().method() === 'OPTIONS') return respond(route, {});
+    frames++; concurrent++; maximum = Math.max(maximum, concurrent);
+    if (frames === 1) await pending;
+    concurrent--; return respond(route, { data: { processed: true } });
+  });
+  await enter(page);
+  await expect.poll(() => frames).toBe(1);
+  try {
+    await page.locator('.answer-option').first().click();
+    await expect.poll(() => state.answers.length).toBe(1);
+    await page.locator('.question-index-list button').nth(1).click();
+    await expect(page.locator('.question-main h2')).toHaveText('Câu hỏi 2');
+    await page.getByRole('button', { name: 'Thu nhỏ camera giám sát' }).click();
+    expect(frames).toBe(1);
+    expect(capabilities).toBe(1);
+  } finally { release(); }
+  await expect.poll(() => frames).toBeGreaterThanOrEqual(3);
+  expect(maximum).toBe(1);
+  expect(capabilities).toBe(1);
+});
+
+test('AI sampling: unavailable worker backs off and recovers; inactive attempt stops capture', async ({ page }) => {
+  test.setTimeout(90000);
+  await setup(page);
+  let frames = 0, stopped = false;
+  await page.route('**/proctoring/sessions/attempt-ux/input-capabilities', route => respond(route, { data: { enabled: true, frame_interval_ms: 100 } }));
+  await page.route('**/proctoring/sessions/attempt-ux/frame', route => {
+    if (route.request().method() === 'OPTIONS') return respond(route, {});
+    frames++;
+    if (frames <= 2) return respond(route, { data: { processed: false } });
+    if (frames === 4) { stopped = true; return respond(route, { error: { code: 'ATTEMPT_INACTIVE' } }, 409); }
+    return respond(route, { data: { processed: true } });
+  });
+  await enter(page);
+  await expect.poll(() => stopped, { timeout: 20000 }).toBe(true);
+  await page.waitForTimeout(600);
+  expect(frames).toBe(4);
+});
+
+test('AI sampling: disabled profiles send no frames and explain the paused state', async ({ page }) => {
+  test.setTimeout(90000);
+  await setup(page);
+  let frames = 0, checked = false;
+  const warnings: string[] = [];
+  page.on('console', message => { if (message.text().includes('[proctor-input]')) warnings.push(message.text()); });
+  await page.route('**/proctoring/sessions/attempt-ux/input-capabilities', route => {
+    checked = true; return respond(route, { data: { enabled: false, frame_interval_ms: null } });
+  });
+  await page.route('**/proctoring/sessions/attempt-ux/frame', route => { frames++; return respond(route, { data: { processed: true } }); });
+  await enter(page);
+  await expect.poll(() => checked).toBe(true);
+  await page.waitForTimeout(600);
+  expect(frames).toBe(0);
+  expect(warnings.some(message => message.includes('models_disabled_or_unconfigured'))).toBe(true);
+});
+
 test('silent microphone permits entry and selecting IDs never stops the current stream', async ({ page }) => {
   await setup(page); await enter(page);
   const streamTracks=await page.locator('.proctor-stream-hidden').evaluate(video=>(video as HTMLVideoElement).srcObject instanceof MediaStream?((video as HTMLVideoElement).srcObject as MediaStream).getTracks().map(track=>track.id):[]);
@@ -120,6 +303,192 @@ test('silent microphone permits entry and selecting IDs never stops the current 
   await expect.poll(()=>page.locator('.proctor-stream-hidden').evaluate(video=>((video as HTMLVideoElement).srcObject as MediaStream).getTracks().filter(track=>track.readyState==='live').map(track=>track.id))).toEqual(streamTracks);
 });
 
+test('device session: refresh restores completed setup without another pre-exam modal', async ({ page }) => {
+  test.setTimeout(90000);
+  const state = await setup(page); await enter(page);
+  await page.locator('.answer-option').first().click();
+  await expect.poll(() => state.answers.length).toBe(1);
+  await page.waitForTimeout(1100);
+  const before = await page.locator('.attempt-timer strong').textContent();
+  const requests = await page.evaluate(() => window.examMediaAudit.requests.length);
+  await page.reload();
+  await expect(page.getByRole('region', { name: 'Thiết bị giám sát', exact: true })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole('dialog', { name: 'Cài đặt thiết bị trước khi thi', exact: true })).toHaveCount(0);
+  await expect(page.locator('.answer-option input').first()).toBeChecked();
+  expect(await page.evaluate(() => window.examMediaAudit.requests.length)).toBe(requests);
+  expect(state.entryChecks).toBe(2);
+  expect(state.starts.every(start => start.resume_attempt_id === attemptId)).toBe(true);
+  const seconds = (text: string) => text.split(':').reduce((minutes, value) => minutes * 60 + Number(value), 0);
+  expect(seconds((await page.locator('.attempt-timer strong').textContent())!)).toBeLessThanOrEqual(seconds(before!));
+});
+
+test('device session: navigation, answer saving, status fetches and settings never reopen pre-exam setup', async ({ page }) => {
+  test.setTimeout(90000);
+  const state = await setup(page); await enter(page);
+  const tracks = await page.evaluate(() => window.examMediaAudit.tracks.map(track => track.id));
+  const before = await page.locator('.attempt-timer strong').textContent();
+  await page.locator('.answer-option').first().click();
+  await expect.poll(() => state.answers.length).toBe(1);
+  await page.getByRole('button', { name: 'Câu tiếp theo', exact: true }).click();
+  await page.getByRole('button', { name: 'Câu trước', exact: true }).click();
+  await expect(page.locator('.answer-option input').first()).toBeChecked();
+  await page.evaluate(() => { window.dispatchEvent(new Event('focus')); window.dispatchEvent(new Event('pageshow')); });
+  await expect.poll(() => state.calls.filter(call => call.method === 'GET').length).toBeGreaterThanOrEqual(2);
+  await page.getByRole('button', { name: 'Cài đặt thiết bị', exact: true }).click();
+  const settings = page.getByRole('dialog', { name: 'Cài đặt thiết bị', exact: true });
+  await expect(settings.getByText('Microphone đã sẵn sàng', { exact: true })).toBeVisible();
+  await settings.getByRole('button', { name: 'Đóng', exact: true }).last().click();
+  await expect(settings).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'Cài đặt thiết bị trước khi thi', exact: true })).toHaveCount(0);
+  expect(await page.evaluate(() => window.examMediaAudit.tracks.map(track => track.id))).toEqual(tracks);
+  expect(await page.evaluate(() => window.examMediaAudit.tracks.every(track => track.readyState === 'live'))).toBe(true);
+  expect(await page.evaluate(() => window.examMediaAudit.requests.length)).toBe(2);
+  expect(state.entryChecks).toBe(1);
+  expect(await page.locator('.attempt-timer strong').textContent()).not.toBe('00:00');
+  expect(before).not.toBe('00:00');
+});
+
+for (const kind of ['camera', 'microphone'] as const) test(`device session: revoked ${kind} is truthful without reopening setup; manual recovery restores AI frames`, async ({ page }) => {
+  test.setTimeout(90000);
+  await setup(page);
+  let frames = 0;
+  await page.route('**/proctoring/sessions/attempt-ux/input-capabilities', route => respond(route, { data: { enabled: true, frame_interval_ms: 100 } }));
+  await page.route('**/proctoring/sessions/attempt-ux/frame', route => {
+    if (route.request().method() !== 'OPTIONS') frames++;
+    return respond(route, { data: { processed: true } });
+  });
+  await enter(page);
+  await expect.poll(() => frames).toBeGreaterThanOrEqual(2);
+  await page.evaluate(value => {
+    const audit = window.examMediaAudit;
+    audit.denied = value === 'camera' ? 'video' : 'audio';
+    audit.permissions[value] = 'denied';
+    audit.permissionTargets[value].dispatchEvent(new Event('change'));
+    const track = audit.tracks.find(item => item.kind === (value === 'camera' ? 'video' : 'audio'))!;
+    track.stop(); track.dispatchEvent(new Event('ended'));
+  }, kind);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.locator('.device-loss-banner')).toBeVisible();
+  await page.getByRole('button', { name: 'Cài đặt thiết bị', exact: true }).click();
+  const settings = page.getByRole('dialog', { name: 'Cài đặt thiết bị', exact: true });
+  await expect(settings.getByRole('button', { name: 'Áp dụng', exact: true })).toBeDisabled();
+  await expect(settings.getByText(kind === 'camera'
+    ? 'Chưa thể truy cập camera. Vui lòng cấp quyền camera trong trình duyệt.'
+    : 'Chưa thể truy cập microphone. Vui lòng cấp quyền microphone trong trình duyệt.', { exact: true })).toBeVisible();
+  const pausedFrames = frames;
+  await page.waitForTimeout(400); expect(frames).toBeLessThanOrEqual(pausedFrames + 1);
+  await page.evaluate(value => {
+    const audit = window.examMediaAudit; audit.denied = ''; audit.permissions[value] = 'granted';
+    audit.permissionTargets[value].dispatchEvent(new Event('change'));
+  }, kind);
+  // Permission alone cannot turn an ended stream into a ready device.
+  await expect(settings.getByRole('button', { name: 'Áp dụng', exact: true })).toBeDisabled();
+  await settings.getByRole('button', { name: 'Thử lại', exact: true }).click();
+  await expect(settings.getByRole('button', { name: 'Áp dụng', exact: true })).toBeEnabled();
+  await expect(settings.getByText('Microphone đã sẵn sàng', { exact: true })).toBeVisible();
+  await settings.getByRole('button', { name: 'Áp dụng', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect.poll(() => frames).toBeGreaterThan(pausedFrames + 1);
+});
+
+test('device session: reload with revoked permission requires a real check and cannot use completion history alone', async ({ page }) => {
+  test.setTimeout(90000);
+  const state = await setup(page); await enter(page);
+  await page.evaluate(() => { sessionStorage.setItem('fixture-device-denied', 'audio'); });
+  await page.reload();
+  const gate = page.getByRole('dialog', { name: 'Cài đặt thiết bị trước khi thi', exact: true });
+  await expect(gate).toBeVisible();
+  expect(await page.evaluate(() => window.examMediaAudit.requests.length)).toBe(0);
+  await gate.getByRole('button', { name: /^(Tiếp tục|Thử lại)$/ }).click();
+  await expect(gate.getByRole('button', { name: 'Vào phòng thi', exact: true })).toBeDisabled();
+  expect(state.starts).toHaveLength(1);
+  await page.evaluate(() => { sessionStorage.removeItem('fixture-device-denied'); window.examMediaAudit.denied = ''; });
+  await gate.getByRole('button', { name: 'Thử lại', exact: true }).click();
+  await expect(gate.getByRole('button', { name: 'Vào phòng thi', exact: true })).toBeEnabled();
+  await gate.getByRole('button', { name: 'Vào phòng thi', exact: true }).click();
+  await expect(gate).toHaveCount(0);
+});
+
+test('device session: refresh still requires a valid identity proof for the same attempt', async ({ page }) => {
+  test.setTimeout(90000);
+  const state = await setup(page); await enter(page); state.entryVerified = false;
+  await page.reload();
+  const gate = page.getByRole('dialog', { name: 'Cài đặt thiết bị trước khi thi', exact: true });
+  await expect(gate).toBeVisible();
+  await expect(gate.getByRole('alert')).toBeVisible();
+  expect(state.starts).toHaveLength(1);
+  state.entryVerified = true;
+  await gate.getByRole('button', { name: 'Thử xác minh lại', exact: true }).click();
+  await expect(gate).toHaveCount(0);
+  expect(state.starts).toHaveLength(2);
+  expect(state.starts[1].resume_attempt_id).toBe(attemptId);
+});
+
+test('device session: completion does not apply to another attempt or changed requirements', async ({ page }) => {
+  test.setTimeout(90000);
+  const state = await setup(page); state.requireMic = false;
+  await page.goto(attemptPath);
+  const gate = page.getByRole('dialog', { name: 'Cài đặt thiết bị trước khi thi', exact: true });
+  await gate.getByRole('button', { name: 'Tiếp tục', exact: true }).click();
+  await expect(gate.getByRole('button', { name: 'Vào phòng thi', exact: true })).toBeEnabled();
+  await gate.getByRole('button', { name: 'Vào phòng thi', exact: true }).click();
+  await expect(gate).toHaveCount(0);
+  state.requireMic = true;
+  await page.reload();
+  await expect(gate).toBeVisible();
+  expect(await page.evaluate(() => window.examMediaAudit.requests.length)).toBe(0);
+  await page.evaluate(() => {
+    const value = sessionStorage.getItem('proctoowl:exam-device-setup:attempt-ux');
+    sessionStorage.removeItem('proctoowl:exam-device-setup:attempt-ux');
+    sessionStorage.setItem('proctoowl:exam-device-setup:another-attempt', value!);
+  });
+  state.requireMic = false;
+  await page.reload();
+  await expect(gate).toBeVisible();
+  expect(await page.evaluate(() => window.examMediaAudit.requests.length)).toBe(0);
+});
+
+test('device session: microphone-only exams restore a real audio track without camera or duplicate setup', async ({ page }) => {
+  test.setTimeout(90000);
+  const state = await setup(page); state.requireCamera = false;
+  await page.goto(attemptPath);
+  const gate = page.getByRole('dialog', { name: 'Cài đặt thiết bị trước khi thi', exact: true });
+  await gate.getByRole('button', { name: 'Tiếp tục', exact: true }).click();
+  await expect(gate.getByText('Microphone đã sẵn sàng', { exact: true })).toBeVisible();
+  await gate.getByRole('button', { name: 'Vào phòng thi', exact: true }).click();
+  await expect(gate).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole('region', { name: 'Thiết bị giám sát', exact: true })).toBeVisible();
+  await expect(gate).toHaveCount(0);
+  expect(await page.evaluate(() => window.examMediaAudit.requests.map(request => !!request.video))).toEqual([false]);
+  expect(await page.evaluate(() => window.examMediaAudit.tracks.map(track => ({ kind: track.kind, state: track.readyState })))).toEqual([{ kind: 'audio', state: 'live' }]);
+  expect(state.entryChecks).toBe(0);
+});
+
+test('device session: fullscreen exit still blocks answers and records the violation without reopening setup', async ({ page }) => {
+  test.setTimeout(90000);
+  const state = await setup(page); state.requireFullscreen = true;
+  await page.addInitScript(() => {
+    let full = false;
+    Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => full ? document.documentElement : null });
+    HTMLElement.prototype.requestFullscreen = async () => { full = true; document.dispatchEvent(new Event('fullscreenchange')); };
+    document.exitFullscreen = async () => { full = false; document.dispatchEvent(new Event('fullscreenchange')); };
+  });
+  await enter(page);
+  await page.locator('.answer-option').first().click(); await expect.poll(() => state.answers.length).toBe(1);
+  await page.evaluate(() => document.exitFullscreen());
+  const fullscreen = page.locator('.fullscreen-overlay');
+  await expect(fullscreen).toBeVisible();
+  await expect(page.locator('.answer-option input').first()).toBeDisabled();
+  await expect.poll(() => state.violations.includes('fullscreen_exit')).toBe(true);
+  await expect(page.getByRole('dialog', { name: 'Cài đặt thiết bị trước khi thi', exact: true })).toHaveCount(0);
+  await fullscreen.getByRole('button', { name: 'Vào lại toàn màn hình', exact: true }).click();
+  await expect(fullscreen).toHaveCount(0);
+  await expect(page.locator('.answer-option input').first()).toBeChecked();
+  await expect(page.locator('.answer-option input').first()).toBeEnabled();
+  expect(await page.evaluate(() => window.examMediaAudit.requests.length)).toBe(2);
+});
+
 test('submit navigates without reload or waiting for a hanging fullscreen exit and cleans listeners', async ({ page }) => {
   const state = await setup(page); await enter(page);
   await page.evaluate(() => {
@@ -127,7 +496,10 @@ test('submit navigates without reload or waiting for a hanging fullscreen exit a
     document.exitFullscreen = () => new Promise<void>(() => {});
   });
   await submit(page);
-  await expect(page).toHaveURL(new RegExp(`${resultPath}$`), { timeout: 7000 });
+  // Track cleanup must complete even while fullscreen exit never resolves.
+  // Next's cold development-route compilation is separate from that guarantee.
+  await stopped(page);
+  await expect(page).toHaveURL(new RegExp(`${resultPath}$`), { timeout: 45000 });
   await expect(page.getByRole('heading',{name:'Bài thi kiểm tra trải nghiệm',exact:true})).toBeVisible();
   expect(state.submits).toBe(1); await stopped(page);
   const count = state.calls.length;
@@ -182,7 +554,7 @@ test('camera and microphone permissions show separate friendly errors with retry
   await setup(page); await page.goto(attemptPath);
   await page.evaluate(() => { window.examMediaAudit.denied = 'audio'; });
   const dialog = page.getByRole('dialog', { name: 'Cài đặt thiết bị trước khi thi' });
-  await dialog.getByRole('button', { name: 'Tiếp tục', exact: true }).click();
+  await dialog.getByRole('button', { name: /^(Tiếp tục|Thử lại)$/ }).click();
   await expect(dialog.getByText('Camera đã sẵn sàng', { exact: true })).toBeVisible();
   await expect(dialog.getByText('Chưa thể truy cập microphone. Vui lòng cấp quyền microphone trong trình duyệt.', { exact: true })).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Vào phòng thi' })).toBeDisabled();
@@ -216,7 +588,7 @@ test('exit during a pending permission request stops tracks returned after unmou
   await expect.poll(() => page.evaluate(() => window.examMediaAudit.tracks.length)).toBe(1);
   // Exercise an external SPA navigation while the permission modal is blocking input.
   await page.getByRole('link', { name: 'Trang chủ', exact: true }).dispatchEvent('click');
-  await expect(page).toHaveURL(/\/student$/);
+  await expect(page).toHaveURL(/\/student$/, { timeout: 45000 });
   await page.evaluate(() => { window.examMediaAudit.release?.(); }); await stopped(page);
   expect(await page.evaluate(() => window.examMediaAudit.requests.length)).toBe(1);
 });
@@ -266,7 +638,10 @@ test('desktop dragging, collapse, question navigation and stored position preser
   await handle.focus(); await page.keyboard.press('ArrowRight');
   const saved = await page.evaluate(() => JSON.parse(sessionStorage.getItem('ai-procto-camera:attempt-ux')!)); expect(saved.x).toBeGreaterThan(moved.x);
   await page.getByRole('link', { name: 'Trang chủ', exact: true }).click(); await stopped(page);
-  await enter(page); await expect.poll(async () => (await widget.boundingBox())!.x).toBe(saved.x);
+  await page.goto(attemptPath);
+  await expect(widget).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Cài đặt thiết bị trước khi thi', exact: true })).toHaveCount(0);
+  await expect.poll(async () => (await widget.boundingBox())!.x).toBe(saved.x);
 });
 
 for (const width of [360, 390, 430, 820, 1024]) test(`polish: camera leaves navigation and submit clear at ${width}px`, async ({ page }, info) => {

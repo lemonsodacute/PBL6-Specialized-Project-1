@@ -1,4 +1,6 @@
 'use client';
+import { borderProps } from '@/components/ui/Border';
+
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
@@ -73,7 +75,7 @@ export function AdminReports({ collection, data, loading, error, exporting, relo
           <ScoreHistogram data={distribution!} />
         </ChartCard>
       </div>
-      <section className={styles.tableCard} aria-labelledby="admin-report-detail-title">
+      <section className={styles.tableCard} aria-labelledby="admin-report-detail-title" {...borderProps('exams')}>
         <div className={styles.tableHeader}><div><h2 id="admin-report-detail-title">Chi tiết bài làm</h2><p>{scope}</p></div><span className={styles.updated}>Điểm gốc theo thang điểm từng bài thi</span></div>
         {data.results.length > 0 && <p className={styles.scrollHint}>Cuộn ngang để xem đầy đủ các cột.</p>}
         {data.results.length ? <Table label="Báo cáo bài thi" mobile="scroll"><thead><tr><th>Đề thi</th><th>MSSV</th><th>Họ tên</th><th>Điểm</th><th>Trạng thái</th><th>Cảnh báo</th><th>Risk score</th><th>Thao tác</th></tr></thead><tbody>{data.results.map(row => <tr key={row.attempt_id}>

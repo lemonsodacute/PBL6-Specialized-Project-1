@@ -1,0 +1,11 @@
+{
+  "pages": {},
+  "app": {
+    "[project]/app/student/history/page": [
+      "static/media/baloo2_latin_vietnamese.p.742e6564.woff2",
+      "static/media/nunito_latin_vietnamese.p.7fcec544.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": false,
+  "pagesUsingSizeAdjust": false
+}

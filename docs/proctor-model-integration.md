@@ -2,6 +2,8 @@
 
 The teacher UI consumes normalized alerts, never a particular model’s predictions. Add the delivered runtime/model files, an adapter, label mapping and calibrated server configuration. Keep the existing Face Verification package and its `0.363` identity threshold separate.
 
+The supplied multitier weights and tracker were located on 2 November 2026. Standalone PT inference and ONNX loading succeeded. The local worker now isolates the two native runtimes and feeds the existing authenticated frame pipeline. Directional gaze alerts await calibration. See the [worker runbook](../backend/proctor_worker/README.md) and [validation history](proctor-model-evaluation.md).
+
 ## 1. Adapter boundary
 
 `backend/app/proctoring/adapters.py` defines:

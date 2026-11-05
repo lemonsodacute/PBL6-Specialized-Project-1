@@ -1,0 +1,48 @@
+/* [project]/components/ui/Feedback.module.css [app-client] (css) */
+.Feedback-module__0plTxW__withMascot.empty-state-box {
+  text-align: left;
+  grid-template-columns: auto minmax(0, max-content);
+  justify-content: center;
+  align-items: center;
+  column-gap: 22px;
+}
+
+.Feedback-module__0plTxW__withMascot .Feedback-module__0plTxW__owl {
+  --mascot-size: 80px;
+  grid-area: 1 / 1 / 3;
+}
+
+.Feedback-module__0plTxW__withMascot > strong {
+  grid-column: 2;
+  align-self: end;
+}
+
+.Feedback-module__0plTxW__withMascot > strong:last-child {
+  grid-row: 1 / 3;
+  align-self: center;
+}
+
+.Feedback-module__0plTxW__withMascot > .empty-state-description {
+  grid-column: 2;
+  align-self: start;
+}
+
+.app-shell[data-role="admin"] .Feedback-module__0plTxW__withMascot .Feedback-module__0plTxW__owl {
+  --mascot-size: 64px;
+}
+
+.app-shell[data-role="student"] .Feedback-module__0plTxW__withMascot .Feedback-module__0plTxW__owl {
+  --mascot-size: 80px;
+}
+
+@media (max-width: 600px) {
+  .Feedback-module__0plTxW__withMascot.empty-state-box {
+    column-gap: 16px;
+  }
+
+  .app-shell[data-role] .Feedback-module__0plTxW__withMascot .Feedback-module__0plTxW__owl {
+    --mascot-size: 64px;
+  }
+}
+
+/*# sourceMappingURL=components_ui_Feedback_module_css_bad6b30c._.single.css.map*/

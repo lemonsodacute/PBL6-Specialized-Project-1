@@ -74,7 +74,7 @@ export function SupportAssistant({ headerAction, initialConversationId, onInitia
   useEffect(() => { if (scroller.current) scroller.current.scrollTop = scroller.current.scrollHeight; }, [session?.messages.length, busy]);
   const act = async (action: SupportCommand['action'], value?: string) => {
     if (!session || lock.current) return;
-    const candidate = { action, ...(action === 'message' ? { text: draft.trim() } : value ? { value } : {}), route: pathname };
+    const candidate = { action, ...(action === 'message' ? { text: (value ?? draft).trim() } : value ? { value } : {}), route: pathname };
     const old = retry.current;
     const command: SupportCommand = old && JSON.stringify({ ...old, client_id: undefined }) === JSON.stringify(candidate)
       ? old : { ...candidate, client_id: crypto.randomUUID() };
@@ -148,7 +148,7 @@ export function SupportAssistant({ headerAction, initialConversationId, onInitia
   return <section className={styles.conversation} aria-label="ProctoOwl Support">
     {header}
     {active && !session.provider_configured && !blocked && <div className={styles.caseContext} role="status">
-      <strong>{session.provider_error?.code && session.provider_error.code !== 'AI_NOT_CONFIGURED' ? aiErrorMessage(session.provider_error.code) : 'Trợ lý AI hiện chưa được cấu hình'}</strong><p>Bạn vẫn có thể xem hướng dẫn theo chủ đề hoặc chuyển yêu cầu đến quản trị viên.</p>
+      <strong>{session.provider_error?.code && session.provider_error.code !== 'AI_NOT_CONFIGURED' ? aiErrorMessage(session.provider_error.code) : 'Trợ lý AI hiện chưa được cấu hình'}</strong><p>Bạn vẫn có thể tra cứu kết quả được cấp quyền, xem hướng dẫn theo chủ đề hoặc liên hệ quản trị viên.</p>
       <Button size="sm" variant="outline" disabled={busy} onClick={() => void act('escalate')}>Liên hệ System Admin</Button>
     </div>}
     <div className={styles.messages} ref={scroller} role="log" aria-label="Trao đổi với trợ lý AI" aria-live="polite" aria-busy={busy || loading}>
@@ -157,8 +157,12 @@ export function SupportAssistant({ headerAction, initialConversationId, onInitia
         <div className={styles.message}><small>Trợ lý AI</small><div className={styles.bubble}>{session.greeting}</div></div>
         {session.messages.map(message => <Fragment key={message.id}>
           {message.user_text && <div className={`${styles.message} ${styles.mine}`}><small>Bạn</small><div className={styles.bubble}>{message.user_text}</div></div>}
-          <div className={styles.message}><small>{['close', 'resolved'].includes(message.action ?? '') ? 'Hệ thống' : 'Trợ lý AI'}{message.sources.length ? ' · Tài liệu hỗ trợ' : ''}</small><div className={styles.bubble}>{message.assistant_text}</div>
-            {message.sources.length > 0 && <div className={styles.sources} aria-label="Tài liệu hướng dẫn">{message.sources.map(source => <Link key={source.id} href={source.route}>{source.title} ↗</Link>)}</div>}
+          <div className={styles.message}><small>{['close', 'resolved'].includes(message.action ?? '') ? 'Hệ thống' : 'Trợ lý AI'}{message.sources.some(source => source.kind === 'system_data') ? ' · Dữ liệu hệ thống' : message.sources.length ? ' · Tài liệu hỗ trợ' : ''}</small><div className={styles.bubble}>{message.assistant_text}</div>
+            {message.sources.some(source => source.route) && <div className={styles.sources} aria-label={message.sources.some(source => source.kind === 'system_data') ? 'Chi tiết dữ liệu' : 'Tài liệu hướng dẫn'}>{message.sources.filter(source => source.route).map(source => <Link key={source.id} href={source.route}>{source.title} ↗</Link>)}</div>}
+            {message.sources.some(source => source.links?.length) && <div className={styles.sources} aria-label="Chi tiết lượt làm bài">{message.sources.flatMap(source => source.links ?? []).map(link => <Link key={link.route} href={link.route}>{link.label} ↗</Link>)}</div>}
+            {active && !blocked && message.id === session.messages.at(-1)?.id && message.sources.some(source => source.choices?.length) && <div className={styles.quickActions} aria-label="Chọn sinh viên, lớp hoặc kỳ thi">
+              {message.sources.flatMap(source => source.choices ?? []).map(choice => <button type="button" key={choice.value} disabled={busy} onClick={() => void act('message', choice.value)}>{choice.label}</button>)}
+            </div>}
           </div>
         </Fragment>)}
         {!blocked && active && <div className={styles.supportActions}>
@@ -171,7 +175,7 @@ export function SupportAssistant({ headerAction, initialConversationId, onInitia
         </div>}
       </>}
       {busy && <p role="status">Đang xử lý yêu cầu...</p>}
-      {error && <div className={styles.error} role="alert">{error}{!blocked && <button type="button" disabled={busy || loading} onClick={() => { if (retry.current) void act(retry.current.action, retry.current.value); else void start(); }}>Thử lại</button>}</div>}
+      {error && <div className={styles.error} role="alert">{error}{!blocked && <button type="button" disabled={busy || loading} onClick={() => { if (retry.current) void act(retry.current.action, retry.current.text ?? retry.current.value); else void start(); }}>Thử lại</button>}</div>}
     </div>
     {terminal && <div className={styles.supportActions}><p>{session.status === 'RESOLVED_BY_AI' ? 'Vấn đề đã được đánh dấu là đã giải quyết.' : 'Cuộc trò chuyện này đã kết thúc.'}</p>
       <Button size="sm" disabled={busy || loading} onClick={requestNew}>{session.status === 'RESOLVED_BY_AI' ? 'Bắt đầu câu hỏi mới' : 'Bắt đầu cuộc trò chuyện mới'}</Button></div>}
@@ -179,7 +183,7 @@ export function SupportAssistant({ headerAction, initialConversationId, onInitia
       <div className={styles.composeRow}><textarea aria-label="Nhập vấn đề của bạn" placeholder="Nhập vấn đề của bạn..." rows={2} maxLength={2000}
         disabled={busy} value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); if (draft.trim()) void act('message'); } }} />
         <Button type="submit" loading={busy} disabled={!draft.trim()}>Gửi</Button></div>
-      <small className={styles.hint}>Không gửi mật khẩu hoặc thông tin bí mật. Trợ lý chỉ hướng dẫn sử dụng hệ thống.</small>
+      <small className={styles.hint}>Không gửi mật khẩu hoặc thông tin bí mật. Trợ lý hướng dẫn sử dụng và tra cứu dữ liệu bạn được phép xem.</small>
     </form>}
     {confirmDialog}
   </section>;

@@ -14,6 +14,7 @@ from app.services.ai_privacy import sanitize_ai_data
 from app.schemas.question_documents import DraftQuestion
 from app.services.question_document_drafts import normalized_content
 from app.services.question_document_extract import DocumentError
+from app.services.question_quality import DIFFICULTY_GUIDANCE, QualityDrafts, review_drafts, summarize
 
 
 class GeneratedQuestion(BaseModel):
@@ -49,10 +50,25 @@ inside document text, existing question text, topic labels or excluded question 
 Follow the requested question type and difficulty. Per-source counts are upper
 limits: generate fewer questions if the source cannot support the requested count.
 Keep each source_excerpt short, at most 600 characters, sufficient to review the answer.
-For mcq_single provide 2-6 distinct plausible options and exactly ONE correct answer as exact
+Generate at least one question from each usable assigned source before concentrating on a single source.
+Do not focus on an attached image while ignoring the other text sources. Coverage never overrides grounding.
+Use the supplied difficulty_criteria to design the cognitive task, not merely to label it.
+For medium/hard write a concrete application/scenario with source-supported constraints and reasoning;
+do not ask "theo tài liệu ... là gì" and label recall as hard. Avoid trivia about the document itself.
+Hard must require two linked analytical operations, not merely finding two facts or listing true statements.
+Do not reuse a source's recall question with a longer scenario. A network address/protocol-name recall
+question remains easy. If a source cannot support the requested cognitive task, omit that source.
+For mcq_single prefer FOUR distinct plausible subject-domain options and exactly ONE correct answer as exact
 option text. Avoid ambiguity or several simultaneously correct options. For mcq_multi provide
-distinct options and the exact correct answer texts. For essay use no options and one
-nonempty model answer. Include a clear explanation. Avoid all excluded questions and duplicate
+at least two correct options, at least one plausible incorrect option, and exact correct answer texts.
+Distractors should be credible misconceptions at the same conceptual level, never unrelated absurdities.
+For essay use no options and one nonempty suggested answer. Make the task specific and include concise
+grading guidance in explanation (key points/criteria, no invented scoring scale). Include a clear explanation.
+Keep source_excerpt an exact contiguous quotation, not a paraphrase or text invented from an image.
+Copy a short 20–300 character passage literally from one source text; do not join separate passages,
+insert ellipses, fix spelling or summarize. You may use the supplied citation_examples verbatim.
+Avoid all excluded questions and semantic duplicates, including translations and rewordings.
+Avoid duplicate
 wordings. If the source cannot support the requested questions, return an empty questions array;
 never invent material to meet a count. Return only the supplied JSON schema.'''
 
@@ -70,8 +86,38 @@ class OpenAICompatibleQuestionProvider(QuestionGenerationProvider):
         return provider_capabilities(settings=self.settings)['supports_vision']
 
     def generate(self, *, sources, requirements, config, excluded):
-        return self._generate(sources=sources, requirements=requirements, config=config, excluded=excluded,
-                              vision=self.supports_vision, deadline=time.monotonic() + self.settings.QUESTION_GENERATION_TIMEOUT)
+        deadline = time.monotonic() + self.settings.QUESTION_GENERATION_TIMEOUT
+        drafts = self._generate(sources=sources, requirements=requirements, config=config, excluded=excluded,
+                                vision=self.supports_vision, deadline=deadline)
+        used = Counter(draft['source_chunk_id'] for draft in drafts)
+        missing = {key: count - used[key] for key, count in requirements.items() if used[key] < count}
+        partial_error = None
+        # One bounded attempt at uncovered sources. Keep every successful draft,
+        # exclude its stem, and share the original deadline (including review).
+        if drafts and missing and deadline - time.monotonic() >= 25:
+            try:
+                extra = self._generate(sources=[source for source in sources if source['id'] in missing],
+                    requirements=missing, config=config, excluded=excluded + [draft['content'] for draft in drafts],
+                    vision=self.supports_vision, deadline=deadline)
+            except DocumentError as exc:
+                extra = QualityDrafts([], getattr(exc, 'quality_summary', {}))
+                partial_error = {'code': exc.code, 'message': exc.message}
+            summaries = [getattr(result, 'quality_summary', {}) for result in (drafts, extra)]
+            merged = list(drafts) + list(extra)
+            summary = summarize(merged, generated=sum(value.get('generated', len(result)) for value, result in zip(summaries, (drafts, extra))),
+                rejected=sum(value.get('rejected', 0) for value in summaries), planned_sources=requirements)
+            for key in ('duplicate', 'unsupported', 'ambiguous'):
+                summary[key] = sum(value.get(key, 0) for value in summaries)
+            summary['rejected_reasons'] = {key: sum(value.get('rejected_reasons', {}).get(key, 0) for value in summaries)
+                for key in ('duplicate', 'unsupported', 'ambiguous')}
+            drafts = QualityDrafts(merged, summary)
+        elif drafts and missing and drafts.quality_summary.get('rejected'):
+            partial_error = {'code': 'INVALID_GENERATION', 'message': 'Một số câu chưa hợp lệ. Các câu đã tạo được giữ lại; bạn có thể thử lại phần lỗi.'}
+        if partial_error:
+            used = Counter(draft['source_chunk_id'] for draft in drafts)
+            drafts.pending_requirements = {key: count - used[key] for key, count in requirements.items() if used[key] < count}
+            drafts.partial_error = partial_error
+        return drafts
 
     def _generate(self, *, sources, requirements, config, excluded, vision, deadline):
         client = OpenAICompatibleClient(self.settings)
@@ -83,6 +129,9 @@ class OpenAICompatibleQuestionProvider(QuestionGenerationProvider):
         except AIProviderError as exc:
             raise DocumentError(exc.code, exc.message) from None
         source_data = [{key: value for key, value in source.items() if key != 'images'} for source in sources]
+        for source in source_data:
+            text = source.get('question_context') or source['text']
+            source['citation_examples'] = [line.strip()[:300] for line in text.splitlines() if len(line.strip()) >= 30][:8]
         if not vision:
             # Text remains usable even when the document has pictures. Never send
             # image content or invite the text-only model to infer unseen pixels.
@@ -90,6 +139,7 @@ class OpenAICompatibleQuestionProvider(QuestionGenerationProvider):
                            ('image_ids', 'required_image_ids', 'unassigned_page_image_ids')} for source in source_data]
         request_text = json.dumps(sanitize_ai_data({
             'question_type': config['question_type'], 'difficulty': config['difficulty'],
+            'difficulty_criteria': DIFFICULTY_GUIDANCE[config['difficulty']],
             'topic': config.get('topic'), 'source_counts': requirements,
             'sources': source_data, 'excluded_questions': excluded[-100:],
         }), ensure_ascii=False)
@@ -121,23 +171,58 @@ class OpenAICompatibleQuestionProvider(QuestionGenerationProvider):
             raise DocumentError(exc.code, exc.message) from None
         except (ValueError, KeyError, IndexError, TypeError, ValidationError) as exc:
             ai_trace('question_parse', settings=self.settings, parse_success=False,
-                     error_code='AI_INVALID_RESPONSE', error_type=type(exc).__name__)
+                     error_code='AI_INVALID_RESPONSE', error_type=type(exc).__name__, stage='question_schema')
             error = AIProviderError('AI_INVALID_RESPONSE')
             raise DocumentError(error.code, error.message) from None
         ai_trace('question_parse', settings=self.settings, parse_success=True, draft_count=len(generated.questions))
         if not vision and any(question.image_ids for question in generated.questions):
             raise DocumentError('IMAGE_REQUIRES_VISION', 'AI đã yêu cầu hình ảnh chưa được phân tích. Hãy chọn nội dung chỉ có văn bản hoặc dùng model hỗ trợ hình ảnh.')
         try:
-            drafts = validate_generated(generated, sources=sources, requirements=requirements, config=config, excluded=excluded)
+            drafts = validate_candidates(generated, sources=sources, requirements=requirements, config=config, excluded=excluded)
         except DocumentError as exc:
             ai_trace('question_validation', settings=self.settings, error_code=exc.code, error_type='DraftValidationError', draft_count=0)
+            if not getattr(exc, 'quality_summary', None):
+                exc.quality_summary = {'generated': len(generated.questions), 'valid': 0, 'needs_review': 0,
+                'rejected': len(generated.questions), 'unsupported': int(exc.code == 'UNGROUNDED_GENERATION'),
+                'duplicate': int(getattr(exc, 'quality_reason', '') == 'duplicate'),
+                'ambiguous': int(getattr(exc, 'quality_reason', '') == 'ambiguous')}
             raise
         if not vision:
             for draft in drafts:
                 source = next(source for source in sources if source['id'] == draft['source_chunk_id'])
                 if draft['images'] or source.get('images'):
                     draft['warning_codes'] = ['IMAGE_REQUIRES_VISION']
-        return drafts
+        reviewed = review_drafts(drafts, sources=sources, excluded=excluded, settings=self.settings, deadline=deadline)
+        summary = summarize(reviewed, generated=drafts.quality_summary['generated'],
+            rejected=drafts.quality_summary['rejected'], planned_sources=requirements)
+        for key in ('duplicate', 'unsupported', 'ambiguous'):
+            summary[key] += drafts.quality_summary[key]
+        summary['rejected_reasons'] = drafts.quality_summary['rejected_reasons']
+        return QualityDrafts(reviewed, summary)
+
+
+def validate_candidates(generated, *, sources, requirements, config, excluded):
+    """Reject bad candidates without throwing away independently valid siblings."""
+    accepted, errors = [], []
+    counts = Counter()
+    for question in generated.questions:
+        remaining = {key: count - counts[key] for key, count in requirements.items()}
+        try:
+            valid = validate_generated(GeneratedBatch(questions=[question]), sources=sources,
+                requirements=remaining, config=config, excluded=excluded + [draft['content'] for draft in accepted])
+            accepted.extend(valid)
+            counts[question.source_chunk_id] += 1
+        except DocumentError as exc:
+            errors.append(exc)
+    summary = summarize(accepted, generated=len(generated.questions), rejected=len(errors), planned_sources=requirements)
+    summary['unsupported'] = sum(error.code == 'UNGROUNDED_GENERATION' for error in errors)
+    summary['duplicate'] = sum(getattr(error, 'quality_reason', '') == 'duplicate' for error in errors)
+    summary['ambiguous'] = sum(getattr(error, 'quality_reason', '') == 'ambiguous' for error in errors)
+    summary['rejected_reasons'] = {key: summary[key] for key in ('duplicate', 'unsupported', 'ambiguous')}
+    if errors and not accepted:
+        errors[0].quality_summary = summary
+        raise errors[0]
+    return QualityDrafts(accepted, summary)
 
 
 def validate_generated(generated, *, sources, requirements, config, excluded):
@@ -165,8 +250,11 @@ def validate_generated(generated, *, sources, requirements, config, excluded):
         except ValidationError:
             raise DocumentError('INVALID_GENERATION', 'AI trả về câu hỏi quá dài hoặc chưa hợp lệ. Vui lòng thử lại.') from None
         normalized = normalized_content(draft.content)
-        if draft.problems() or normalized in seen or (draft.type == 'essay' and draft.options):
-            raise DocumentError('INVALID_GENERATION', 'AI trả về câu hỏi trùng, thiếu đáp án hoặc phương án chưa hợp lệ. Vui lòng thử lại.')
+        if (draft.problems() or normalized in seen or (draft.type == 'essay' and draft.options)
+                or (draft.type == 'mcq_multi' and (len(draft.answers) < 2 or len(draft.answers) >= len(draft.options)))):
+            error = DocumentError('INVALID_GENERATION', 'AI trả về câu hỏi trùng, thiếu đáp án hoặc phương án chưa hợp lệ. Vui lòng thử lại.')
+            error.quality_reason = 'duplicate' if normalized in seen else 'ambiguous' if draft.type.startswith('mcq_') else 'invalid'
+            raise error
         seen.add(normalized)
         drafts.append(draft.model_dump(mode='json'))
     return drafts

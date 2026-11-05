@@ -1,0 +1,28 @@
+# Optional workers for the existing native/local LiveKit server.
+# Generate the private config with scripts/start-classroom-recording.ps1.
+services:
+  redis:
+    image: redis:7.4-alpine
+    container_name: proctoowl-recording-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6382:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - recording-redis:/data
+  egress:
+    image: livekit/egress:v1.15.0
+    container_name: proctoowl-recording-egress
+    restart: unless-stopped
+    depends_on: [redis]
+    environment:
+      EGRESS_CONFIG_FILE: /etc/livekit/egress.yaml
+    ports:
+      - "127.0.0.1:7989:7989"
+    shm_size: 1gb
+    cpus: 6.0
+    volumes:
+      - ../../backend/private/livekit-recording/egress.yaml:/etc/livekit/egress.yaml:ro
+      - ../../backend/private/recordings:/out
+volumes:
+  recording-redis:

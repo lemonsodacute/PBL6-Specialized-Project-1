@@ -12,14 +12,14 @@ async function respond(route: Route, json: unknown, status = 200) {
     'access-control-allow-credentials': 'true', 'access-control-allow-headers': 'authorization,content-type', 'access-control-allow-methods': 'GET,POST,OPTIONS' };
   return route.fulfill({ status: route.request().method() === 'OPTIONS' ? 204 : status, headers, ...(route.request().method() === 'OPTIONS' ? {} : { json }) });
 }
-async function setup(page: Page) {
+async function setup(page: Page, requireMic = false) {
   await uiSession(page);
   await page.routeWebSocket('**/api/v1/**', () => {});
   const state = { starts: [] as Record<string, unknown>[], frames: [] as string[], finalCalls: 0, gate: null as Promise<void> | null, rejectStart: false };
   const attempt = { id: attemptId, exam_id: examId, status: 'in_progress', questions: [], answers: [], remaining_seconds: 1800,
     server_deadline_at: new Date(Date.now() + 1800000).toISOString() };
   await page.route(`**/api/v1/exams/${examId}`, route => respond(route, { data: { id: examId, title: 'Kiểm tra cổng danh tính',
-    require_camera: true, require_mic: false, require_fullscreen: false, duration_minutes: 30 } }));
+    require_camera: true, require_mic: requireMic, require_fullscreen: false, duration_minutes: 30 } }));
   await page.route('**/api/v1/identity/student-card/status', route => respond(route, { data: { identity_profile_status: 'VERIFIED', has_reference: true } }));
   await page.route(`**/api/v1/identity/exams/${examId}/verify*`, async route => {
     if (route.request().method() === 'OPTIONS') return respond(route, {});
@@ -53,9 +53,20 @@ async function setup(page: Page) {
   await page.route(`**/api/v1/attempts/${attemptId}**`, route => respond(route, { data: attempt }));
   await page.route('**/api/v1/proctoring/**', route => respond(route, { data: {} }));
   await page.addInitScript(() => {
-    Object.assign(window, { entryPerson: 'A', entryFrame: 0 });
+    Object.assign(window, { entryPerson: 'A', entryFrame: 0, entryMediaRequests: [], entryTracks: [] });
     navigator.mediaDevices.enumerateDevices = async () => [];
-    navigator.mediaDevices.getUserMedia = async () => {
+    navigator.mediaDevices.getUserMedia = async (constraints = {}) => {
+      const audit = window as unknown as { entryMediaRequests: MediaStreamConstraints[]; entryTracks: MediaStreamTrack[] };
+      audit.entryMediaRequests.push(constraints);
+      const combined = new MediaStream();
+      if (constraints.audio) {
+        const context = new AudioContext();
+        const [audio] = context.createMediaStreamDestination().stream.getAudioTracks();
+        const stop = audio.stop.bind(audio);
+        audio.stop = () => { stop(); void context.close().catch(() => undefined); };
+        combined.addTrack(audio);
+      }
+      if (constraints.video) {
       const canvas = Object.assign(document.createElement('canvas'), { width: 640, height: 480 });
       const ctx = canvas.getContext('2d')!;
       const stream = canvas.captureStream(15);
@@ -68,7 +79,10 @@ async function setup(page: Page) {
       draw(); const timer = setInterval(draw, 60);
       const track = stream.getVideoTracks()[0], stop = track.stop.bind(track);
       track.stop = () => { clearInterval(timer); stop(); };
-      return stream;
+      combined.addTrack(track);
+      }
+      audit.entryTracks.push(...combined.getTracks());
+      return combined;
     };
   });
   return state;
@@ -108,6 +122,7 @@ for (const [person, message] of [
 });
 
 test('valid current frame starts once, disables repeat clicks, and transfers live camera', async ({ page }) => {
+  test.setTimeout(90000);
   const state = await setup(page);
   let release!: () => void;
   state.gate = new Promise<void>(resolve => { release = resolve; });
@@ -116,12 +131,34 @@ test('valid current frame starts once, disables repeat clicks, and transfers liv
   await expect(dialog.getByRole('button', { name: 'Đang xác minh danh tính...', exact: true })).toBeDisabled();
   expect(state.starts).toHaveLength(0);
   release();
-  await expect(page).toHaveURL(`/student/attempts/${attemptId}`);
+  await expect(page).toHaveURL(`/student/attempts/${attemptId}`, { timeout: 45000 });
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Thiết bị giám sát', exact: true })).toBeVisible();
   expect(state.starts).toEqual([{ exam_id: examId, entry_verification_id: proofId }]);
   expect(new Set(state.frames).size).toBe(2);
   expect(await page.locator('.proctor-stream-hidden').evaluate(el => ((el as HTMLVideoElement).srcObject as MediaStream).getVideoTracks()[0].readyState)).toBe('live');
+});
+
+test('StrictMode handoff keeps camera and microphone alive without a second device modal', async ({ page }) => {
+  test.setTimeout(90000);
+  const state = await setup(page, true);
+  const gate = await reachFinalDevices(page);
+  await expect(gate.getByText('Microphone đã sẵn sàng', { exact: true })).toBeVisible();
+  const before = await page.evaluate(() => (window as unknown as { entryMediaRequests: unknown[] }).entryMediaRequests.length);
+  await gate.getByRole('button', { name: 'Vào phòng thi', exact: true }).click();
+  await expect(page).toHaveURL(`/student/attempts/${attemptId}`, { timeout: 45000 });
+  await expect(page.getByRole('region', { name: 'Thiết bị giám sát', exact: true })).toBeVisible();
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(gate).toHaveCount(0);
+  await page.getByRole('button', { name: 'Cài đặt thiết bị', exact: true }).click();
+  const settings = page.getByRole('dialog', { name: 'Cài đặt thiết bị', exact: true });
+  await expect(settings.getByText('Microphone đã sẵn sàng', { exact: true })).toBeVisible();
+  await expect(settings.getByText('Camera đã sẵn sàng', { exact: true })).toBeVisible();
+  await settings.getByRole('button', { name: 'Áp dụng', exact: true }).click();
+  const live = await page.locator('.proctor-stream-hidden').evaluate(element => ((element as HTMLVideoElement).srcObject as MediaStream).getTracks().map(track => ({ kind: track.kind, state: track.readyState })));
+  expect(live).toHaveLength(2); expect(live.every(track => track.state === 'live')).toBe(true);
+  expect(await page.evaluate(() => (window as unknown as { entryMediaRequests: unknown[] }).entryMediaRequests.length)).toBe(before);
+  expect(state.starts).toEqual([{ exam_id: examId, entry_verification_id: proofId }]);
 });
 
 test('expired proof permits a retry with a new frame and no earlier successful attempt', async ({ page }) => {

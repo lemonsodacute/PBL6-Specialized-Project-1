@@ -1,0 +1,7 @@
+# Windows x64, CPython 3.12.10. Install in backend/.venv-proctor only.
+mediapipe==1.2.0
+opencv-contrib-python==5.0.0.93
+numpy==2.5.4
+Pillow==13.0.0
+fastapi==0.162.0
+uvicorn==0.54.0

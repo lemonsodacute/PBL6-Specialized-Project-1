@@ -1,5 +1,22 @@
 // Single-use, memory-only handoff across the immediate Next.js exam navigation.
 // This preserves the already confirmed devices; it is never an authorization proof.
+type DeviceRequirements = { camera: boolean; microphone: boolean };
+const setupKey = (attemptId: string) => `proctoowl:exam-device-setup:${attemptId}`;
+
+/** Tab/attempt-scoped UX history, never permission or identity evidence. */
+export function rememberExamDeviceSetup(attemptId: string, requirements: DeviceRequirements) {
+  try { sessionStorage.setItem(setupKey(attemptId), JSON.stringify({ version: 1, ...requirements })); } catch { /* Storage can be unavailable. */ }
+}
+export function hasExamDeviceSetup(attemptId: string, requirements: DeviceRequirements) {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(setupKey(attemptId)) || 'null');
+    return saved?.version === 1 && saved.camera === requirements.camera && saved.microphone === requirements.microphone;
+  } catch { return false; }
+}
+export function forgetExamDeviceSetup(attemptId: string) {
+  try { sessionStorage.removeItem(setupKey(attemptId)); } catch { /* Optional UX history. */ }
+}
+
 let pending: { attemptId: string; stream: MediaStream; timer: ReturnType<typeof setTimeout> } | null = null;
 function discard() {
   if (!pending) return;

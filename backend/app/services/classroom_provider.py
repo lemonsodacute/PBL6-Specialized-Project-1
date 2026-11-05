@@ -1,5 +1,6 @@
 """SFU boundary for online classrooms. Exam calls use their existing transport."""
 from datetime import timedelta
+import json
 from typing import Protocol
 from uuid import UUID
 from urllib.parse import urlsplit
@@ -20,8 +21,13 @@ class ClassroomProvider(Protocol):
     async def close_room(self, name: str) -> None: ...
     async def participant(self, name: str, identity: str): ...
     async def remove(self, name: str, identity: str) -> None: ...
-    def token(self, name: str, identity: str, display_name: str) -> dict: ...
+    def token(self, name: str, identity: str, display_name: str, *, policy=None, host=False) -> dict: ...
     def webhook(self, body: str, authorization: str): ...
+    async def participants(self, name: str): ...
+    async def metadata(self, item, value): ...
+    async def permissions(self, item, participant, value): ...
+    async def mute(self, name: str, participant): ...
+    async def send(self, name: str, topic: str, value: dict, identities=None): ...
 
 
 class LiveKitProvider:
@@ -78,14 +84,48 @@ class LiveKitProvider:
     async def remove(self, name: str, identity: str):
         await self._call('remove_participant', api.RoomParticipantIdentity(room=name, identity=identity), missing_ok=True)
 
-    def token(self, name: str, identity: str, display_name: str):
+    async def participants(self, name):
+        result = await self._call('list_participants', api.ListParticipantsRequest(room=name), missing_ok=True)
+        return list(result.participants) if result else []
+
+    async def metadata(self, item, value):
+        await self._call('update_room_metadata', api.UpdateRoomMetadataRequest(room=room_name(item.id), metadata=json.dumps({'policy': value['policy']})))
+
+    async def permissions(self, item, participant, value):
+        from app.services.classroom_controls import sources
+        member = value['members'].get(participant.identity, {})
+        # Role is signed in the token; clients cannot edit their own metadata.
+        try:
+            host = participant.identity == str(item.teacher_id) or json.loads(participant.metadata or '{}').get('host') is True
+        except (ValueError, AttributeError):
+            host = participant.identity == str(item.teacher_id)
+        source_ids = {'camera': api.TrackSource.CAMERA, 'microphone': api.TrackSource.MICROPHONE,
+                      'screen_share': api.TrackSource.SCREEN_SHARE, 'screen_share_audio': api.TrackSource.SCREEN_SHARE_AUDIO}
+        await self._call('update_participant', api.UpdateParticipantRequest(
+            room=room_name(item.id), identity=participant.identity,
+            metadata=json.dumps({'host': host, 'hand': member.get('hand')}),
+            permission=api.ParticipantPermission(can_subscribe=True, can_publish=True, can_publish_data=True,
+                can_update_metadata=False, can_publish_sources=[source_ids[x] for x in sources(value['policy'], host)])))
+
+    async def mute(self, name, participant):
+        for track in participant.tracks:
+            if track.source == api.TrackSource.MICROPHONE and not track.muted:
+                await self._call('mute_published_track', api.MuteRoomTrackRequest(room=name, identity=participant.identity, track_sid=track.sid, muted=True))
+
+    async def send(self, name, topic, value, identities=None):
+        await self._call('send_data', api.SendDataRequest(room=name, topic=topic, data=json.dumps(value).encode(),
+            kind=api.DataPacket.RELIABLE, destination_identities=identities or []))
+
+    def token(self, name: str, identity: str, display_name: str, *, policy=None, host=False):
         self._validate()
         s = self.settings
+        from app.services.classroom_controls import DEFAULT_POLICY, sources
         jwt = (api.AccessToken(s.LIVEKIT_API_KEY, s.LIVEKIT_API_SECRET)
                .with_identity(identity).with_name(display_name).with_ttl(timedelta(seconds=60))
+               .with_metadata(json.dumps({'host': host}))
                .with_grants(api.VideoGrants(room_join=True, room=name, room_create=False, room_admin=False,
                                            can_publish=True, can_subscribe=True, can_publish_data=True,
-                                           can_publish_sources=['camera', 'microphone'], can_update_own_metadata=False))
+                                           can_publish_sources=sources(policy or DEFAULT_POLICY, host), can_update_own_metadata=False))
                .to_jwt())
         return {'provider': 'livekit', 'url': s.LIVEKIT_URL, 'server_url': s.LIVEKIT_URL, 'room_name': name, 'token': jwt}
 

@@ -1,0 +1,63 @@
+.inboxPage { width: 100%; min-width: 0; }
+.pageHeading { margin-bottom: 20px; }
+.pageHeading h1 { margin: 0 0 6px; font-size: 24px; font-weight: 800; }
+.pageHeading p { color: var(--text-secondary); font-size: 14px; }
+.inbox { display: grid; grid-template-columns: minmax(310px, .44fr) minmax(0, .56fr); height: calc(100dvh - 232px); min-height: 440px; max-height: 900px; border: 1px solid var(--border); border-radius: 24px; background: var(--surface); overflow: hidden; box-shadow: 0 2px 4px rgb(20 70 80 / 4%); }
+.list { display: flex; flex-direction: column; min-height: 0; min-width: 0; border-right: 1px solid var(--border); }
+.listTools { flex-shrink: 0; padding: 16px 18px 14px; border-bottom: 1px solid var(--border); background: var(--surface-muted); }
+.listHeading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.listHeading h2 { margin: 0; font: 800 20px/1.4 var(--font-heading); }
+.inboxCount { display: inline-flex; align-items: center; justify-content: center; min-width: 31px; height: 31px; padding: 0 8px; border-radius: 50%; background: var(--color-primary); color: var(--text-on-solid); font-size: 16px; font-weight: 800; }
+.search { position: relative; }
+.search > svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-secondary); }
+.search input { width: 100%; height: 48px; padding: 10px 14px 10px 44px; border: 1px solid var(--border-control); border-radius: 17px; background: var(--surface); color: var(--text-primary); font: inherit; font-size: 15px; }
+.statusTabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-top: 10px; padding: 4px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.statusTabs button { min-height: 36px; padding: 6px 10px; border: 0; border-radius: 12px; background: transparent; color: var(--text-secondary); font: 800 14px/1.4 var(--font-heading); cursor: pointer; }
+.statusTabs button[aria-pressed='true'] { background: var(--color-primary); color: var(--text-on-solid); }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.filters button { min-height: 36px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text-secondary); font: 700 14px/1.5 var(--font-body); cursor: pointer; }
+.filters button[aria-pressed='true'] { border-color: var(--border-users); background: color-mix(in srgb, var(--border-users) 20%, var(--surface)); color: var(--text-primary); }
+.inbox :is(button, input):focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.listScroll { overflow-y: auto; flex: 1; min-height: 0; }
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100%; padding: 35px 28px; text-align: center; color: var(--text-secondary); font-size: 16px; line-height: 1.65; }
+.emptyIcon, .placeholderIcon { display: grid; place-items: center; flex-shrink: 0; border: 1px solid var(--border); border-radius: 50%; color: var(--primary); }
+.emptyIcon { width: 106px; height: 106px; margin-bottom: 17px; background: var(--surface-muted); }
+.empty strong { color: var(--text-primary); font: 800 20px/1.5 var(--font-heading); }
+.empty p { max-width: 39ch; margin-top: 9px; }
+.detail { display: flex; flex-direction: column; min-height: 0; min-width: 0; background: var(--procto-bg); }
+.placeholder { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; padding: 36px 28px; text-align: center; }
+.placeholderIcon { width: 140px; height: 140px; margin-bottom: 20px; background: var(--surface); }
+.placeholder h2 { max-width: 38ch; margin: 0; color: var(--text-primary); font: 800 21px/1.5 var(--font-heading); }
+.placeholder p { max-width: 43ch; margin-top: 12px; color: var(--text-secondary); font-size: 17px; line-height: 1.6; }
+.listItem { display: flex; width: 100%; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); text-align: left; color: var(--text-primary); background: var(--surface); cursor: pointer; }
+.listItem:hover { background: var(--surface-muted); }
+.activeItem { background: var(--primary-soft); box-shadow: inset 3px 0 var(--primary); }
+.avatar { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font-size: 13px; font-weight: 800; }
+.itemContent { display: flex; flex: 1; flex-direction: column; gap: 3px; min-width: 0; line-height: 1.45; }
+.itemTitle { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 15px; }
+.itemTitle strong, .preview { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.itemTitle strong { min-width: 0; }
+.count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--color-danger-btn); color: var(--text-on-solid); font-size: 12px; font-weight: 800; }
+.itemContent small, .itemContent time { color: var(--text-secondary); font-size: 12px; overflow-wrap: anywhere; }
+.preview { color: var(--text-secondary); font-size: 13px; }
+.error { padding: 12px 20px; color: var(--error); font-size: 14px; overflow-wrap: anywhere; }
+.error button { margin-left: 4px; color: var(--primary); text-decoration: underline; }
+.older { display: block; min-height: 44px; margin: 12px auto; padding: 8px 14px; border: 1px solid var(--border); border-radius: 12px; color: var(--primary); background: var(--surface); font-size: 13px; cursor: pointer; }
+@media (max-width: 767px) {
+  .inbox { grid-template-columns: 1fr; height: calc(100dvh - 218px); min-height: 440px; }
+  .list { border-right: 0; }
+  .listTools { padding: 14px 16px 12px; }
+  .listHeading h2 { font-size: 20px; }
+  .filters { gap: 8px; }
+  .filters button { padding-inline: 10px; }
+  .detail { display: none; }
+  .hasSelection .list { display: none; }
+  .hasSelection { position: fixed; inset: 0; z-index: var(--z-drawer); height: 100dvh; max-height: none; border: 0; border-radius: 0; }
+  .hasSelection .detail { display: flex; }
+  .empty { padding: 28px 22px; }
+  .emptyIcon { width: 88px; height: 88px; }
+  .empty strong { font-size: 18px; }
+}
+@media (max-width: 767px), (pointer: coarse) {
+  .statusTabs button, .filters button { min-height: 44px; }
+}

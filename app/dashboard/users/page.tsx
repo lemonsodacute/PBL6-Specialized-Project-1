@@ -89,11 +89,11 @@ export default function UserManagementPage() {
 
   return <div className="workspace-page">
     
-    {(error || loadError) && !showCreate && <Card><p role="alert">{error || loadError}</p><Button variant="warning" onClick={() => void load()}>Tải lại danh sách</Button></Card>}
-    {notice && <Card><p role="status">{notice}</p></Card>}
+    {(error || loadError) && !showCreate && <Card borderRole="danger"><p role="alert">{error || loadError}</p><Button variant="warning" onClick={() => void load()}>Tải lại danh sách</Button></Card>}
+    {notice && <Card borderRole="success"><p role="status">{notice}</p></Card>}
     {<Suspense fallback={<Card>Đang tải yêu cầu...</Card>}><ProfileVerificationRequests refresh={requestRefresh} onEdit={student => openEdit(toSafe(student))} onApproved={() => void load()} /></Suspense>}
     
-    <Card>
+    <Card borderRole="users">
       
       <CollectionToolbar actions={<Button onClick={openCreate}>+ Thêm người dùng</Button>} state={collection} placeholder="Tìm người dùng..." sorts={commonSorts} filters={[
         {key:'role',label:'Vai trò',options:Object.entries(roleLabels).map(([value,label])=>({value,label}))},

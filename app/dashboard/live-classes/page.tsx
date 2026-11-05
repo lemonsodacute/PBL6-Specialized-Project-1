@@ -1,11 +1,16 @@
 'use client';
+import { borderProps } from '@/components/ui/Border';
+
 
 
 import { friendlyError } from '@/lib/uiErrors';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, Card, EmptyState, Input, Modal,ConfirmDialog, Select, Table, Textarea } from '@/components/ui';
+import { Button, Card, EmptyState, Input, Modal,ConfirmDialog, Textarea } from '@/components/ui';
+import { Clock3, GraduationCap, Play, Plus } from 'lucide-react';
+import { TeacherIdentity } from '@/components/teacher/TeachingCollectionHeader';
+import styles from '@/components/teacher/TeachingCollection.module.css';
 import { api } from '@/lib/api';
 import type { LiveClass, LiveClassStatus } from '@/types';
 import { useRef } from 'react';
@@ -14,8 +19,7 @@ import { useCollectionState,useServerCollection } from '@/lib/collections';
 import { CollectionToolbar,CollectionPagination,EmptySearchState } from '@/components/collections/CollectionToolbar';
 
 type ClassOption = { id: string; name: string };
-const statusLabels: Record<LiveClassStatus, string> = { scheduled: 'Đã lên lịch', ongoing: 'Đang diễn ra', ended: 'Đã kết thúc', cancelled: 'Đã huỷ' };
-const statusClass: Record<LiveClassStatus, string> = { scheduled: 'exam-status-published', ongoing: 'exam-status-ongoing', ended: 'exam-status-closed', cancelled: 'exam-status-draft' };
+const statusLabels: Record<LiveClassStatus, string> = { scheduled: 'Sắp diễn ra', ongoing: 'Đang diễn ra', ended: 'Đã kết thúc', cancelled: 'Đã huỷ' };
 const unwrap = <T,>(response: unknown): T => (response as { data: T }).data;
 const formatDate = (value: string) => new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value));
 const toInputDate = (value: string) => { const date = new Date(value); return Number.isNaN(date.getTime()) ? '' : new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
@@ -55,12 +59,23 @@ export default function LiveClassesPage() {
   const start = (item: LiveClass) => act(item, 'start');
   const end = (item: LiveClass) => act(item, 'end');
 
-  return <div className="workspace-page classroom-page">
+  return <div className={`workspace-page classroom-page ${styles.page}`}>
+    <h1 className={styles.srOnlyTitle}>Lớp học trực tuyến</h1>
     {notice && <p className="classroom-notice" role="status">{notice}</p>}
     {(error||loadError) && <div className="classroom-alert" role="alert">{error||loadError}{loadError&&<Button onClick={()=>void load()}>Thử lại</Button>}</div>}
     {!classes.length && !loading && <Card><p>Giảng viên cần có ít nhất một lớp được phân công để lên lịch buổi học.</p></Card>}
-    <Card><CollectionToolbar actions={<Button disabled={busy || loading || !classes.length} onClick={() => { setError(''); setEditing(emptyLiveClass(classes[0]?.id)); }}>+ Tạo buổi học</Button>} state={collection} placeholder="Tìm lớp hoặc buổi học..." filters={[{key:'status',label:'Trạng thái',options:Object.entries(statusLabels).map(([value,label])=>({value,label}))},{key:'class_id',label:'Lớp học',source:'classes',options:[]}]} sorts={[{value:'newest',label:'Lịch gần nhất'},{value:'oldest',label:'Lịch cũ nhất'}]}/></Card>
-    {loading ? <Card><p>Đang tải…</p></Card> : !loadError&&<Card>{items.length ? <Table><thead><tr><th>Tiêu đề</th><th>Lớp</th><th>Thời gian</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{items.map(item => <tr key={item.id}><td><button className="table-link" onClick={() => router.push(`/live-class/${item.id}`)}>{item.title}</button><small className="table-description">{item.description}</small></td><td>{item.class_name??classes.find(c => c.id === item.class_id)?.name ?? '—'}</td><td><span className="date-stack">{formatDate(item.scheduled_start)}<small>đến {formatDate(item.scheduled_end)}</small></span></td><td><Badge className={`status-badge ${statusClass[item.status]}`}>{statusLabels[item.status]}</Badge></td><td><div className="table-actions">{item.status === 'scheduled' && <Button variant="success" size="sm" disabled={busy} onClick={() => void start(item)}>Bắt đầu</Button>}{item.status === 'ongoing' && <><Button variant="outline" size="sm" onClick={() => router.push(`/live-class/${item.id}`)}>Mở phòng</Button><Button variant="danger" size="sm" disabled={busy} onClick={() => setEnding(item)}>Kết thúc</Button></>}{item.status === 'ended' && <Button variant="outline" size="sm" onClick={() => router.push(`/live-class/${item.id}`)}>Xem chi tiết</Button>}</div></td></tr>)}</tbody></Table> : collection.active?<EmptySearchState mascot state={collection}/>:<EmptyState mascot title="Chưa có buổi học">Tạo buổi học đầu tiên cho lớp.</EmptyState>}</Card>}
+    <Card className={`${styles.toolbarCard} ${styles.liveToolbar}`}><CollectionToolbar actions={<Button aria-label="+ Tạo buổi học" disabled={busy || loading || !classes.length} onClick={() => { setError(''); setEditing(emptyLiveClass(classes[0]?.id)); }}><Plus size={18} aria-hidden="true" />Tạo buổi học</Button>} state={collection} searchLabel="Tìm buổi học" placeholder="Nhập tên lớp hoặc buổi học..." filters={[{key:'status',label:'Trạng thái',options:Object.entries(statusLabels).map(([value,label])=>({value,label}))},{key:'class_id',label:'Lớp học',source:'classes',options:[]}]} sorts={[{value:'newest',label:'Lịch gần nhất'},{value:'oldest',label:'Lịch cũ nhất'}]}/></Card>
+    <div className={styles.listHeading}><h2>Lịch buổi học</h2>{!loading && !loadError && <p>{items.length} / {total ?? items.length} buổi học</p>}</div>
+    {loading ? <Card><p role="status">Đang tải…</p></Card> : !loadError && (items.length ? <div className={styles.list}>{items.map(item => {
+      const date = new Date(item.scheduled_start);
+      return <article className={styles.sessionCard} key={item.id} data-live-session={item.id} {...borderProps('classes')}>
+        <div className={styles.dateTile} aria-hidden="true"><small>{date.toLocaleDateString('vi-VN', { weekday: 'short' })}</small><strong>{date.getDate().toString().padStart(2, '0')}</strong><span>Tháng {date.getMonth() + 1}</span></div>
+        <div className={styles.sessionCopy}><h3><button onClick={() => router.push(`/live-class/${item.id}`)}>{item.title}</button></h3><p className={styles.className}><GraduationCap size={16} aria-hidden="true" />{item.class_name ?? classes.find(c => c.id === item.class_id)?.name ?? '—'}</p>{item.description && <p>{item.description}</p>}</div>
+        <div className={styles.schedule}><span><Clock3 size={17} aria-hidden="true" /><time dateTime={item.scheduled_start}>{formatDate(item.scheduled_start)}</time></span><small>đến <time dateTime={item.scheduled_end}>{formatDate(item.scheduled_end)}</time></small></div>
+        <div className={styles.sessionMeta}><TeacherIdentity name={item.teacher_name} /><span className={`${styles.status} ${styles[item.status]}`}>{statusLabels[item.status]}</span></div>
+        <div className={styles.sessionActions}>{item.status === 'scheduled' && <Button variant="success" size="sm" disabled={busy} onClick={() => void start(item)}><Play size={15} aria-hidden="true" />Bắt đầu</Button>}{item.status === 'ongoing' && <><Button variant="outline" size="sm" onClick={() => router.push(`/live-class/${item.id}`)}>Tham gia</Button><Button variant="danger" size="sm" disabled={busy} onClick={() => setEnding(item)}>Kết thúc</Button></>}{item.status === 'ended' && <Button variant="outline" size="sm" onClick={() => router.push(`/live-class/${item.id}`)}>Điểm danh / Lịch sử</Button>}</div>
+      </article>;
+    })}</div> : <Card className={styles.empty}>{collection.active ? <EmptySearchState mascot state={collection} /> : <EmptyState mascot title="Chưa có buổi học">Tạo buổi học đầu tiên cho lớp.</EmptyState>}</Card>)}
     <CollectionPagination state={collection} total={total} count={items.length} loading={loading}/>
     <LiveClassModal value={editing} classes={classes} busy={busy} error={error} onChange={setEditing} onClose={() => { if (!busy) setEditing(null); }} onSave={() => void save()} />
     <ConfirmDialog open={Boolean(ending)} title="Kết thúc buổi học?" description="Tất cả người tham gia sẽ rời khỏi phòng." confirmLabel="Kết thúc buổi học" busy={busy} error={error} onCancel={()=>setEnding(null)} onConfirm={()=>{if(ending)void end(ending);}}/>

@@ -12,6 +12,7 @@ import httpx
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 from app.core.config import settings
 from app.proctoring.contracts import EvidenceSummary, ModelConfig, NormalizedProctorEvent, SafeMetadata
+from app.proctoring.diagnostics import diagnostic
 
 
 @dataclass(frozen=True)
@@ -26,6 +27,7 @@ class MonitoringFrame:
     content: bytes
     content_type: str
     occurred_at: datetime
+    trace_id: str | None = None
 
 
 class RawPrediction(BaseModel):
@@ -90,7 +92,7 @@ class TemporalPolicy:
     def __init__(self):
         self.states: dict[str,TemporalState] = {}
 
-    def normalize(self, context, provider, config, predictions):
+    def normalize(self, context, provider, config, predictions, *, trace=None):
         output, present = [], set()
         for prediction in predictions:
             kind = config.label_map.get(prediction.label)
@@ -104,6 +106,8 @@ class TemporalPolicy:
             state = self.states.get(kind)
             if state and stamp <= state.last: continue
             if not state or (stamp-state.last).total_seconds()*1000>policy.maximum_gap_ms:
+                if state: diagnostic('temporal_reset', trace=trace, provider=provider, event_type=kind,
+                    reason='observation_gap', gap_ms=round((stamp-state.last).total_seconds()*1000), maximum_gap_ms=policy.maximum_gap_ms)
                 state = TemporalState(stamp,stamp); self.states[kind]=state
             else:
                 state.last=stamp; state.frames+=1
@@ -136,10 +140,13 @@ def configured_models():
     for provider,raw in list(settings.PROCTOR_MODELS.items())[:16]:
         if provider in {'legacy','browser_signals','test_simulator'}: continue
         try: config = ModelConfig.model_validate(raw)
-        except ValueError: continue
-        if not config.enabled or not config.policies or not all(policy.calibrated for policy in config.policies.values()): continue
+        except ValueError:
+            diagnostic('profile_skipped', reason='invalid_configuration'); continue
+        if not config.enabled or not config.policies or not all(policy.calibrated for policy in config.policies.values()):
+            diagnostic('profile_skipped', provider=provider, reason='disabled_or_uncalibrated'); continue
         factory = factories.get(provider) or (HTTPModelAdapter if config.endpoint else None)
         if factory and config.frame_interval_ms is not None: result.append((provider,config,factory))
+        else: diagnostic('profile_skipped', provider=provider, reason='transport_or_cadence_missing')
     return result
 
 
@@ -165,6 +172,12 @@ class AdapterRuntime:
 
     async def close(self):
         for attempt_id in {key[0] for key in self.sessions}: await self.stop(attempt_id)
+
+    def calibration_sample(self, attempt_id):
+        if settings.ENVIRONMENT.lower() not in {'development', 'dev', 'local'} or not settings.PROCTOR_GAZE_CALIBRATION:
+            return None
+        record = self.sessions.get((attempt_id, 'local_gaze'))
+        return getattr(record[0], 'latest_calibration_sample', None) if record else None
 
     async def process_frame(self, context: AdapterContext, frame: MonitoringFrame):
         if context.attempt_id in self.busy or len(self.busy)>=32:
@@ -193,11 +206,15 @@ class AdapterRuntime:
                     predictions=[RawPrediction.model_validate(item) for item in predictions]
                     if any(abs((item.occurred_at-frame.occurred_at).total_seconds())>30 for item in predictions):
                         raise ValueError('Prediction timestamp does not match input')
-                    output.extend(policy.normalize(context,provider,config,predictions))
+                    normalized=policy.normalize(context,provider,config,predictions,trace=frame.trace_id)
+                    output.extend(normalized)
+                    diagnostic('temporal_policy', trace=frame.trace_id, provider=provider, predictions=len(predictions),
+                        active_states=len(policy.states), emitted=[event.event_type for event in normalized])
                     self.sessions[key]=(adapter,policy,frame.occurred_at);self.sessions.move_to_end(key)
                     self.last_used[key]=time.monotonic()
                     health.append((provider,'ACTIVE',None))
                 except Exception as error:
+                    diagnostic('adapter_failed', trace=frame.trace_id, provider=provider, error_type=type(error).__name__)
                     logger.warning('proctor_adapter_failed provider=%s category=%s',provider,'timeout' if isinstance(error,(asyncio.TimeoutError,httpx.TimeoutException)) else 'invalid_or_unavailable')
                     health.append((provider,'DEGRADED' if isinstance(error,(asyncio.TimeoutError,httpx.TimeoutException)) else 'UNAVAILABLE',
                         'MODEL_TIMEOUT' if isinstance(error,(asyncio.TimeoutError,httpx.TimeoutException)) else 'INVALID_MODEL_OUTPUT' if isinstance(error,ValueError) else 'MODEL_UNAVAILABLE'))
@@ -215,4 +232,13 @@ class AdapterRuntime:
                 await self.stop(context.attempt_id)
 
 
+def _local_factory(module):
+    def factory(config):
+        from app.proctoring.local_worker import LocalWorkerAdapter
+        return LocalWorkerAdapter(module)
+    return factory
+
+
+register_model('local_yolo', _local_factory('object_detection'))
+register_model('local_gaze', _local_factory('gaze'))
 runtime = AdapterRuntime()

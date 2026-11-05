@@ -1,0 +1,385 @@
+/* [project]/app/dark-polish.css [app-client] (css) */
+html[data-theme="dark"] .app-shell .workspace {
+  background: radial-gradient(circle at top right, rgba(0, 109, 119, .06), transparent 35%), var(--dark-bg);
+}
+
+html[data-theme="dark"] .app-shell .sidebar {
+  background: var(--dark-sidebar);
+  border-right-color: var(--dark-border);
+}
+
+html[data-theme="dark"] .app-shell .sidebar :is(nav a, .student-nav-group, .sidebar-bottom a) {
+  color: var(--dark-text-secondary);
+}
+
+html[data-theme="dark"] .app-shell .sidebar :is(nav a, .student-nav-group, .sidebar-bottom a):hover {
+  background: var(--dark-surface-1);
+  color: var(--dark-text-primary);
+}
+
+html[data-theme="dark"] .app-shell .sidebar :is(nav a[aria-current="page"], .student-nav-group.is-active) {
+  color: var(--dark-text-primary);
+  background: color-mix(in srgb, var(--dark-focus) 14%, var(--dark-surface-2));
+  border-color: var(--dark-border-hover);
+  box-shadow: inset 3px 0 var(--dark-focus), var(--dark-glow-soft);
+}
+
+html[data-theme="dark"] .app-shell .sidebar nav a[aria-current="page"] .nav-icon {
+  color: var(--dark-focus);
+}
+
+html[data-theme="dark"] .app-shell .sidebar .student-profile {
+  background: var(--dark-surface-1);
+  border: 1px solid var(--dark-border);
+  box-shadow: var(--dark-highlight);
+}
+
+html[data-theme="dark"] .app-shell .sidebar .student-profile small {
+  color: var(--dark-text-secondary);
+}
+
+html[data-theme="dark"] .app-shell .sidebar .student-avatar {
+  border: 2px solid var(--dark-border-hover);
+}
+
+html[data-theme="dark"] :-webkit-any(.ui-card, .an-card, .an-kpi, .study-set-card) {
+  border-color: var(--dark-border);
+  box-shadow: var(--dark-highlight);
+}
+
+html[data-theme="dark"] :-moz-any(.ui-card, .an-card, .an-kpi, .study-set-card) {
+  border-color: var(--dark-border);
+  box-shadow: var(--dark-highlight);
+}
+
+html[data-theme="dark"] :is(.ui-card, .an-card, .an-kpi, .study-set-card) {
+  border-color: var(--dark-border);
+  box-shadow: var(--dark-highlight);
+}
+
+html[data-theme="dark"] .app-shell .ui-card {
+  box-shadow: var(--dark-highlight);
+}
+
+html[data-theme="dark"] .app-shell :-webkit-any(.student-exam-card[data-exam-status="in_progress"], .study-set-card.selected) {
+  border-color: var(--dark-border-active);
+  background: var(--dark-surface-2);
+  box-shadow: var(--dark-highlight), var(--dark-shadow), var(--dark-glow-active);
+}
+
+html[data-theme="dark"] .app-shell :-moz-any(.student-exam-card[data-exam-status="in_progress"], .study-set-card.selected) {
+  border-color: var(--dark-border-active);
+  background: var(--dark-surface-2);
+  box-shadow: var(--dark-highlight), var(--dark-shadow), var(--dark-glow-active);
+}
+
+html[data-theme="dark"] .app-shell :is(.student-exam-card[data-exam-status="in_progress"], .study-set-card.selected) {
+  border-color: var(--dark-border-active);
+  background: var(--dark-surface-2);
+  box-shadow: var(--dark-highlight), var(--dark-shadow), var(--dark-glow-active);
+}
+
+html[data-theme="dark"] :-webkit-any(.study-set-card, .student-course-card, .classroom-session-card) {
+  transition: border-color .18s, background-color .18s, transform .18s;
+}
+
+html[data-theme="dark"] :-moz-any(.study-set-card, .student-course-card, .classroom-session-card) {
+  transition: border-color .18s, background-color .18s, transform .18s;
+}
+
+html[data-theme="dark"] :is(.study-set-card, .student-course-card, .classroom-session-card) {
+  transition: border-color .18s, background-color .18s, transform .18s;
+}
+
+html[data-theme="dark"] :-webkit-any(.study-set-card, .student-course-card, .classroom-session-card):has(a):hover {
+  border-color: var(--dark-border-hover);
+  box-shadow: var(--dark-highlight), var(--dark-glow-soft);
+  transform: translateY(-1px);
+}
+
+html[data-theme="dark"] :-moz-any(.study-set-card, .student-course-card, .classroom-session-card):has(a):hover {
+  border-color: var(--dark-border-hover);
+  box-shadow: var(--dark-highlight), var(--dark-glow-soft);
+  transform: translateY(-1px);
+}
+
+html[data-theme="dark"] :is(.study-set-card, .student-course-card, .classroom-session-card):has(a):hover {
+  border-color: var(--dark-border-hover);
+  box-shadow: var(--dark-highlight), var(--dark-glow-soft);
+  transform: translateY(-1px);
+}
+
+html[data-theme="dark"] :-webkit-any(.ui-field, .monitor-sort, .topbar-search) {
+  background: var(--dark-field);
+  border-color: var(--dark-border-control);
+  color: var(--dark-text-primary);
+}
+
+html[data-theme="dark"] :-moz-any(.ui-field, .monitor-sort, .topbar-search) {
+  background: var(--dark-field);
+  border-color: var(--dark-border-control);
+  color: var(--dark-text-primary);
+}
+
+html[data-theme="dark"] :is(.ui-field, .monitor-sort, .topbar-search) {
+  background: var(--dark-field);
+  border-color: var(--dark-border-control);
+  color: var(--dark-text-primary);
+}
+
+html[data-theme="dark"] :-webkit-any(input, select, textarea)::placeholder {
+  color: var(--dark-text-tertiary);
+  opacity: 1;
+}
+
+html[data-theme="dark"] :-moz-any(input, select, textarea)::placeholder {
+  color: var(--dark-text-tertiary);
+  opacity: 1;
+}
+
+html[data-theme="dark"] :is(input, select, textarea)::placeholder {
+  color: var(--dark-text-tertiary);
+  opacity: 1;
+}
+
+html[data-theme="dark"] :is(.ui-field, .app-shell input, .app-shell select, .app-shell textarea):focus-visible {
+  outline: 2px solid var(--dark-focus);
+  outline-offset: 2px;
+  border-color: var(--dark-focus);
+  box-shadow: 0 0 0 4px rgba(112, 222, 209, .09);
+}
+
+html[data-theme="dark"] :-webkit-any(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--dark-focus);
+  outline-offset: 3px;
+}
+
+html[data-theme="dark"] :-moz-any(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--dark-focus);
+  outline-offset: 3px;
+}
+
+html[data-theme="dark"] :is(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--dark-focus);
+  outline-offset: 3px;
+}
+
+html[data-theme="dark"] .app-shell .sidebar :-webkit-any(a, button, [tabindex]):focus-visible {
+  outline-color: var(--dark-focus);
+}
+
+html[data-theme="dark"] .app-shell .sidebar :-moz-any(a, button, [tabindex]):focus-visible {
+  outline-color: var(--dark-focus);
+}
+
+html[data-theme="dark"] .app-shell .sidebar :is(a, button, [tabindex]):focus-visible {
+  outline-color: var(--dark-focus);
+}
+
+html[data-theme="dark"] :-webkit-any(.ui-button-primary, .ui-button-filled-pill) {
+  background: var(--dark-cta);
+  border-color: var(--dark-border-active);
+  color: var(--text-on-solid);
+  box-shadow: var(--dark-glow-soft);
+}
+
+html[data-theme="dark"] :-moz-any(.ui-button-primary, .ui-button-filled-pill) {
+  background: var(--dark-cta);
+  border-color: var(--dark-border-active);
+  color: var(--text-on-solid);
+  box-shadow: var(--dark-glow-soft);
+}
+
+html[data-theme="dark"] :is(.ui-button-primary, .ui-button-filled-pill) {
+  background: var(--dark-cta);
+  border-color: var(--dark-border-active);
+  color: var(--text-on-solid);
+  box-shadow: var(--dark-glow-soft);
+}
+
+html[data-theme="dark"] :-webkit-any(.ui-button-primary, .ui-button-filled-pill):hover:not(:disabled) {
+  background: var(--dark-cta-hover);
+  border-color: var(--dark-focus);
+  box-shadow: var(--dark-glow-active);
+}
+
+html[data-theme="dark"] :-moz-any(.ui-button-primary, .ui-button-filled-pill):hover:not(:disabled) {
+  background: var(--dark-cta-hover);
+  border-color: var(--dark-focus);
+  box-shadow: var(--dark-glow-active);
+}
+
+html[data-theme="dark"] :is(.ui-button-primary, .ui-button-filled-pill):hover:not(:disabled) {
+  background: var(--dark-cta-hover);
+  border-color: var(--dark-focus);
+  box-shadow: var(--dark-glow-active);
+}
+
+html[data-theme="dark"] :-webkit-any(.ui-button-outline, .ui-button-ghost-outlined) {
+  background: var(--dark-surface-1);
+  color: var(--dark-text-primary);
+  border-color: var(--dark-border-control);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] :-moz-any(.ui-button-outline, .ui-button-ghost-outlined) {
+  background: var(--dark-surface-1);
+  color: var(--dark-text-primary);
+  border-color: var(--dark-border-control);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] :is(.ui-button-outline, .ui-button-ghost-outlined) {
+  background: var(--dark-surface-1);
+  color: var(--dark-text-primary);
+  border-color: var(--dark-border-control);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] :-webkit-any(.ui-button-outline, .ui-button-ghost-outlined):hover:not(:disabled) {
+  background: var(--dark-surface-2);
+  border-color: var(--dark-border-hover);
+}
+
+html[data-theme="dark"] :-moz-any(.ui-button-outline, .ui-button-ghost-outlined):hover:not(:disabled) {
+  background: var(--dark-surface-2);
+  border-color: var(--dark-border-hover);
+}
+
+html[data-theme="dark"] :is(.ui-button-outline, .ui-button-ghost-outlined):hover:not(:disabled) {
+  background: var(--dark-surface-2);
+  border-color: var(--dark-border-hover);
+}
+
+html[data-theme="dark"] :-webkit-any(.ui-button, .ui-field):disabled {
+  opacity: 1;
+  color: var(--dark-text-tertiary);
+  background: var(--dark-surface-2);
+  border-color: var(--dark-border);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] :-moz-any(.ui-button, .ui-field):disabled {
+  opacity: 1;
+  color: var(--dark-text-tertiary);
+  background: var(--dark-surface-2);
+  border-color: var(--dark-border);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] :is(.ui-button, .ui-field):disabled {
+  opacity: 1;
+  color: var(--dark-text-tertiary);
+  background: var(--dark-surface-2);
+  border-color: var(--dark-border);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .ui-modal {
+  background: var(--dark-surface-2);
+  border: 1px solid var(--dark-border-active);
+  box-shadow: var(--dark-highlight), var(--shadow-overlay), var(--dark-glow-soft);
+}
+
+html[data-theme="dark"] :-webkit-any(.action-menu-panel, .ui-popover, .account-menu-panel) {
+  background: var(--dark-surface-2);
+  border-color: var(--dark-border-hover);
+  box-shadow: var(--dark-shadow);
+}
+
+html[data-theme="dark"] :-moz-any(.action-menu-panel, .ui-popover, .account-menu-panel) {
+  background: var(--dark-surface-2);
+  border-color: var(--dark-border-hover);
+  box-shadow: var(--dark-shadow);
+}
+
+html[data-theme="dark"] :is(.action-menu-panel, .ui-popover, .account-menu-panel) {
+  background: var(--dark-surface-2);
+  border-color: var(--dark-border-hover);
+  box-shadow: var(--dark-shadow);
+}
+
+html[data-theme="dark"] .ui-overlay {
+  background: var(--overlay-background);
+}
+
+html[data-theme="dark"] .ui-table th {
+  background: var(--dark-surface-2);
+  color: var(--dark-text-secondary);
+}
+
+html[data-theme="dark"] .ui-table :-webkit-any(td, th) {
+  border-color: var(--dark-border);
+}
+
+html[data-theme="dark"] .ui-table :-moz-any(td, th) {
+  border-color: var(--dark-border);
+}
+
+html[data-theme="dark"] .ui-table :is(td, th) {
+  border-color: var(--dark-border);
+}
+
+html[data-theme="dark"] .ui-table tbody tr:hover {
+  background: var(--dark-surface-2);
+}
+
+html[data-theme="dark"] .ui-table tbody tr[aria-selected="true"] {
+  background: var(--dark-surface-3);
+  box-shadow: inset 3px 0 var(--dark-focus);
+}
+
+html[data-theme="dark"] .ui-badge {
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+}
+
+html[data-theme="dark"] .an-card-footer {
+  background: var(--dark-surface-2);
+}
+
+html[data-theme="dark"] .an-range {
+  background: var(--dark-surface-2);
+  border-color: var(--dark-border);
+}
+
+html[data-theme="dark"] {
+  --chart-grid: var(--dark-border);
+  --chart-card-shadow: var(--dark-highlight);
+}
+
+@media (max-width: 767px) {
+  html[data-theme="dark"] .app-shell :-webkit-any(.student-exam-card[data-exam-status="in_progress"], .study-set-card.selected) {
+    box-shadow: var(--dark-highlight), var(--dark-glow-soft);
+  }
+
+  html[data-theme="dark"] .app-shell :-moz-any(.student-exam-card[data-exam-status="in_progress"], .study-set-card.selected) {
+    box-shadow: var(--dark-highlight), var(--dark-glow-soft);
+  }
+
+  html[data-theme="dark"] .app-shell :is(.student-exam-card[data-exam-status="in_progress"], .study-set-card.selected) {
+    box-shadow: var(--dark-highlight), var(--dark-glow-soft);
+  }
+
+  html[data-theme="dark"] .ui-modal {
+    box-shadow: var(--shadow-overlay);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="dark"] :-webkit-any(.study-set-card, .student-course-card, .classroom-session-card) {
+    transition: none;
+    transform: none;
+  }
+
+  html[data-theme="dark"] :-moz-any(.study-set-card, .student-course-card, .classroom-session-card) {
+    transition: none;
+    transform: none;
+  }
+
+  html[data-theme="dark"] :is(.study-set-card, .student-course-card, .classroom-session-card) {
+    transition: none;
+    transform: none;
+  }
+}
+
+/*# sourceMappingURL=app_dark-polish_css_bad6b30c._.single.css.map*/

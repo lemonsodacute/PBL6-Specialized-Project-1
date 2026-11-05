@@ -276,7 +276,7 @@ class MultimodalGenerationTests(TestCase):
                 self.assertNotIn('data:image', json.dumps(payload))
                 self.assertNotIn('required_image_ids', payload['messages'][1]['content'])
                 return httpx.Response(200, json={'choices': [{'finish_reason': 'stop', 'message': {'content': json.dumps({'questions': [output]})}}]})
-            with patch('app.services.question_generation.httpx.Client', return_value=httpx.Client(transport=httpx.MockTransport(handle))):
+            with patch('app.services.question_generation.httpx.Client', return_value=httpx.Client(transport=httpx.MockTransport(handle))), patch('app.services.question_generation.review_drafts', side_effect=lambda drafts, **kwargs: drafts):
                 drafts = OpenAICompatibleQuestionProvider(settings).generate(sources=[source], requirements={source['id']: 1}, config={'question_type': 'mcq_single', 'difficulty': 'medium'}, excluded=[])
             self.assertEqual(drafts[0]['warning_codes'], ['IMAGE_REQUIRES_VISION'])
             self.assertTrue(drafts[0]['images'])
@@ -300,7 +300,7 @@ class MultimodalGenerationTests(TestCase):
                 self.assertNotIn('server-only', json.dumps(payload))
                 return httpx.Response(200, json={'choices': [{'finish_reason': 'stop', 'message': {'content': json.dumps({'questions': [output]})}}]})
             settings = SimpleNamespace(QUESTION_GENERATION_BASE_URL='https://provider.example/v1', QUESTION_GENERATION_MODEL='vision-model', QUESTION_GENERATION_API_KEY='server-only', QUESTION_GENERATION_TIMEOUT=30, QUESTION_GENERATION_SUPPORTS_VISION=True)
-            with patch('app.services.question_generation.httpx.Client', return_value=httpx.Client(transport=httpx.MockTransport(handle))):
+            with patch('app.services.question_generation.httpx.Client', return_value=httpx.Client(transport=httpx.MockTransport(handle))), patch('app.services.question_generation.review_drafts', side_effect=lambda drafts, **kwargs: drafts):
                 drafts = OpenAICompatibleQuestionProvider(settings).generate(sources=[source], requirements={source['id']: 1}, config=config, excluded=[])
             self.assertEqual(drafts[0]['images'][0]['id'], source['image_ids'][0])
             self.assertNotIn('data_base64', json.dumps(drafts))

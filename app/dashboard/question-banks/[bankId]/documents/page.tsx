@@ -9,6 +9,7 @@ import { QuestionEditor } from '@/components/teacher/QuestionEditor';
 import { ProtectedDocumentImage, QuestionImages } from '@/components/questions/QuestionImages';
 import { api, ApiError, apiFetch } from '@/lib/api';
 import { DraftQualityReview, type QualityFeedback } from '@/components/teacher/DraftQualityReview';
+import { GeneratedQuestionQuality } from '@/components/teacher/GeneratedQuestionQuality';
 import { aiErrorMessage } from '@/lib/ai-provider';
 import { difficultyLabels, typeLabels, questionTypeLabel, unwrap, type Bank, type SelectionQuestion } from '@/lib/question-selection';
 import { documentError, documentImportReview, draftProblems, draftSelectionQuestion, normalizeDraftContent, updateDocumentDraft,
@@ -45,6 +46,7 @@ export default function DocumentQuestionsPage() {
   const alive = useRef(true);
   const existing = new Set((bank?.questions ?? []).map(question => normalize(question.content)));
   const drafts = document?.questions ?? [];
+  const expiresAt = document?.expires_at;
   const review = documentImportReview(drafts, selected.filter(id => quality[id]?.decision !== 'rejected'),
     (bank?.questions ?? []).map(question => question.content), document?.images);
   const { selection, readyCount, invalidCount } = review;
@@ -88,7 +90,7 @@ export default function DocumentQuestionsPage() {
       if (session) {
         setDocument(session);
         if (session.config) setConfig(session.config);
-        setSelected(session.questions.filter(draft => !draft.duplicate && !draftProblems(draft).length).map(draft => draft.id));
+        setSelected(session.questions.filter(draft => !draft.duplicate && !draftProblems(draft).length && draft.quality_check?.status !== 'review').map(draft => draft.id));
         setImported(session.imported_count ?? null);
         setStep(session.imported_count != null ? 4 : session.questions.length && session.batches.every(batch => batch.complete) ? 3 : 2);
       }
@@ -97,11 +99,11 @@ export default function DocumentQuestionsPage() {
     return () => { active = false; alive.current = false; };
   }, [bankId]);
   useEffect(() => {
-    if (!document) { setExpired(false); return; }
-    const check = () => setExpired(new Date(document.expires_at).getTime() <= Date.now());
+    if (!expiresAt) { setExpired(false); return; }
+    const check = () => setExpired(new Date(expiresAt).getTime() <= Date.now());
     check(); const timer = window.setInterval(check, 30_000);
     return () => window.clearInterval(timer);
-  }, [document?.expires_at]);
+  }, [expiresAt]);
   useEffect(() => {
     let active = true; setQuality({});
     if (document?.id) void apiFetch<{ data: Record<string, QualityFeedback> }>(`/question-banks/${bankId}/documents/${document.id}/feedback`)
@@ -116,7 +118,7 @@ export default function DocumentQuestionsPage() {
     setDocument(current => ({ ...session, sections: session.sections ?? current?.sections }));
   }
   function chooseDefaults(session: DocumentSession) {
-    setSelected(session.questions.filter(draft => !draft.duplicate && !draftProblems(draft).length).map(draft => draft.id));
+    setSelected(session.questions.filter(draft => !draft.duplicate && !draftProblems(draft).length && draft.quality_check?.status !== 'review').map(draft => draft.id));
   }
   function chooseAll() {
     const seen = new Set(existing);
@@ -195,6 +197,11 @@ export default function DocumentQuestionsPage() {
           session = { ...next, questions: next.questions.filter(question => !removedDraftIds.current.has(question.id))
             .map(question => session.questions.find(old => old.id === question.id) ?? question) };
           setSession(session);
+          const remaining = next.batches.find(part => part.index === batch.index);
+          if (remaining && !remaining.complete && remaining.error) {
+            lastFailure = remaining.error.message;
+            if (['AI_RATE_LIMITED', 'AI_AUTH_FAILED', 'AI_NOT_CONFIGURED', 'AI_MODEL_UNSUPPORTED'].includes(remaining.error.code)) break;
+          }
         } catch (cause) {
           if (!alive.current) return;
           lastFailure = documentError(cause, 'Phần tài liệu này chưa xử lý được. Bạn có thể thử lại.');
@@ -205,12 +212,24 @@ export default function DocumentQuestionsPage() {
         }
       }
       if (resume) setSelected(session.questions.filter(question => !question.duplicate && !draftProblems(question).length
-        && (selected.includes(question.id) || !reviewedIds.has(question.id))).map(question => question.id));
+        && (selected.includes(question.id) || (!reviewedIds.has(question.id) && question.quality_check?.status !== 'review'))).map(question => question.id));
       else chooseDefaults(session);
       if (session.questions.length || session.batches.every(batch => batch.complete)) setStep(3);
       if (lastFailure) setError(lastFailure);
       setProgress('');
     } catch (cause) { if (alive.current) setError(documentError(cause, 'Chưa tạo được bản nháp. Các lượt đã hoàn tất được giữ lại để bạn tiếp tục.')); }
+    finally { working.current = false; if (alive.current) { setBusy(false); setProgress(''); } }
+  }
+  async function checkQuality() {
+    if (!document || working.current || expired || savingReviews.size) return;
+    working.current = true; setBusy(true); setError(''); setProgress('Đang kiểm tra nguồn, đáp án và chất lượng câu hỏi…');
+    try {
+      const next = await api.questionBanks.checkDocumentQuality(bankId, document.id, drafts);
+      if (alive.current) {
+        setSession(next);
+        setSelected(current => current.filter(id => next.questions.some(draft => draft.id === id && !draft.duplicate && draft.quality_check?.status !== 'review')));
+      }
+    } catch (cause) { if (alive.current) setError(documentError(cause, 'Chưa kiểm tra được chất lượng. Bản nháp hiện tại được giữ nguyên.')); }
     finally { working.current = false; if (alive.current) { setBusy(false); setProgress(''); } }
   }
   async function regenerate(draft: DocumentDraft) {
@@ -243,7 +262,7 @@ export default function DocumentQuestionsPage() {
       <Button variant="outline" disabled={expired || savingReviews.size > 0} onClick={() => void prepare(true)}>Thử lại phần lỗi</Button>
       {!!document.questions.length && step !== 3 && <Button variant="outline" onClick={() => setStep(3)}>Xem câu hỏi đã tạo</Button>}</Card>}
     {loading ? <LoadingSkeleton rows={4} /> : bank && <>
-      {step === 1 && <Card className="document-stage"><h2>Bước 1 — Tài liệu</h2>
+      {step === 1 && <Card borderRole="exams" className="document-stage"><h2>Bước 1 — Tài liệu</h2>
         {!document ? <div className="form-stack"><label>Chọn tài liệu<Input type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" disabled={busy} onChange={event => { setFile(event.target.files?.[0] ?? null); setError(''); }} /></label>
           <p>PDF hoặc DOCX, tối đa 10 MB và 200 trang PDF. PDF scan cần được chuyển sang text trước khi tải.</p>
           <Button disabled={!file || busy} onClick={() => void upload()}>{busy ? 'Đang đọc tài liệu…' : 'Đọc tài liệu'}</Button></div>
@@ -271,7 +290,7 @@ export default function DocumentQuestionsPage() {
             <div className="form-actions"><Button variant="outline" disabled={busy} onClick={() => void reset()}>Đổi tài liệu</Button><Button disabled={busy || expired} onClick={() => { setError(''); setStep(2); }}>Tiếp tục cấu hình</Button></div></div>}
       </Card>}
 
-      {step === 2 && document && <Card className="document-stage"><h2>Bước 2 — Cấu hình</h2><div className="form-stack">
+      {step === 2 && document && <Card borderRole="exams" className="document-stage"><h2>Bước 2 — Cấu hình</h2><div className="form-stack">
         <label>Cách xử lý tài liệu<Select value={config.mode} disabled={busy || expired} onChange={event => { setError(''); setConfig(current => ({ ...current, mode: event.target.value as 'import' | 'generate' })); }}>
           <option value="import">Nhập câu hỏi có sẵn</option><option value="generate" disabled={!capabilities?.generation_available}>Tạo câu hỏi từ tài liệu</option></Select></label>
         {config.mode === 'import' ? <><p>Dùng tài liệu có câu hỏi và đáp án. Nội dung được giữ nguyên để bạn review, không viết lại bằng AI.</p><div className="document-format-example">Câu 1: Nội dung câu hỏi…<br />A. Phương án thứ nhất<br />B. Phương án thứ hai<br />Đáp án: B</div></>
@@ -289,7 +308,10 @@ export default function DocumentQuestionsPage() {
       </div></Card>}
 
       {step === 3 && document && <>
-        <Card className="document-review-heading"><h2>Bước 3 — Câu hỏi đề xuất — {drafts.length}</h2><p>Các câu này là bản nháp. Chưa có câu hỏi nào được thêm vào ngân hàng.</p>
+        <Card borderRole="exams" className="document-review-heading"><h2>Bước 3 — Câu hỏi đề xuất — {drafts.length}</h2><p>Các câu này là bản nháp. Chưa có câu hỏi nào được thêm vào ngân hàng.</p>
+          {document.config?.mode === 'generate' && <><p className="field-helper">Kiểm tra tự động: {drafts.filter(draft => draft.quality_check?.status === 'pass').length} đạt · {drafts.filter(draft => draft.quality_check?.status !== 'pass').length} cần xem lại. Kết quả này không thay thế giảng viên duyệt.</p>
+            {document.quality_summary && <p className="field-helper">Nguồn đã dùng: {new Set(drafts.map(draft => draft.source_chunk_id)).size}/{document.quality_summary.source_ids_planned.length} phần trong kế hoạch.</p>}
+            <Button variant="outline" disabled={busy || expired || !drafts.length || savingReviews.size > 0} onClick={() => void checkQuality()}>Kiểm tra chất lượng</Button></>}
           {document.warnings.map(warning => <p className="document-warning" key={warning}>{warning}</p>)}
           {!drafts.length && <p>Phần nguồn chưa đủ căn cứ để tạo câu hỏi. Hãy bổ sung tài liệu hoặc chọn nội dung khác.</p>}
           <div className="form-toolbar"><Button variant="outline" disabled={busy || expired} onClick={chooseAll}>Chọn tất cả</Button><Button variant="outline" disabled={busy} onClick={() => setSelected([])}>Bỏ chọn tất cả</Button></div>
@@ -297,9 +319,10 @@ export default function DocumentQuestionsPage() {
         <div className="document-draft-list">{drafts.map((draft, index) => {
           const problems = review.problems.get(draft.id) ?? [];
           const rejected = quality[draft.id]?.decision === 'rejected';
-          return <Card className="document-draft-card" key={draft.id}>
+          return <Card borderRole="exams" className="document-draft-card" key={draft.id}>
             <label className="document-draft-select"><input className="ui-checkbox" type="checkbox" disabled={busy || expired || rejected} aria-label={`Chọn câu đề xuất ${index + 1}`} checked={!rejected && selected.includes(draft.id)} onChange={event => setSelected(current => event.target.checked ? [...current, draft.id] : current.filter(id => id !== draft.id))} /><strong>Câu {index + 1}</strong></label>
             <p className="document-draft-content">{draft.content}</p><p className="question-row-meta"><Badge className="question-type" data-type={draft.type}>{questionTypeLabel(draft.type)}</Badge>{draft.difficulty && <span className="question-difficulty" data-difficulty={draft.difficulty}>{difficultyLabels[draft.difficulty]}</span>}{draft.topic && <span>{draft.topic}</span>}<span>{Number(draft.default_points)} điểm</span></p>
+            {document.config?.mode === 'generate' && <GeneratedQuestionQuality check={draft.quality_check} selectedDifficulty={draft.difficulty} />}
             {!expired && <QuestionImages images={draft.images?.map(image => ({ ...image, preview_url: image.temp_url }))} />}
             {!expired && draft.images?.map((image, imageIndex) => <Button key={image.id} variant="outline" onClick={() => setSourceImage(image.temp_url)}>Xem hình nguồn {imageIndex + 1}</Button>)}
             {draft.warning_codes?.includes('IMAGE_REQUIRES_VISION') && <p className="document-warning"><TriangleAlert className="inline-icon" aria-hidden="true" /> Hình ảnh chưa được AI phân tích. Hãy kiểm tra hình và đáp án trước khi nhập.</p>}
@@ -332,7 +355,7 @@ export default function DocumentQuestionsPage() {
         </Card>
       </>}
 
-      {step === 4 && <Card className="document-stage"><h2>Bước 4 — Thêm vào ngân hàng</h2>
+      {step === 4 && <Card borderRole="exams" className="document-stage"><h2>Bước 4 — Thêm vào ngân hàng</h2>
         {imported != null ? <div className="form-stack"><p role="status">Đã thêm {imported} câu vào ngân hàng “{bank.name}”.</p><Link className="bank-open-link" href={`/dashboard/question-banks/${bankId}`}>Mở ngân hàng</Link><Button variant="outline" onClick={() => void reset()}>Nhập tài liệu khác</Button></div>
           : <div className="form-stack"><p>Bạn đã chọn {selection.length} câu để thêm vào “{bank.name}”.</p><p>Vui lòng xác nhận rằng bạn đã kiểm tra nội dung, phương án và đáp án của các câu đang chọn.</p>
             {remainingParts > 0 && <p className="document-warning">Còn {remainingParts} phần chưa xử lý xong. Xác nhận sẽ chỉ thêm {readyCount} câu đang chọn và kết thúc phiên; các phần chưa xong sẽ không được nhập. Quay lại review nếu bạn muốn thử lại phần lỗi trước.</p>}

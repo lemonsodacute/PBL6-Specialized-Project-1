@@ -1,0 +1,91 @@
+:is(.page,.studentPage){--tc-bg:var(--teacher-bg);--tc-card:var(--teacher-surface);--tc-ink:var(--teacher-ink);--tc-muted:var(--teacher-muted);--tc-line:var(--teacher-border);--tc-primary:var(--teacher-cta);--tc-hero:var(--teacher-hero);--tc-field:var(--teacher-field);--tc-soft:var(--teacher-accent-soft);--tc-success:var(--teacher-success-solid);--tc-focus:var(--teacher-focus);display:grid;gap:24px;width:100%;min-width:0;color:var(--tc-ink);font-family:var(--font-public-body),Nunito,system-ui,sans-serif}
+.srOnlyTitle{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+:global(.workspace):has(.page){background:var(--teacher-bg)}
+:is(.page,.studentPage) *{box-sizing:border-box;min-width:0}
+:is(.page,.studentPage) :is(h1,h2,h3,p,dl,dd){margin:0}
+:is(.page,.studentPage) :is(button,a,input,select,textarea):focus-visible{outline:3px solid var(--tc-focus);outline-offset:3px}
+:is(.page,.studentPage) .hero{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:28px 32px;border-radius:24px;background:var(--tc-hero);border:1px solid var(--teacher-stat-border);color:var(--teacher-hero-ink);min-height:260px}
+.heroCopy{flex:1}
+.hero .eyebrow{font-size:14px;font-weight:800;line-height:1.5;letter-spacing:.09em;text-transform:uppercase;color:var(--teacher-hero-kicker);margin-bottom:14px}
+.hero h1{font:900 clamp(30px,3.3vw,42px)/1.15 var(--font-public-body),Nunito,system-ui,sans-serif;letter-spacing:-.02em;color:var(--teacher-hero-ink);text-wrap:balance}
+.hero .intro{font-size:17px;font-weight:600;line-height:1.6;max-width:61ch;color:var(--teacher-hero-muted);margin-top:18px}
+.heroArt{display:block;flex:0 1 32%;width:32%;max-width:300px;height:auto;object-fit:contain}
+.metrics{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px!important}
+.metrics>div{display:flex;flex-direction:column;gap:2px;border-radius:14px;background:var(--teacher-stat-bg);border:1px solid var(--teacher-stat-border);padding:12px 18px}
+.metrics dt{order:2;color:var(--teacher-hero-muted);font-size:13px;line-height:1.5}
+.metrics dd{order:1;font-size:28px;font-weight:900;line-height:1.1;color:var(--teacher-hero-ink);font-variant-numeric:tabular-nums}
+:is(.page,.studentPage) .toolbarCard{padding:16px;border:1px solid var(--tc-line);border-radius:18px;background:var(--tc-card);box-shadow:none;margin:0}
+.toolbarCard :global(fieldset){display:grid;gap:12px;margin:0;border:0;border-radius:0;padding:0;background:transparent;align-items:end}
+.classToolbar :global(fieldset){grid-template-columns:minmax(0,1fr) minmax(160px,240px)}
+.liveToolbar>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end}
+.liveToolbar :global(fieldset){grid-template-columns:minmax(150px,1.4fr) minmax(125px,.8fr) minmax(170px,1.1fr) minmax(140px,.85fr)}
+.toolbarCard :global(fieldset)>:is(label,div){min-width:0;color:var(--tc-muted);font-size:13px;font-weight:700;gap:6px}
+.toolbarCard :global(.ui-field){height:48px;min-height:48px;width:100%;min-width:0;border:1px solid var(--teacher-control-border);border-radius:12px;background:var(--tc-field);color:var(--tc-ink);font:600 15px/1.5 var(--font-public-body),Nunito,sans-serif;box-shadow:none}
+.toolbarCard :global(.ui-field)::placeholder{color:var(--tc-muted);opacity:1}
+.toolbarCard :global(fieldset)>button{grid-column:1/-1;justify-self:start}
+.toolbarCard :global(button.ui-button-primary){min-height:48px;border-radius:12px;padding:10px 20px;background:var(--tc-primary);color:#fff;box-shadow:none;font:800 15px/1.5 var(--font-public-body),Nunito,sans-serif;gap:8px;white-space:nowrap}
+.toolbarCard :global(button.ui-button-icon){height:48px;min-width:44px;border:1px solid var(--tc-line);border-radius:12px;box-shadow:none;background:var(--tc-field);color:var(--tc-ink)}
+.toolbarCard :global(button.ui-button-primary):hover{background:var(--teacher-cta-hover)}
+.listHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.listHeading h2{font:800 20px/1.4 var(--font-public-body),Nunito,sans-serif;color:var(--tc-ink)}
+.listHeading p{font-size:14px;line-height:1.5;color:var(--tc-muted);font-variant-numeric:tabular-nums}
+.list{display:grid;gap:16px}
+.classCard,.sessionCard{display:grid;align-items:center;gap:20px 24px;padding:16px;border:1px solid var(--tc-line);border-radius:20px;background:var(--tc-card);box-shadow:var(--teacher-card-shadow);transition:border-color .18s,box-shadow .18s}
+.classCard:hover,.sessionCard:hover{border-color:color-mix(in srgb,var(--tc-primary) 35%,var(--tc-line));box-shadow:var(--shadow-medium)}
+.classCard{grid-template-columns:112px minmax(0,1fr) auto 44px}
+.classArt{display:block;border-radius:16px;width:112px;height:112px;object-fit:cover}
+.classCopy,.sessionCopy{display:grid;gap:7px;min-width:0}
+.classCopy h3,.sessionCopy h3{font:800 19px/1.4 var(--font-public-body),Nunito,sans-serif;letter-spacing:-.01em;color:var(--tc-ink);overflow-wrap:anywhere}
+.classCopy h3 a{color:inherit;text-decoration:none}
+.classCopy h3 a:hover{text-decoration:underline;text-underline-offset:4px}
+.classCopy p,.sessionCopy p{font-size:15px;line-height:1.6;color:var(--tc-muted);overflow-wrap:anywhere;max-width:70ch}
+.period{justify-self:start;border-radius:999px;background:var(--tc-soft);color:var(--tc-ink);padding:3px 10px;font-size:13px;font-weight:700;line-height:1.5}
+.classMeta{display:flex;align-items:center;gap:24px}
+.identity{display:flex;align-items:center;gap:10px;min-width:0}
+.avatar{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;border-radius:50%;background:var(--tc-soft);color:var(--tc-ink);font-size:13px;font-weight:800}
+.identity>span:last-child{display:grid;gap:2px;min-width:0;max-width:150px;overflow-wrap:anywhere}
+.identity small{color:var(--tc-muted);font-size:12px;line-height:1.4}
+.identity strong{color:var(--tc-ink);font-size:14px;line-height:1.45;font-weight:800}
+.studentCount{display:inline-flex;align-items:center;gap:8px;justify-content:center;padding:8px 14px;background:var(--tc-field);border-radius:999px;color:var(--tc-ink);font-size:14px;font-weight:800;white-space:nowrap}
+.studentCount svg{flex-shrink:0;color:var(--tc-muted)}
+.openClass{width:44px;height:44px;border:1px solid var(--tc-line);border-radius:12px;display:grid;place-items:center;color:var(--tc-ink);background:var(--tc-card)}
+.openClass:hover{background:var(--tc-soft)}
+.empty{background:var(--tc-card);border:1px solid var(--tc-line);border-radius:20px}
+.sessionCard{grid-template-columns:84px minmax(180px,1fr) 180px minmax(180px,auto) auto;gap:16px;padding-right:20px}
+.dateTile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 4px;width:84px;border-radius:16px;background:var(--tc-soft);color:var(--tc-ink);font-variant-numeric:tabular-nums;text-align:center}
+.dateTile small{font-size:11px;line-height:1.5;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.dateTile strong{font-size:32px;line-height:1.1;font-weight:900}
+.dateTile span{font-size:12px;font-weight:700;color:var(--tc-muted)}
+.sessionCopy h3 button{padding:0;border:0;background:transparent;text-align:left;color:inherit;font:inherit;line-height:inherit;cursor:pointer;overflow-wrap:anywhere}
+.sessionCopy h3 button:hover{text-decoration:underline;text-underline-offset:4px}
+.sessionCopy .className{display:flex;align-items:flex-start;gap:7px;font-size:14px;font-weight:800;line-height:1.5;color:var(--tc-ink)}
+.className svg{flex-shrink:0;margin-top:3px;color:var(--tc-muted)}
+.schedule{display:grid;gap:4px;font-size:14px;line-height:1.5;font-variant-numeric:tabular-nums;color:var(--tc-ink)}
+.schedule>span{display:flex;align-items:flex-start;gap:7px;font-weight:800}
+.schedule svg{flex-shrink:0;margin-top:2px;color:var(--tc-muted)}
+.schedule small{padding-left:24px;font-size:13px;color:var(--tc-muted)}
+.sessionMeta{display:flex;align-items:center;flex-wrap:wrap;gap:12px 20px}
+.sessionMeta .identity .avatar{width:36px;height:36px;flex-basis:36px}
+.status{display:inline-flex;align-items:center;justify-self:start;gap:7px;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:800;line-height:1.5;white-space:nowrap}
+.status::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
+.scheduled{background:var(--tag-purple-soft);color:var(--tag-purple-ink)}
+.ongoing{background:var(--tag-green-soft);color:var(--tag-green-ink)}
+.ended{background:var(--tag-gray-soft);color:var(--tag-gray-ink)}
+.cancelled{background:var(--tag-red-soft);color:var(--tag-red-ink)}
+.sessionActions{display:flex;flex-direction:column;gap:8px;justify-content:center;align-items:stretch}
+.sessionActions :global(.ui-button){min-height:44px;border-radius:12px;padding:9px 16px;font:800 14px/1.5 var(--font-public-body),Nunito,sans-serif;gap:7px;white-space:nowrap;box-shadow:none}
+.sessionActions :global(.ui-button-success){background:var(--tc-success);color:#fff}
+.sessionActions :global(.ui-button-outline){border:1px solid var(--tc-line);background:var(--tc-field);color:var(--tc-ink)}
+@media(max-width:1250px){.liveToolbar>div{grid-template-columns:minmax(0,1fr)}.liveToolbar>div>div{margin-left:0}.sessionCard{grid-template-columns:72px minmax(0,1fr) auto}.dateTile{width:72px;grid-row:1/4}.sessionCopy{grid-column:2}.schedule{grid-column:2;grid-row:2}.sessionMeta{grid-column:2;grid-row:3}.sessionActions{grid-column:3;grid-row:1/4}.classCard{grid-template-columns:88px minmax(0,1fr) 44px}.classArt{width:88px;height:88px;grid-row:1/3}.classCopy{grid-column:2}.classMeta{grid-column:2;flex-wrap:wrap;gap:12px 20px}.openClass{grid-column:3;grid-row:1/3}:is(.page,.studentPage) .hero{padding:32px}.heroArt{width:28%;flex-basis:28%}}
+@media(max-width:900px){.liveToolbar :global(fieldset){grid-template-columns:repeat(2,minmax(0,1fr))}.liveToolbar :global(fieldset)>label:first-child{grid-column:1/-1}:is(.page,.studentPage) .hero{gap:12px}.hero .intro{font-size:16px}.heroArt{display:none}.metrics dd{font-size:26px}}
+@media(max-width:600px){:is(.page,.studentPage){gap:20px}:is(.page,.studentPage) .hero{padding:26px 22px;border-radius:22px;min-height:0}.hero h1{font-size:30px}.hero .eyebrow{font-size:12px}.metrics{gap:8px}.metrics>div{padding:10px 14px}.metrics dt{font-size:12px}.classToolbar :global(fieldset),.liveToolbar :global(fieldset){grid-template-columns:minmax(0,1fr)}.toolbarCard :global(.ui-field){font-size:16px}.liveToolbar>div>div>button{width:100%;flex:1}.classCard{grid-template-columns:64px minmax(0,1fr) 44px;gap:14px;padding:16px}.classArt{width:64px;height:64px;grid-row:1}.classCopy h3,.sessionCopy h3{font-size:18px}.classCopy{grid-column:2/4;grid-row:1}.classMeta{grid-column:1/3;grid-row:2;gap:12px}.openClass{grid-column:3;grid-row:2}.classCopy p{font-size:14px}.studentCount{font-size:13px;padding:6px 10px}.sessionCard{grid-template-columns:64px minmax(0,1fr);gap:16px;padding:16px}.dateTile{width:64px;grid-row:1}.dateTile strong{font-size:28px}.sessionCopy{grid-column:2;grid-row:1}.schedule{grid-column:1/-1;grid-row:2}.sessionMeta{grid-column:1/-1;grid-row:3;justify-content:space-between}.sessionActions{grid-column:1/-1;grid-row:4;flex-direction:row;flex-wrap:wrap}.sessionActions>*{flex:1}.identity>span:last-child{max-width:155px}:is(.page,.studentPage) .listHeading h2{font-size:19px}}
+@media(min-width:768px) and (max-width:1100px){.heroArt{display:none}}
+@media(prefers-reduced-motion:reduce){.classCard,.sessionCard{transition:none}}
+
+/* Student uses the shared collection without the teacher-only shell selectors. */
+.studentPage{--surface:var(--tc-card);--border:var(--tc-line);--text-primary:var(--tc-ink);--text-secondary:var(--tc-muted);--text-muted:var(--tc-muted);--muted:var(--tc-muted)}
+:global(.student-app-shell) .studentPage .hero h1{font-family:var(--font-public-body),Nunito,system-ui,sans-serif;font-weight:900;letter-spacing:-.02em}
+:global(.student-app-shell) .studentPage .classCopy h3{font-weight:800;letter-spacing:-.01em}
+:global(.student-app-shell) .studentPage .toolbarCard:global(.ui-card){padding:16px;border:1px solid var(--tc-line);border-radius:18px;background:var(--tc-card);box-shadow:none}
+:global(.student-app-shell) .studentPage .toolbarCard :global(fieldset[role='search']){padding:0;border:0;border-radius:0;background:transparent}
+:global(.student-app-shell) .studentPage .toolbarCard :global(.ui-field){background:var(--tc-field);border-color:var(--teacher-control-border);border-radius:12px}

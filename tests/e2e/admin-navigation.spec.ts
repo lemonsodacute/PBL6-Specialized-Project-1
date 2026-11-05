@@ -24,6 +24,7 @@ async function checkMenu(page: Page, activeLabel: string) {
   const nav = sidebar.getByRole('navigation', { name: 'Điều hướng hệ thống' });
   await expect(page.locator('#workspace-sidebar')).toHaveCount(1);
   await expect(page.locator('.topbar')).toHaveCount(1);
+  await expect(page.getByRole('navigation', { name: 'Vị trí hiện tại', exact: true }).locator('[aria-current="page"]')).toHaveText(activeLabel);
   await expect(sidebar.getByRole('link', { name: 'ProctoOwl — Trang chủ', exact: true })).toHaveCount(1);
   const parent = nav.getByRole('button', { name: 'Quản lý người dùng', exact: true });
   const childActive = ['Danh sách người dùng', 'Xác thực thẻ sinh viên'].includes(activeLabel);
@@ -40,7 +41,7 @@ async function checkMenu(page: Page, activeLabel: string) {
   await expect(sidebar.getByRole('link', { name: 'Cài đặt', exact: true })).toHaveCount(1);
   await expect(sidebar.getByRole('link', { name: 'Trợ giúp', exact: true })).toHaveAttribute('href', '/admin/help');
   await expect(nav.locator(':scope > a, :scope > .sidebar-nav-section > button')).toHaveText([
-    'Tổng quan hệ thống', 'Quản lý lớp học', 'Quản lý người dùng', 'Quản lý đề thi', 'Tin nhắn', 'AI Support', 'Báo cáo & thống kê', 'Nhật ký hệ thống',
+    'Tổng quan hệ thống', 'Quản lý lớp học', 'Quản lý người dùng', 'Quản lý đề thi', 'Tin nhắn', 'Hỗ trợ AI', 'Báo cáo & thống kê', 'Nhật ký hệ thống',
   ]);
   await expect(nav.locator('a[href="/admin/student-cards"]')).toHaveCount(1);
   await expect(nav.locator(':scope > a[href="/admin/student-cards"]')).toHaveCount(0);

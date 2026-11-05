@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import { Button,ActionMenu } from '@/components/ui';
 import type { ManagedExam } from './ExamEditor';
 import styles from './ExamActions.module.css';
@@ -27,7 +28,7 @@ export function ExamActions({ exam, attempts, onAction }: { exam: ManagedExam; a
   const note = !known ? 'Chưa kiểm tra được tình trạng bài làm. Vui lòng tải lại danh sách.'
     : hasAttempts ? 'Đề đã có bài làm nên không thể đổi trạng thái hoặc xóa.' : '';
   return <div className={styles.actions}>
-    {primary.href ? <Link className={`ui-button ui-button-outline ui-button-sm ${styles.primary}`} href={primary.href}>{primary.label}</Link>
+    {primary.href ? <Link className={`ui-button ui-button-outline ui-button-sm ${styles.primary}`} href={primary.href}>{primary.label}{primary.href === resultsHref && <ArrowRight size={16} aria-hidden="true" />}</Link>
       : <Button variant="outline" size="sm" className={styles.primary} onClick={() => onAction('edit')}>{primary.label}</Button>}
     <ActionMenu label={`Thao tác đề ${exam.title}`} note={note} items={items.map(item=>({label:item.label,href:item.href,disabled:item.disabled,tone:item.tone,onSelect:()=>{if(item.action)onAction(item.action);}}))}/>
 

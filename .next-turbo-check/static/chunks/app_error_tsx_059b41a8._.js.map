@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///D:/ChauAnh/PBL6%20new/app/error.tsx"],"sourcesContent":["\"use client\";\n\nexport default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {\n  return <main className=\"route-error\" role=\"alert\"><div className=\"route-error-card\"><p className=\"eyebrow\">Có lỗi xảy ra</p><h1>Không thể tải trang</h1><p>Đã xảy ra lỗi tạm thời. Vui lòng thử tải lại trang.</p><button className=\"ui-button ui-button-warning ui-button-md\" onClick={() => reset()}>Thử lại</button></div></main>;\n}\n"],"names":[],"mappings":";;;;;AAAA;;AAEe,SAAS,MAAM,KAAoE;QAApE,EAAE,KAAK,EAA6D,GAApE;IAC5B,qBAAO,6LAAC;QAAK,WAAU;QAAc,MAAK;kBAAQ,cAAA,6LAAC;YAAI,WAAU;;8BAAmB,6LAAC;oBAAE,WAAU;8BAAU;;;;;;8BAAiB,6LAAC;8BAAG;;;;;;8BAAwB,6LAAC;8BAAE;;;;;;8BAAuD,6LAAC;oBAAO,WAAU;oBAA2C,SAAS,IAAM;8BAAS;;;;;;;;;;;;;;;;;AACzS;KAFwB","debugId":null}}]
+}

@@ -2,17 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Badge, Button, Card, Input, Modal,ConfirmDialog, Table, PageHeader } from '@/components/ui';
+import Link from 'next/link';
+import { Button, Card, ConfirmDialog, Table, PageHeader } from '@/components/ui';
 import { api, ApiError, setSessionToken } from '@/lib/api';
 import { useAuth } from '@/components/auth/AuthContext';
 import { DeviceSetup } from '@/components/live-class/DeviceSetup';
-import { ParticipantTile } from '@/components/live-class/ParticipantTile';
+import { MeetingRoom } from '@/components/live-class/MeetingRoom';
+import { ClassroomSessionCard } from '@/components/live-class/ClassroomSessionCard';
+import { StudentPageHeader } from '@/components/student/StudentPageHeader';
+import { ClassRecordingsSection } from '@/components/live-class/ClassRecordingsSection';
 import { classroomDate, classroomDuration, classroomListPath, createClassroomTransport, type AttendanceRow, type ClassroomSession, type ClassroomTransport, type ClassroomDevices, type ConnectionState } from '@/lib/classroom';
 import { classroomError, ClassroomError, traceClassroom, type ClassroomErrorCode } from '@/lib/classroom-errors';
 import { friendlyError } from '@/lib/uiErrors';
 
-type Phase = 'setup' | 'joining' | 'room' | 'failed';
-const connectionLabels: Record<ConnectionState, string> = { IDLE: 'Sẵn sàng tham gia', CONNECTING: 'Đang kết nối…', CONNECTED: 'Đã kết nối', RECONNECTING: 'Đang kết nối lại…', DISCONNECTED: 'Đã ngắt kết nối', ERROR: 'Kết nối chưa thành công' };
+type Phase = 'setup' | 'joining' | 'room' | 'failed' | 'waiting';
 
 export default function LiveClassPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,13 +31,11 @@ function LiveClassRoom({ id }: { id: string }) {
   const [phase, setPhase] = useState<Phase>('setup');
   const [setupKey, setSetupKey] = useState(0);
   const [, render] = useState(0);
-  const [showPanel, setShowPanel] = useState(true);
   const [panel, setPanel] = useState<'participants' | 'chat' | 'attendance'>('participants');
   const [attendance, setAttendance] = useState<AttendanceRow[]>([]);
   const [attendanceError, setAttendanceError] = useState('');
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
   const transport = useRef<ClassroomTransport | null>(null);
   const mounted = useRef(false);
   const attempt = useRef(0);
@@ -42,6 +43,7 @@ function LiveClassRoom({ id }: { id: string }) {
   const joining = useRef(false);
   const unsubscribe = useRef<(() => void) | null>(null);
   const cleanup = useRef<Promise<void>>(Promise.resolve());
+  const unlock = useRef<(() => void) | null>(null);
   const devices = useRef<ClassroomDevices>({ camera: false, microphone: false });
   const deviceDenied = useRef(false);
   const resumeChecked = useRef(false);
@@ -51,31 +53,33 @@ function LiveClassRoom({ id }: { id: string }) {
   const manager = user?.role === 'admin' || (user?.role === 'teacher' && session?.teacher_id === user.id);
 
   const release = useCallback(async () => {
+    unlock.current?.(); unlock.current = null;
     const engine = transport.current;
     transport.current = null;
     unsubscribe.current?.(); unsubscribe.current = null;
     const sid = engine?.localSid();
     if (engine) cleanup.current = (async () => {
-      await engine.disconnect();
-      if (sid) await api.liveClasses.leave(id, sid).catch(() => {});
+      try { await engine.disconnect(); }
+      finally { if (sid) await api.liveClasses.leave(id, sid).catch(() => {}); }
     })();
-    await cleanup.current;
+    await cleanup.current.catch(() => {});
   }, [id]);
   const leave = useCallback((notice = '') => {
     window.sessionStorage.removeItem(resumeKey);
+    void api.liveClasses.cancelAdmission(id).catch(() => {});
     attempt.current++;
     void release();
     router.replace(`${destination}${notice ? `?notice=${notice}` : ''}`);
-  }, [destination, release, router, resumeKey]);
+  }, [destination, release, router, resumeKey, id]);
 
   useEffect(() => {
     mounted.current = true; joined.current = false;
-    const pagehide = () => { attempt.current++; void release(); };
+    const pagehide = () => { attempt.current++; void api.liveClasses.cancelAdmission(id).catch(() => {}); void release(); };
     const pageshow = (event: PageTransitionEvent) => { if (event.persisted) { setPhase('setup'); setSetupKey(v => v + 1); joined.current = false; setError(''); } };
     window.addEventListener('pagehide', pagehide);
     window.addEventListener('pageshow', pageshow);
-    return () => { mounted.current = false; attempt.current++; window.removeEventListener('pagehide', pagehide); window.removeEventListener('pageshow', pageshow); void release(); };
-  }, [release]);
+    return () => { mounted.current = false; attempt.current++; window.removeEventListener('pagehide', pagehide); window.removeEventListener('pageshow', pageshow); void api.liveClasses.cancelAdmission(id).catch(() => {}); void release(); };
+  }, [release, id]);
 
   useEffect(() => {
     if (!user) return;
@@ -99,6 +103,7 @@ function LiveClassRoom({ id }: { id: string }) {
           traceClassroom('session_loaded', { session_id: id, session_status: detail.status });
           lastSessionStatus.current = detail.status;
         }
+        if (['removed', 'rejected'].includes(detail.admission || '') && joined.current) { leave('removed'); return; }
         if (detail.status !== 'ongoing' && joined.current) leave('ended');
       } catch (cause) {
         if (!active) return;
@@ -129,11 +134,15 @@ function LiveClassRoom({ id }: { id: string }) {
 
   const engine = transport.current;
   const connection: ConnectionState = phase === 'failed' ? 'ERROR' : phase === 'joining' ? 'CONNECTING' : engine?.connectionState() || 'IDLE';
+  const notice = engine?.notice();
   useEffect(() => {
     traceClassroom('connection_state', { session_id: id, session_status: session?.status, connection_state: connection });
   }, [id, session?.status, connection]);
   useEffect(() => {
     if (phase !== 'room' || !engine) return;
+    if (engine.notice() === 'removed') { leave('removed'); return; }
+    if (engine.notice() === 'duplicate') { window.sessionStorage.removeItem(resumeKey); void release(); setError(new ClassroomError('DUPLICATE_TAB').message); setErrorCode('DUPLICATE_TAB'); setPhase('failed'); return; }
+    if (engine.notice() === 'ended') { leave('ended'); return; }
     if (connection === 'DISCONNECTED') {
       void api.liveClasses.get(id).then(response => {
         if (!mounted.current || transport.current !== engine) return;
@@ -151,7 +160,7 @@ function LiveClassRoom({ id }: { id: string }) {
     };
     confirmPresence(); const timer = window.setInterval(confirmPresence, 20000);
     return () => window.clearInterval(timer);
-  }, [phase, connection, engine, id, leave, release]);
+  }, [phase, connection, engine, id, leave, release, resumeKey, notice]);
 
   const connect = async () => {
     if (joining.current) return;
@@ -163,6 +172,19 @@ function LiveClassRoom({ id }: { id: string }) {
     try {
       await release();
       if (!mounted.current || version !== attempt.current) return;
+      if (navigator.locks) {
+        const acquired = await new Promise<boolean>(resolve => {
+          void navigator.locks.request(`classroom:${user?.id}:${id}`, { ifAvailable: true }, lock => {
+            if (!lock) { resolve(false); return; }
+            return new Promise<void>(done => { unlock.current = done; resolve(true); });
+          }).catch(() => resolve(false));
+        });
+        if (!acquired) throw new ClassroomError('DUPLICATE_TAB');
+      }
+      if (!mounted.current || version !== attempt.current) { unlock.current?.(); unlock.current = null; return; }
+      const admission = await api.liveClasses.admission(id);
+      if (!mounted.current || version !== attempt.current) return;
+      if (admission.data.status === 'waiting') { unlock.current?.(); unlock.current = null; setPhase('waiting'); return; }
       traceClassroom('token_request', { session_id: id, session_status: session?.status, token_request_status: 'pending' });
       const { data: token } = await api.liveClasses.token(id);
       tokenStatus = 200;
@@ -207,10 +229,10 @@ function LiveClassRoom({ id }: { id: string }) {
       if (mounted.current && version === attempt.current) setBusy(false);
     }
   };
-  const join = async (capture: MediaStream, denied = false) => {
+  const join = async (capture: MediaStream, denied = false, outputDevice?: string) => {
     if (joining.current) return;
     const video = capture.getVideoTracks()[0]; const audio = capture.getAudioTracks()[0];
-    devices.current = { camera: Boolean(video), microphone: Boolean(audio), videoDevice: video?.getSettings().deviceId, audioDevice: audio?.getSettings().deviceId };
+    devices.current = { camera: Boolean(video), microphone: Boolean(audio), videoDevice: video?.getSettings().deviceId, audioDevice: audio?.getSettings().deviceId, outputDevice };
     deviceDenied.current = denied;
     // Preview is optional; SDK captures are acquired only after room connection.
     capture.getTracks().forEach(track => track.stop());
@@ -226,7 +248,7 @@ function LiveClassRoom({ id }: { id: string }) {
       const value = JSON.parse(saved);
       devices.current = { camera: value.camera === true, microphone: value.microphone === true,
         videoDevice: typeof value.videoDevice === 'string' ? value.videoDevice : undefined,
-        audioDevice: typeof value.audioDevice === 'string' ? value.audioDevice : undefined };
+        audioDevice: typeof value.audioDevice === 'string' ? value.audioDevice : undefined, outputDevice: typeof value.outputDevice === 'string' ? value.outputDevice : undefined };
     } catch { window.sessionStorage.removeItem(resumeKey); return; }
     // Only resume a previously joined room in this tab. Never create a session,
     // persist a provider token, or autojoin a room opened for the first time.
@@ -234,6 +256,16 @@ function LiveClassRoom({ id }: { id: string }) {
     // This one-time resume belongs to the loaded session, not each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.id, session?.status, user?.id, resumeKey]);
+  useEffect(() => {
+    if (phase !== 'waiting' || !session) return;
+    if (session.admission === 'admitted' || !session.policy.waiting_room) void connect();
+    if (['rejected', 'removed'].includes(session.admission || '')) {
+      setError(new ClassroomError(session.admission === 'removed' ? 'REMOVED_BY_TEACHER' : 'ADMISSION_REJECTED').message);
+      setPhase('failed');
+    }
+    // Admission changes arrive with the existing session refresh, before SFU access.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, session?.admission, session?.policy.waiting_room]);
   const media = async (kind: 'camera' | 'microphone', enabled: boolean) => {
     if (!engine || busy) return;
     setBusy(true); setError(''); setErrorCode(undefined);
@@ -248,30 +280,32 @@ function LiveClassRoom({ id }: { id: string }) {
     catch (cause) { setError(friendlyError(cause, 'Không kết thúc được buổi học. Vui lòng thử lại.')); }
     finally { if (mounted.current) setBusy(false); }
   };
-  const send = async () => {
-    if (!engine || !message.trim() || busy) return;
-    setBusy(true);
-    try { await engine.chat(message.trim()); setMessage(''); }
-    catch { setError('Chưa gửi được tin nhắn. Vui lòng thử lại.'); }
-    finally { if (mounted.current) setBusy(false); }
-  };
-
-  if (!session) return <div className="workspace-page"><Card><p role={error ? 'alert' : 'status'}>{error || 'Đang tải phòng học…'}</p><Button variant="outline" onClick={() => leave()}>Quay lại danh sách</Button></Card></div>;
-  const participants = engine?.participants() || [];
-  const local = participants.find(p => p.local);
+  const student = user?.role === 'student';
+  if (!session) return <div className="workspace-page classroom-page">{student && <StudentPageHeader title="Lớp học trực tuyến" />}<Card><p role={error ? 'alert' : 'status'}>{error || 'Đang tải phòng học…'}</p><Button variant="outline" onClick={() => leave()}>Quay lại danh sách</Button></Card></div>;
   const finished = ['ended', 'cancelled'].includes(session.status);
-  return <div className="workspace-page classroom-page" data-connection-state={connection}><PageHeader mode="context" context={session.class_name||'Lớp học trực tuyến'} title={session.title} actions={phase === 'room' && <div className="classroom-header-actions"><Badge>{participants.length} người đang tham gia</Badge><Button variant="outline" size="sm" onClick={() => setShowPanel(v => !v)}>{showPanel ? 'Ẩn người tham gia' : 'Người tham gia'}</Button>{manager && <Button variant="danger" size="sm" disabled={busy} onClick={() => setConfirmEnd(true)}>Kết thúc buổi</Button>}</div>}/><p className="detail-meta">{session.description || `Giảng viên: ${session.teacher_name || '—'}`}</p>
+  const inRoom = phase === 'room' && session.status === 'ongoing' && Boolean(engine);
+  const classList = student ? '/student/classes' : user?.role === 'admin' ? '/admin/classes' : '/dashboard/classes';
+  const classHref = `${classList}/${session.class_id}`;
+  const returnLabel = student ? 'Quay lại lớp học trực tuyến' : 'Quay lại danh sách';
+  return <div className={`workspace-page classroom-page ${inRoom ? 'classroom-meeting-page' : ''}`} data-connection-state={connection}>{!inRoom && <>
+      {student ? <StudentPageHeader title="Lớp học trực tuyến" /> : <PageHeader mode="context" context={session.class_name||'Lớp học trực tuyến'} title={session.title}/>}
+      <nav className="classroom-breadcrumb" aria-label="Đường dẫn lớp học"><ol><li><Link href={classList}>Lớp học</Link></li><li><Link href={classHref}>{session.class_name || 'Chi tiết lớp học'}</Link></li><li aria-current="page">{session.title}</li></ol></nav>
+      {session.status === 'ongoing' && phase !== 'waiting' && <p className="detail-meta">Giảng viên: {session.teacher_name || '—'}</p>}
+    </>}
     {error && <p className="classroom-alert" role="alert" data-error-code={errorCode}>{error}</p>}
-    {session.status !== 'ongoing' ? <><Card><h2>{finished ? 'Buổi học đã kết thúc' : 'Buổi học sắp diễn ra'}</h2><p>{classroomDate(session.scheduled_start)} – {classroomDate(session.scheduled_end)}</p>{session.actual_end && <p>Kết thúc thực tế: {classroomDate(session.actual_end)}</p>}<Button variant="outline" onClick={() => leave()}>Quay lại danh sách</Button></Card>{manager && finished && <AttendanceTable rows={attendance} error={attendanceError} />}</> : <>
+    {!inRoom && session.recording?.active && <p className="classroom-recording-prejoin" role="status">Buổi học này đang được ghi hình. Âm thanh, hình ảnh và nội dung chia sẻ trong phòng có thể được lưu lại sau khi bạn tham gia.</p>}
+    {session.status !== 'ongoing' ? <><ClassroomSessionCard session={session} classHref={classHref} returnLabel={returnLabel} onLeave={() => leave()} />{manager && finished && <AttendanceTable rows={attendance} error={attendanceError} />}</> : <>
       {phase === 'setup' && <DeviceSetup key={setupKey} busy={false} onJoin={join} onLeave={() => leave()} />}
       {phase === 'joining' && <Card><p role="status">Đang kết nối…</p><Button variant="outline" onClick={() => leave()}>Rời phòng</Button></Card>}
       {phase === 'failed' && <Card><h2>Kết nối chưa thành công</h2><div className="classroom-setup-actions"><Button onClick={() => void connect()}>Thử lại</Button><Button variant="outline" onClick={() => leave()}>Rời phòng</Button></div></Card>}
-      {phase === 'room' && <><p className={`classroom-connection ${connection.toLowerCase()}`} role="status">{connectionLabels[connection]}</p>{engine?.audioBlocked() && <Button variant="outline" onClick={() => void engine.startAudio().then(() => render(v => v + 1)).catch(() => setError('Không phát được âm thanh. Kiểm tra thiết bị đầu ra.'))}>Bật âm thanh phòng học</Button>}<div className={`classroom-room ${showPanel ? '' : 'panel-hidden'}`}><main className="classroom-stage"><div className="classroom-grid" data-count={Math.min(participants.length, 4)}>{participants.map(participant => <ParticipantTile key={participant.sid} participant={participant} teacherId={session.teacher_id} />)}</div>{manager && participants.length === 1 && <p className="classroom-waiting">Chưa có sinh viên nào trong phòng. Hãy chờ sinh viên tham gia.</p>}<div className="classroom-controls"><Button variant="outline" disabled={busy || connection !== 'CONNECTED'} aria-pressed={Boolean(local?.mic)} onClick={() => void media('microphone', !local?.mic)}>{local?.mic ? 'Tắt mic' : 'Bật mic'}</Button><Button variant="outline" disabled={busy || connection !== 'CONNECTED'} aria-pressed={Boolean(local?.camera)} onClick={() => void media('camera', !local?.camera)}>{local?.camera ? 'Tắt camera' : 'Bật camera'}</Button><Button variant="danger" onClick={() => leave()}>Rời phòng</Button></div></main>{showPanel && <aside className="classroom-panel"><div className="classroom-panel-tabs"><button className={panel === 'participants' ? 'selected' : ''} onClick={() => setPanel('participants')}>Người tham gia ({participants.length})</button><button className={panel === 'chat' ? 'selected' : ''} onClick={() => setPanel('chat')}>Chat</button>{manager && <button className={panel === 'attendance' ? 'selected' : ''} onClick={() => setPanel('attendance')}>Điểm danh</button>}</div>{panel === 'participants' && <ul className="classroom-participant-list">{participants.map(p => <li key={p.sid}><strong>{p.name}{p.local ? ' (Bạn)' : ''}</strong>{p.id === session.teacher_id && <span className="classroom-teacher-badge">Giảng viên</span>}<small>{p.mic ? '● Mic bật' : '○ Mic tắt'} · {p.camera ? '● Camera bật' : '○ Camera tắt'}</small></li>)}</ul>}{panel === 'attendance' && <AttendanceTable rows={attendance} error={attendanceError} compact />}{panel === 'chat' && <><div className="classroom-chat-log" role="log" aria-label="Tin nhắn phòng học">{engine?.messages().map(m => <div key={m.id}><strong>{m.name}</strong><time>{new Date(m.time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</time><p>{m.text}</p></div>)}{!engine?.messages().length && <p>Chưa có tin nhắn. Tin nhắn chỉ lưu trong phiên hiện tại.</p>}</div><form className="classroom-chat-form" onSubmit={e => { e.preventDefault(); void send(); }}><Input aria-label="Tin nhắn" placeholder="Nhập tin nhắn…" maxLength={1000} value={message} onChange={e => setMessage(e.target.value)} /><Button type="submit" size="sm" disabled={busy || connection !== 'CONNECTED' || !message.trim()}>Gửi</Button></form></>}</aside>}</div></>}
+      {phase === 'waiting' && <ClassroomSessionCard session={session} waiting classHref={classHref} returnLabel={returnLabel} onLeave={() => leave()} />}
+      {inRoom && engine && <MeetingRoom id={id} session={session} engine={engine} manager={manager} connection={connection} busy={busy} error={setError} onSession={setSession} onMedia={media} onLeave={() => leave()} onEnd={() => setConfirmEnd(true)} attendance={<AttendanceTable rows={attendance} error={attendanceError} compact />} onAttendance={() => setPanel('attendance')} />}
     </>}
+    {finished && <ClassRecordingsSection id={id} manager={Boolean(manager)} />}
     <ConfirmDialog open={confirmEnd} title="Kết thúc buổi học?" description="Tất cả người tham gia sẽ rời khỏi phòng." confirmLabel="Kết thúc buổi học" busy={busy} error={error} onCancel={()=>setConfirmEnd(false)} onConfirm={()=>void end()}/>
   </div>;
 }
 
 function AttendanceTable({ rows, error, compact = false }: { rows: AttendanceRow[]; error: string; compact?: boolean }) {
-  return <Card className="classroom-attendance"><h2>Điểm danh buổi học</h2>{error ? <p role="alert">{error}</p> : compact ? <ul className="classroom-participant-list">{rows.map(row => <li key={row.student_id}><strong>{row.full_name}</strong><small>Vào: {classroomDate(row.joined_at)}</small><small>Rời: {row.joined_at && !row.left_at ? 'Đang tham gia' : classroomDate(row.left_at)}</small><small>{row.joined_at ? classroomDuration(row.duration_sec) : 'Chưa tham gia'}</small></li>)}</ul> : <Table><thead><tr><th>Sinh viên</th><th>Vào</th><th>Rời</th><th>Thời lượng</th></tr></thead><tbody>{rows.map(row => <tr key={row.student_id}><td>{row.full_name}</td><td>{classroomDate(row.joined_at)}</td><td>{classroomDate(row.left_at)}</td><td>{row.joined_at ? classroomDuration(row.duration_sec) : 'Chưa tham gia'}</td></tr>)}</tbody></Table>}{!error && !rows.length && <p>Chưa có dữ liệu điểm danh.</p>}</Card>;
+  return <Card borderRole="classes" className="classroom-attendance"><h2>Điểm danh buổi học</h2>{error ? <p role="alert">{error}</p> : compact ? <ul className="classroom-participant-list">{rows.map(row => <li key={row.student_id}><strong>{row.full_name}</strong><small>MSSV: {row.student_code || '—'}</small><small>Vào: {classroomDate(row.joined_at)}</small><small>Rời: {row.joined_at && !row.left_at ? 'Đang tham gia' : classroomDate(row.left_at)}</small><small>{row.joined_at ? classroomDuration(row.duration_sec) : 'Chưa tham gia'}</small></li>)}</ul> : <Table><thead><tr><th>Sinh viên</th><th>MSSV</th><th>Vào</th><th>Rời</th><th>Thời lượng</th><th>Trạng thái</th></tr></thead><tbody>{rows.map(row => <tr key={row.student_id}><td>{row.full_name}</td><td>{row.student_code || '—'}</td><td>{classroomDate(row.joined_at)}</td><td>{classroomDate(row.left_at)}</td><td>{row.joined_at ? classroomDuration(row.duration_sec) : 'Chưa tham gia'}</td><td>{row.status === 'absent' ? 'Chưa tham gia' : row.left_at ? 'Đã rời lớp' : 'Đang tham gia'}</td></tr>)}</tbody></Table>}{!error && !rows.length && <p>Chưa có dữ liệu điểm danh.</p>}</Card>;
 }

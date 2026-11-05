@@ -15,6 +15,16 @@ class DraftConfiguration(BaseModel):
     topic: str | None = Field(default=None, max_length=255)
 
 
+class DraftQualityCheck(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    status: Literal['pass', 'review']
+    flags: list[Literal['UNSUPPORTED', 'AMBIGUOUS', 'WEAK_DISTRACTORS', 'DIFFICULTY_MISMATCH', 'INCOMPLETE',
+        'POTENTIAL_DUPLICATE', 'REVIEW_UNAVAILABLE', 'EDITED_AFTER_CHECK', 'IMAGE_NOT_VERIFIED']] = Field(default_factory=list, max_length=12)
+    grounded: bool | None = None
+    assessed_difficulty: Literal['easy', 'medium', 'hard'] | None = None
+    fingerprint: str = Field(pattern=r'^[a-f0-9]{64}$')
+
+
 class DraftQuestion(BaseModel):
     model_config = ConfigDict(extra='forbid')
     id: UUID
@@ -33,6 +43,7 @@ class DraftQuestion(BaseModel):
     source_excerpt: str = Field(default='', max_length=6000)
     warnings: list[Annotated[str, Field(max_length=512)]] = Field(default_factory=list, max_length=12)
     duplicate: bool = False
+    quality_check: DraftQualityCheck | None = None
     images: list['DocumentImage'] = Field(default_factory=list, max_length=250)
     warning_codes: list[Literal['IMAGE_REQUIRES_VISION']] = Field(default_factory=list)
 
@@ -76,6 +87,11 @@ class ImportDrafts(BaseModel):
             if question.problems():
                 raise ValueError('Câu hỏi chưa đủ nội dung hoặc đáp án. Vui lòng sửa bản nháp.')
         return self
+
+
+class QualityReviewInput(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    questions: list[DraftQuestion] = Field(default_factory=list, max_length=100)
 
 
 class DocumentImage(BaseModel):

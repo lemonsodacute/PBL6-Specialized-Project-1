@@ -1,11 +1,15 @@
 'use client';
+import { borderProps, type BorderRole } from '@/components/ui/Border';
+
 
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { Activity, AlertCircle, ArrowRight, Check, CheckCircle2, ChevronDown, Clock3, Code2, Download, FileQuestion, Filter, Headphones, Info, RefreshCw, Server, ShieldCheck, Sparkles, Star, Users } from 'lucide-react';
+import { AlertCircle, ArrowRight, Check, CheckCircle2, ChevronDown, Clock3, Code2, Download, FileQuestion, Filter, Headphones, Info, RefreshCw, Server, ShieldCheck, Sparkles, Star, Users } from 'lucide-react';
 import { Button, Input, Select, Table } from '@/components/ui';
 import { BarChart, ChartCard, ChartEmpty, DonutChart } from '@/components/analytics/Charts';
 import { apiFetch, downloadAPIFile } from '@/lib/api';
-import { AISupportTabs } from './AISupportTabs';
+import { AISupportTabs, supportPanelId, supportTabId } from './AISupportTabs';
+import { AISupportHeader } from './AISupportHeader';
+import pageStyles from './AISupportPage.module.css';
 import { codeOf, configured, count, day, divide, errorDescriptions, healthStatus, numberOf, percent, providerName, rateOf, requestFailure, timestamp, type ActivityData, type DateWindow, type Failure, type Rate, type Tone } from './ai-activity';
 import styles from './AIActivityDashboard.module.css';
 
@@ -28,9 +32,22 @@ function Stats({ items }: { items: { label: string; value: number | null; tone?:
     <dt>{item.label}</dt><dd className={item.tone ? styles[item.tone] : undefined}>{count(item.value!)}</dd>
   </div>)}</dl>;
 }
-function Kpi({ label, value, detail, icon, tone }: { label: string; value: string; detail: string; icon: ReactNode; tone: Tone }) {
-  return <article className={`${styles.kpi} ${styles[tone]}`}><div className={styles.kpiTop}><span>{label}</span><span className={styles.kpiIcon}>{icon}</span></div>
+function Kpi({ label, value, detail, icon, tone, borderRole }: { label: string; value: string; detail: string; icon: ReactNode; tone: Tone; borderRole: BorderRole }) {
+  return <article className={`${styles.kpi} ${styles[tone]}`} {...borderProps(borderRole)}><div className={styles.kpiTop}><span>{label}</span><span className={styles.kpiIcon}>{icon}</span></div>
     <strong className={styles.kpiValue}>{value}</strong><p>{detail}</p></article>;
+}
+
+function DailyQuestionPlaceholder({ window, requests }: { window: DateWindow; requests: number | null }) {
+  const start = Date.parse(`${window.start}T00:00:00Z`), end = Date.parse(`${window.end}T00:00:00Z`);
+  const days = Math.max(0, Math.round((end - start) / 86400000));
+  const ticks = Array.from({ length: Math.min(7, days + 1) }, (_, index) => index);
+  const dates = ticks.map(index => new Date(start + Math.round(index * days / Math.max(1, ticks.length - 1)) * 86400000).toISOString().slice(0, 10));
+  return <div className={styles.daily} aria-label="Kết quả tạo câu hỏi theo ngày">
+    <div className={styles.dailyPlot}><Info size={22} aria-hidden="true" /><strong>{requests === 0 ? 'Chưa có lượt tạo câu hỏi trong khoảng này.' : 'Chưa có dữ liệu phân bổ theo ngày.'}</strong>
+      <p>{requests === 0 ? 'Biểu đồ cột sẽ hiển thị khi nguồn dữ liệu có hoạt động theo ngày.' : 'Nguồn hiện tại chỉ cung cấp số liệu tổng hợp; không suy diễn các ngày thành 0.'}</p>
+    </div>
+    <div className={styles.dailyDates} aria-label="Mốc ngày trong khoảng đã áp dụng">{dates.map(date => <time dateTime={date} key={date}>{date.slice(8)}/{date.slice(5, 7)}</time>)}</div>
+  </div>;
 }
 
 export default function AIActivityDashboard() {
@@ -69,7 +86,7 @@ export default function AIActivityDashboard() {
   const q = data?.question ?? {}, s = data?.support ?? {};
   const requests = numberOf(q,'requests'), success = numberOf(q,'success'), generated = numberOf(q,'generated_questions');
   const requested = numberOf(q,'requested_questions'), sessions = numberOf(s,'sessions'), escalated = numberOf(s,'escalated_count');
-  const successRate = divide(success,requests), successPercent = successRate ? percent(successRate) : null;
+  const successRate = divide(success,requests);
   const failures = numberOf(q,'failures');
   const outcomes = requests != null && success != null && failures != null && success + failures === requests
     ? [{label:'Thành công',value:success,tone:'brand' as const},{label:'Thất bại',value:failures,tone:'critical' as const}] : [];
@@ -81,11 +98,10 @@ export default function AIActivityDashboard() {
   const escalation = rateOf(s.escalation_rate) ?? divide(escalated,sessions);
   const health = data ? healthStatus(data.health) : null, lastError = data ? codeOf(data.health.last_error_code) : null;
 
-  return <div className={`${styles.page} an-page`}>
-    <header className={styles.header}><div className={styles.headingIcon}><Activity size={23} aria-hidden="true" /></div><div>
-      <h1>Hoạt động AI</h1><p>Theo dõi tình trạng provider, tạo câu hỏi và hỗ trợ người dùng.</p>
-    </div></header>
+  return <div className={`${pageStyles.theme} ${pageStyles.page} ${styles.page} an-page`}>
+    <AISupportHeader selected="activity" />
     <AISupportTabs selected="activity" />
+    <div className={pageStyles.panelContent} role="tabpanel" id={supportPanelId('activity')} aria-labelledby={supportTabId('activity')} tabIndex={0}>
     <section className={styles.filterPanel} aria-label="Bộ lọc hoạt động AI">
       <form className={styles.filters} onSubmit={apply} noValidate>
         <label><span><Filter size={14} aria-hidden="true" />Khoảng thời gian</span><Select value={range} onChange={event => {
@@ -106,22 +122,23 @@ export default function AIActivityDashboard() {
     {data && health && <>
       {requests === 0 && sessions === 0 && <div className={styles.empty} role="status"><Info size={19} aria-hidden="true" /><div><strong>Chưa có dữ liệu trong khoảng thời gian này.</strong><p>Chọn khoảng thời gian khác hoặc sử dụng tính năng AI để bắt đầu ghi nhận hoạt động.</p></div></div>}
       <section className={styles.kpis} aria-label="Chỉ số hoạt động AI">
-        {requests != null && <Kpi label={successPercent ? 'Tỷ lệ tạo câu hỏi thành công' : 'Lượt tạo câu hỏi'} value={successPercent ?? count(requests)} detail={success != null ? `${count(success)} / ${count(requests)} lượt xử lý thành công` : 'Lượt xử lý được ghi nhận'} icon={<ShieldCheck size={20} aria-hidden="true" />} tone="success" />}
-        {generated != null && <Kpi label="Câu hỏi đã tạo" value={count(generated)} detail={requested != null ? `${count(requested)} câu được yêu cầu` : 'Câu hỏi được ghi nhận trong kỳ'} icon={<FileQuestion size={20} aria-hidden="true" />} tone="info" />}
-        {sessions != null && <Kpi label="Phiên hỗ trợ" value={count(sessions)} detail="Phiên được tạo trong khoảng ngày đã chọn" icon={<Users size={20} aria-hidden="true" />} tone="brand" />}
-        {escalation && <Kpi label="Chuyển quản trị viên" value={percent(escalation) ?? count(escalation.numerator)} detail={`${count(escalation.numerator)} / ${count(escalation.denominator)} phiên hỗ trợ`} icon={<ArrowRight size={20} aria-hidden="true" />} tone="warning" />}
+        {requests != null && <Kpi label="Lượt tạo câu hỏi" borderRole="exams" value={count(requests)} detail={success != null ? `${count(success)} / ${count(requests)} lượt xử lý thành công` : 'Lượt xử lý được ghi nhận'} icon={<ShieldCheck size={20} aria-hidden="true" />} tone="success" />}
+        {generated != null && <Kpi label="Câu hỏi đã tạo" borderRole="exams" value={count(generated)} detail={requested != null ? `${count(requested)} câu được yêu cầu` : 'Câu hỏi được ghi nhận trong kỳ'} icon={<FileQuestion size={20} aria-hidden="true" />} tone="info" />}
+        {sessions != null && <Kpi label="Phiên hỗ trợ" borderRole="users" value={count(sessions)} detail="Phiên được tạo trong khoảng ngày đã chọn" icon={<Users size={20} aria-hidden="true" />} tone="brand" />}
+        {escalation && <Kpi label="Chuyển quản trị viên" borderRole="warning" value={percent(escalation) ?? count(escalation.numerator)} detail={`${count(escalation.numerator)} / ${count(escalation.denominator)} phiên hỗ trợ`} icon={<ArrowRight size={20} aria-hidden="true" />} tone="warning" />}
       </section>
-      <div className="an-grid an-grid-main">
-        <ChartCard title="Kết quả tạo câu hỏi" description="Phân bố lượt xử lý trong khoảng ngày đã áp dụng" footer={requests != null ? `${count(requests)} lượt xử lý đã ghi nhận · không bao gồm so sánh tăng trưởng.` : 'Chưa có số liệu lượt xử lý.'}>
-          <DonutChart label="Kết quả tạo câu hỏi" totalLabel="Lượt xử lý" items={outcomes} />
+      <div className={styles.overview}>
+        <ChartCard title="Kết quả tạo câu hỏi" description="Theo ngày trong khoảng thời gian đã áp dụng" footer={requests != null ? `${count(requests)} lượt xử lý đã ghi nhận · không bao gồm so sánh tăng trưởng.` : 'Chưa có số liệu lượt xử lý.'}>
+          <DailyQuestionPlaceholder window={applied} requests={requests} />
+          {outcomes.some(item => item.value > 0) && <details className={styles.subDetails}><summary>Phân bố số liệu tổng hợp<ChevronDown size={15} aria-hidden="true" /></summary><DonutChart label="Kết quả tạo câu hỏi tổng hợp" totalLabel="Lượt xử lý" items={outcomes} /></details>}
         </ChartCard>
         <ChartCard title="Kết quả hỗ trợ" description="Phiên hỗ trợ và phản hồi trong kỳ" footer="Phiên đã phản hồi giải quyết và phiên chuyển quản trị viên có thể trùng nhau; không cộng các nhóm thành tổng.">
           <BarChart label="Kết quả hỗ trợ trong kỳ" items={supportOutcomes} />
         </ChartCard>
       </div>
-      <section className={styles.health} aria-labelledby="provider-health-title">
+      <section className={styles.health} aria-labelledby="provider-health-title" {...borderProps(health.tone==='success'?'success':health.tone==='danger'?'danger':health.tone==='warning'?'warning':'neutral')}>
         <div className={styles.providerIdentity}><span className={`${styles.healthIcon} ${styles[health.tone]}`}><Server size={22} aria-hidden="true" /></span><div>
-          <h2 id="provider-health-title">Tình trạng provider</h2><strong>{providerName(data.health.provider)}</strong><Status tone={health.tone}>{health.label}</Status>
+          <h2 id="provider-health-title">Tình trạng dịch vụ AI</h2><strong>{providerName(data.health.provider)}</strong><Status tone={health.tone}>{health.label}</Status>
         </div></div>
         <dl className={styles.healthFacts}>
           <div><dt>Tạo câu hỏi</dt><dd><CheckCircle2 size={14} aria-hidden="true" />{configured(data.health.question_model)}</dd></div>
@@ -134,7 +151,7 @@ export default function AIActivityDashboard() {
         <ChartEmpty detail="Chưa có lịch sử theo ngày để hiển thị xu hướng. Bạn vẫn có thể xem số liệu tổng hợp của khoảng thời gian đã chọn ở phía trên." />
       </ChartCard>
       <div className={styles.analytics}>
-        <section className={styles.panel} aria-labelledby="question-analytics-title">
+        <section className={styles.panel} aria-labelledby="question-analytics-title" {...borderProps('exams')}>
           <div className={styles.panelHeader}><div><h2 id="question-analytics-title"><FileQuestion size={19} aria-hidden="true" />Tạo câu hỏi</h2><p>Hiệu suất xử lý và mức đáp ứng yêu cầu</p></div><Button variant="outline" size="sm" disabled={!!exporting} loading={exporting === 'question'} aria-label="Xuất CSV tạo câu hỏi" onClick={() => void download('question')}><Download size={15} aria-hidden="true" />Xuất CSV</Button></div>
           <Stats items={[{label:'Lượt xử lý',value:requests},{label:'Thành công',value:success,tone:'success'},{label:'Thất bại',value:numberOf(q,'failures'),tone:'danger'}]} />
           <div className={styles.bars}>
@@ -154,32 +171,32 @@ export default function AIActivityDashboard() {
             </div>
           </details>
         </section>
-        <section className={styles.panel} aria-labelledby="support-analytics-title">
+        <section className={styles.panel} aria-labelledby="support-analytics-title" {...borderProps('users')}>
           <div className={styles.panelHeader}><div><h2 id="support-analytics-title"><Headphones size={19} aria-hidden="true" />Hỗ trợ người dùng</h2><p>Kết quả hỗ trợ và khả năng tìm nội dung</p></div><Button variant="outline" size="sm" disabled={!!exporting} loading={exporting === 'support'} aria-label="Xuất CSV hỗ trợ" onClick={() => void download('support')}><Download size={15} aria-hidden="true" />Xuất CSV</Button></div>
           <Stats items={[{label:'Phiên hỗ trợ',value:sessions},{label:'AI giải quyết',value:numberOf(s,'resolved_by_ai_count'),tone:'success'},{label:'Chuyển quản trị viên',value:escalated,tone:'warning'}]} />
           <div className={styles.bars}>
             <MetricBar label="Tỷ lệ chuyển quản trị viên" value={escalation} tone="warning" />
-            <MetricBar label="Truy xuất KB thành công" value={rateOf(s.retrieval_hit_rate)} />
+            <MetricBar label="Tra cứu kho tri thức thành công" value={rateOf(s.retrieval_hit_rate)} />
             <MetricBar label="Phản hồi đã giải quyết" value={rateOf(s.helpful_rate)} tone="success" />
           </div>
           <Stats items={[{label:'Không tìm thấy trong kho tri thức',value:numberOf(s,'kb_not_found_count'),tone:'warning'}]} />
           <p className={styles.note}><Info size={14} aria-hidden="true" />Phiên tính theo ngày tạo. Tỷ lệ truy xuất tính theo lượt có dữ liệu tìm kiếm; giải quyết dựa trên phản hồi của người dùng.</p>
         </section>
       </div>
-      <section className={styles.panel} aria-labelledby="recent-failures-title">
+      <section className={styles.panel} aria-labelledby="recent-failures-title" {...borderProps('danger')}>
         <div className={styles.panelHeader}><div><h2 id="recent-failures-title"><AlertCircle size={18} aria-hidden="true" />Sự cố gần đây</h2><p>Sự kiện lỗi gần nhất toàn hệ thống, có thể nằm ngoài khoảng lọc.</p></div></div>
-        {lastError ? <Table label="Lỗi provider gần nhất"><thead><tr><th>Thời điểm</th><th>Mã lỗi</th><th>Nội dung</th></tr></thead><tbody><tr><td><time dateTime={data.health.last_error_at ?? undefined}>{timestamp(data.health.last_error_at)}</time></td><td><code>{lastError}</code></td><td>{errorDescriptions[lastError] ?? 'Hệ thống đã ghi nhận lỗi từ dịch vụ AI.'}</td></tr></tbody></Table> : <p className={styles.noFailure}><CheckCircle2 size={18} aria-hidden="true" />Chưa ghi nhận sự cố provider.</p>}
-        <div className={styles.failureCounts}>{numberOf(q,'provider_failure_count') != null && <span>Tạo câu hỏi: <strong>{count(numberOf(q,'provider_failure_count')!)} lần gọi provider lỗi</strong></span>}{numberOf(s,'provider_failure_count') != null && <span>Hỗ trợ: <strong>{count(numberOf(s,'provider_failure_count')!)} lần gọi provider lỗi</strong></span>}{numberOf(q,'retry_count') != null && <span>Thử lại tạo câu hỏi: <strong>{count(numberOf(q,'retry_count')!)} lượt</strong></span>}</div>
+        {lastError ? <Table label="Lỗi dịch vụ AI gần nhất"><thead><tr><th>Thời điểm</th><th>Mã lỗi</th><th>Nội dung</th></tr></thead><tbody><tr><td><time dateTime={data.health.last_error_at ?? undefined}>{timestamp(data.health.last_error_at)}</time></td><td><code>{lastError}</code></td><td>{errorDescriptions[lastError] ?? 'Hệ thống đã ghi nhận lỗi từ dịch vụ AI.'}</td></tr></tbody></Table> : <p className={styles.noFailure}><CheckCircle2 size={18} aria-hidden="true" />Chưa ghi nhận sự cố dịch vụ AI.</p>}
+        <div className={styles.failureCounts}>{numberOf(q,'provider_failure_count') != null && <span>Tạo câu hỏi: <strong>{count(numberOf(q,'provider_failure_count')!)} lần gọi dịch vụ AI lỗi</strong></span>}{numberOf(s,'provider_failure_count') != null && <span>Hỗ trợ: <strong>{count(numberOf(s,'provider_failure_count')!)} lần gọi dịch vụ AI lỗi</strong></span>}{numberOf(q,'retry_count') != null && <span>Thử lại tạo câu hỏi: <strong>{count(numberOf(q,'retry_count')!)} lượt</strong></span>}</div>
       </section>
     </>}
     {(data || error) && <details className={styles.technical} id="ai-technical-details"><summary><Code2 size={18} aria-hidden="true" /><span>Chi tiết kỹ thuật<small>Cấu hình và chẩn đoán dịch vụ</small></span><ChevronDown size={17} aria-hidden="true" /></summary>
       <div className={styles.technicalBody}>{data && <>
         <dl className={styles.diagnostics}>
-          <div><dt>Provider adapter</dt><dd><code>{['gemini-openai-compatible','openai_compatible'].includes(data.health.provider) ? data.health.provider : 'Không xác định'}</code></dd></div>
-          <div><dt>Model tạo câu hỏi</dt><dd>{configured(data.health.question_model)}</dd></div>
-          <div><dt>Model hỗ trợ</dt><dd>{configured(data.health.support_model)}</dd></div>
+          <div><dt>Bộ kết nối dịch vụ AI</dt><dd><code>{['gemini-openai-compatible','openai_compatible'].includes(data.health.provider) ? data.health.provider : 'Không xác định'}</code></dd></div>
+          <div><dt>Mô hình tạo câu hỏi</dt><dd>{configured(data.health.question_model)}</dd></div>
+          <div><dt>Mô hình hỗ trợ</dt><dd>{configured(data.health.support_model)}</dd></div>
           <div><dt>Cấp dịch vụ</dt><dd>{data.health.provider_tier === 'configured externally' ? 'Cấu hình trên máy chủ' : 'Chưa xác định'}</dd></div>
-          <div><dt>Mã lỗi provider gần nhất</dt><dd><code>{lastError ?? 'Chưa ghi nhận'}</code></dd></div>
+          <div><dt>Mã lỗi dịch vụ AI gần nhất</dt><dd><code>{lastError ?? 'Chưa ghi nhận'}</code></dd></div>
           {numberOf(q,'retry_count') != null && <div><dt>Lần thử lại khi tạo câu hỏi</dt><dd>{count(numberOf(q,'retry_count')!)}</dd></div>}
           {numberOf(q,'average_latency_ms') != null && <div><dt>Độ trễ tạo câu hỏi trung bình</dt><dd>{count(numberOf(q,'average_latency_ms')!)} ms</dd></div>}
           {numberOf(s,'average_response_latency_ms') != null && <div><dt>Độ trễ phản hồi hỗ trợ trung bình</dt><dd>{count(numberOf(s,'average_response_latency_ms')!)} ms</dd></div>}
@@ -189,5 +206,6 @@ export default function AIActivityDashboard() {
       </>}{error && <dl className={styles.diagnostics}><div><dt>Yêu cầu dữ liệu / xuất tệp</dt><dd>{error.message}</dd></div>{error.status != null && <div><dt>HTTP</dt><dd>{error.status}</dd></div>}{error.code && <div><dt>Mã lỗi</dt><dd><code>{error.code}</code></dd></div>}</dl>}</div>
     </details>}
     <p className={styles.footerNote}><Sparkles size={14} aria-hidden="true" />Các chỉ số lấy từ dữ liệu đã ghi nhận. Tỷ lệ luôn đi kèm số mẫu thực tế.</p>
+    </div>
   </div>;
 }

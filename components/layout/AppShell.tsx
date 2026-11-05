@@ -1,7 +1,7 @@
 'use client';
 
 import Link, { useLinkStatus } from 'next/link';
-import { Menu, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Menu, X, PanelLeftClose, PanelLeftOpen, GraduationCap, ShieldCheck, ArrowRight } from 'lucide-react';
 import { NavigationIcon } from './NavigationIcon';
 import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useSupportChat } from '@/components/chat/SupportChatProvider';
@@ -19,9 +19,10 @@ import topbarStyles from './WorkspaceTopbar.module.css';
 import pageTitleStyles from './WorkspacePageTitles.module.css';
 import canvasStyles from '@/components/ui/DottedCanvas.module.css';
 import { ProfileAvatar, type AvatarUser } from '@/components/profile/ProfileAvatar';
-import { adminNavItems, isAdminNavItemActive } from '@/lib/admin-navigation';
+import { adminNavItems, isAdminNavItemActive, type AdminNavItem } from '@/lib/admin-navigation';
 import { settingsRoute, helpRoute } from '@/lib/settings';
 import neoStyles from '@/app/student/StudentCalendar.module.css';
+import teacherStyles from './TeacherWorkspace.module.css';
 
 export type NavItem = { label: string; href: string };
 export const teacherNavigation: NavItem[] = [
@@ -42,6 +43,9 @@ export function WorkspaceShell({ children, user, navigation, contentClassName = 
 }) {
   const pathname = usePathname(); const router = useRouter(); const { logout } = useAuth();
   const student = user.role === 'student';
+  const teacher = user.role === 'teacher';
+  const admin = user.role === 'admin';
+  const contextHeader = teacher || admin;
   // This attribute selects visual density only; routing and access checks stay below.
   const experience = user.role === 'admin' || /^\/dashboard\/(monitor|reports)(\/|$)/.test(pathname) || /^\/dashboard\/exams\/[^/]+\/(report|attempts)(\/|$)/.test(pathname)
     ? 'analytics'
@@ -49,6 +53,22 @@ export function WorkspaceShell({ children, user, navigation, contentClassName = 
   const { count: chatUnread } = useSupportChat();
   const area = student ? 'Khu vực sinh viên' : user.role === 'admin' ? 'Khu vực quản trị' : 'Khu vực giảng dạy';
   const items = user.role === 'admin' ? adminNavItems : navigation ?? teacherNavigation;
+  const teacherSection = teacher ? [
+    ...teacherNavigation,
+    {href:'/teacher',label:'Tổng quan'},
+    {href:settingsRoute('teacher'),label:'Cài đặt'},
+    {href:helpRoute('teacher'),label:'Trợ giúp'},
+    {href:'/notifications',label:'Thông báo'},
+    {href:'/live-class',label:'Lớp học trực tuyến'},
+    {href:'/dashboard/oral-grading',label:'Chấm bài tự luận'},
+  ].filter(item=>pathname===item.href||(!['/dashboard','/teacher'].includes(item.href)&&pathname.startsWith(`${item.href}/`)))
+    .sort((a,b)=>b.href.length-a.href.length)[0]?.label??'Tổng quan' : '';
+  const adminSection = admin ? [
+    ...adminNavItems.flatMap<AdminNavItem>(item=>'children' in item?item.children:[item]),
+    {href:helpRoute('admin'),label:'Trợ giúp'},
+    {href:'/notifications',label:'Thông báo'},
+  ].find(item=>isAdminNavItemActive(item,pathname))?.label??'Tổng quan hệ thống' : '';
+  const currentSection = admin ? adminSection : teacherSection;
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [preferenceReady, setPreferenceReady] = useState(false);
@@ -58,6 +78,12 @@ export function WorkspaceShell({ children, user, navigation, contentClassName = 
   const sidebar = useRef<HTMLElement>(null);
   useDialogFocus(open, sidebar, () => setOpen(false));
   useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => {
+    const destinations = user.role === 'student'
+      ? ['/student', '/student/classes', '/student/live-classes', '/student/exams', '/student/history', '/student/grades', settingsRoute('student'), helpRoute('student')]
+      : (user.role === 'admin' ? adminNavItems : teacherNavigation).flatMap(item => 'children' in item ? item.children.map(child => child.href) : [item.href]).concat([settingsRoute(user.role), helpRoute(user.role), '/notifications']);
+    for (const href of new Set(destinations)) if (href) router.prefetch(href);
+  }, [router, user.role]);
   useEffect(() => {
     const media = window.matchMedia('(max-width: 1023px)');
     const closeOnDesktop = () => { setDesktop(!media.matches); if (!media.matches) setOpen(false); };
@@ -78,14 +104,16 @@ export function WorkspaceShell({ children, user, navigation, contentClassName = 
     try { localStorage.setItem('proctoowl-sidebar-collapsed', String(next)); } catch { /* A session-only preference is fine in restricted browsers. */ }
   };
   const navLink = (href: string, label: string, active?: boolean, hint = true) => {
-    const current = active ?? (pathname === href || (href === '/dashboard' && pathname === '/teacher') || (!['/student', '/dashboard', '/admin', '/teacher'].includes(href) && pathname.startsWith(`${href}/`)));
-    return <SidebarHint key={href} label={label} enabled={compact && hint}><Link href={href} className={current ? 'current' : ''} aria-current={current ? 'page' : undefined}><NavigationIcon href={href} /><span className="nav-label">{label}</span>{href === '/admin/messages' && chatUnread > 0 && <span className="support-nav-badge" aria-label={`${chatUnread} tin nhắn chưa đọc`}>{chatUnread > 99 ? '99+' : chatUnread}</span>}<NavigationPending /></Link></SidebarHint>;
+    const current = active ?? (pathname === href || (href === '/dashboard' && pathname === '/teacher') ||
+      (pathname.startsWith('/live-class/') && ['/student/live-classes', '/dashboard/live-classes'].includes(href)) ||
+      (!['/student', '/dashboard', '/admin', '/teacher'].includes(href) && pathname.startsWith(`${href}/`)));
+    return <SidebarHint key={href} label={label} enabled={compact && hint}><Link href={href} prefetch={true} className={current ? 'current' : ''} aria-current={current ? 'page' : undefined}><NavigationIcon href={href} /><span className="nav-label">{label}</span>{href === '/admin/messages' && chatUnread > 0 && <span className="support-nav-badge" aria-label={`${chatUnread} tin nhắn chưa đọc`}>{chatUnread > 99 ? '99+' : chatUnread}</span>}<NavigationPending /></Link></SidebarHint>;
   };
 
-  return <div className={`app-shell ${sidebarStyles.shell} ${pageTitleStyles.pageTitles} ${student ? `student-app-shell ${canvasStyles.canvas}` : ''} ${student && pathname === '/student' ? `neo-dashboard-shell ${neoStyles.neoShell}` : ''}`} data-role={user.role} data-experience={experience} data-sidebar-collapsed={compact}>
+  return <div className={`app-shell ${sidebarStyles.shell} ${pageTitleStyles.pageTitles} ${teacher ? teacherStyles.shell : admin ? teacherStyles.headerShell : ''} ${student ? `student-app-shell ${canvasStyles.canvas}` : ''} ${student && pathname === '/student' ? `neo-dashboard-shell ${neoStyles.neoShell}` : ''}`} data-role={user.role} data-experience={experience} data-sidebar-collapsed={compact}>
     <a href="#main-content" className="skip-link">Đến nội dung chính</a>
     {open && <button type="button" className="sidebar-backdrop" aria-label="Đóng menu bên ngoài" tabIndex={-1} onClick={() => setOpen(false)} />}
-    <aside ref={sidebar} id="workspace-sidebar" className={`sidebar ${student ? 'student-sidebar' : ''} ${open ? 'open' : ''}`}
+    <aside ref={sidebar} id="workspace-sidebar" className={`sidebar ${teacher ? teacherStyles.sidebar : ''} ${student ? 'student-sidebar' : ''} ${open ? 'open' : ''}`}
       role={open ? 'dialog' : undefined} aria-modal={open || undefined} aria-label="Menu điều hướng" tabIndex={-1}>
       <button type="button" className="icon-button shell-close-button" aria-label="Đóng menu" onClick={() => setOpen(false)}><X size={20} aria-hidden="true" /></button>
       <Link href={student ? '/student' : '/dashboard'} className="brand" aria-label="ProctoOwl — Trang chủ">ProctoOwl</Link>
@@ -113,11 +141,15 @@ export function WorkspaceShell({ children, user, navigation, contentClassName = 
       <div className="sidebar-bottom">{navLink(settingsRoute(user.role), 'Cài đặt')}{navLink(helpRoute(user.role), 'Trợ giúp')}</div>
     </aside>
     <div className="workspace">
-      <header className={`topbar ${topbarStyles.bar} ${student ? 'student-topbar' : ''}`}>
+      <header className={`topbar ${topbarStyles.bar} ${contextHeader ? teacherStyles.bar : ''} ${student ? 'student-topbar' : ''}`}>
         <button type="button" className="icon-button shell-menu-button" disabled={!preferenceReady} aria-label="Mở menu" aria-expanded={open} aria-controls="workspace-sidebar" onClick={() => setOpen(true)}>
           <Menu size={20} aria-hidden="true" />
         </button>
-        <div className="topbar-title">{area}</div>
+        {contextHeader?<nav className={teacherStyles.context} aria-label="Vị trí hiện tại">
+          <Link className="topbar-title" href="/dashboard" prefetch={true}>{admin?<ShieldCheck size={23} aria-hidden="true"/>:<GraduationCap size={23} aria-hidden="true"/>}<span>{area}</span></Link>
+          <ArrowRight className={teacherStyles.contextArrow} size={17} aria-hidden="true"/>
+          <span className={teacherStyles.currentPage} aria-current="page" title={currentSection}>{currentSection}</span>
+        </nav>:<div className="topbar-title">{area}</div>}
         <div className="header-actions">{showNotifications && <NotificationBell />}<AccountMenu user={user} onLogout={() => { logout(); router.push('/login'); }} /></div>
       </header>
       <main id="main-content" tabIndex={-1} className={`shell-content ${contentClassName}`}>{children}</main>
@@ -139,5 +171,5 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [standalone, authReady, user, router, wrongWorkspace]);
   if (standalone) return <>{children}</>;
   if (!authReady || !user || wrongWorkspace) return <div className="workspace-page"><LoadingSkeleton rows={3} /></div>;
-  return <WorkspaceShell user={user} showChat={!pathname.startsWith('/live-class/')&&!pathname.startsWith('/student/attempts/')&&!pathname.includes('/verify')}>{children}</WorkspaceShell>;
+  return <WorkspaceShell user={user} contentClassName={pathname.startsWith('/live-class/') ? 'classroom-shell' : ''} showChat={!pathname.startsWith('/live-class/')&&!pathname.startsWith('/student/attempts/')&&!pathname.includes('/verify')}>{children}</WorkspaceShell>;
 }

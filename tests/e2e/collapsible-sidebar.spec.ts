@@ -21,17 +21,17 @@ async function width(page: Page, expected: number) {
 
 for(const role of ['student','teacher','admin'] as const)test(`${role}: collapse gains content width, keeps named routes and persists across reload`,async({page})=>{
   await visit(page,role);const toggle=page.getByRole('button',{name:'Thu gọn thanh điều hướng',exact:true});
-  await expect(toggle).toBeEnabled();await width(page,260);
+  const expandedWidth=role==='teacher'?320:260;
+  await expect(toggle).toBeEnabled();await width(page,expandedWidth);
   await expect(sidebar(page).getByRole('button',{name:'Thu gọn thanh điều hướng',exact:true})).toBeVisible();
   await expect(page.locator('.topbar').getByRole('button',{name:/thanh điều hướng/})).toHaveCount(0);
-  // Measure the settled layout: initial data/font loading also repositions the
-  // collision-aware chat launcher, independently of sidebar collapse.
+  // Measure the settled layout after initial data and fonts have loaded.
   await expect(page.locator('main .loading-skeleton')).toHaveCount(0);
   await page.evaluate(()=>document.fonts.ready);
   // A legacy brand rule used transparent text fill, hiding Teacher/Admin wordmarks
   // even though their text, font size and normal color were present.
   await expect(sidebar(page).locator('.brand')).toHaveCSS('-webkit-text-fill-color','rgb(255, 255, 255)');
-  await expect(sidebar(page).locator('.brand')).toHaveCSS('font-size','24px');
+  await expect(sidebar(page).locator('.brand')).toHaveCSS('font-size',role==='teacher'?'28px':'24px');
   await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
   const before=(await page.locator('.workspace').boundingBox())!;
   const expandedRail=(await sidebar(page).boundingBox())!,toggleBox=(await toggle.boundingBox())!;
@@ -50,7 +50,7 @@ for(const role of ['student','teacher','admin'] as const)test(`${role}: collapse
   expect(expandBox.x+expandBox.width).toBeLessThanOrEqual(rail.x+rail.width);
   const after=(await page.locator('.workspace').boundingBox())!;
   expect(page.url()).toBe(routeBefore);
-  expect(Math.round(after.width-before.width)).toBe(180);expect(Math.round(after.x)).toBe(Math.round(rail.x+rail.width));
+  expect(Math.round(after.width-before.width)).toBe(expandedWidth-80);expect(Math.round(after.x)).toBe(Math.round(rail.x+rail.width));
   const headerInset=await page.locator('.topbar').evaluate(el=>parseFloat(getComputedStyle(el).marginLeft));
   expect(await page.locator('.topbar').evaluate(el=>Math.round(el.getBoundingClientRect().left))).toBe(Math.round(after.x+headerInset));
   await expect(sidebar(page).getByRole('link',{name:homeName,exact:true})).toHaveAttribute('href',homeHref!);
@@ -81,7 +81,7 @@ for(const role of ['student','teacher','admin'] as const)test(`${role}: collapse
   await page.screenshot({path:`artifacts/collapsible-sidebar/${role}-collapsed.png`});
   expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBe('true');
   await page.reload();await expect(page.getByRole('button',{name:'Hiện thanh điều hướng',exact:true})).toBeEnabled();await width(page,80);
-  await page.getByRole('button',{name:'Hiện thanh điều hướng',exact:true}).click();await width(page,260);
+  await page.getByRole('button',{name:'Hiện thanh điều hướng',exact:true}).click();await width(page,expandedWidth);
   expect(await page.evaluate(key=>localStorage.getItem(key),key)).toBe('false');
   expect(page.url()).toBe(routeBefore);
   if(role==='student')await expect(sidebar(page).locator('.student-profile')).toContainText('Nguyễn Minh Anh');
@@ -114,10 +114,10 @@ test('admin compact flyouts preserve both groups and fit a short scrolling sideb
   await expect(panel.getByRole('link',{name:'Danh sách người dùng',exact:true})).toHaveAttribute('href','/dashboard/users');
   await expect(panel.getByRole('link',{name:'Xác thực thẻ sinh viên',exact:true})).toHaveAttribute('href','/admin/student-cards');
   await page.keyboard.press('Escape');
-  await sidebar(page).getByRole('button',{name:'AI Support',exact:true}).click();
-  const ai=page.getByRole('region',{name:'AI Support',exact:true});await expect(ai).toBeVisible();
+  await sidebar(page).getByRole('button',{name:'Hỗ trợ AI',exact:true}).click();
+  const ai=page.getByRole('region',{name:'Hỗ trợ AI',exact:true});await expect(ai).toBeVisible();
   const box=(await ai.boundingBox())!;expect(box.x).toBeGreaterThan(70);expect(box.y).toBeGreaterThanOrEqual(12);expect(box.y+box.height).toBeLessThanOrEqual(548);
-  await expect(ai.getByRole('link',{name:'Knowledge Base',exact:true})).toHaveAttribute('href','/admin/ai-support/knowledge');
+  await expect(ai.getByRole('link',{name:'Kho tri thức',exact:true})).toHaveAttribute('href','/admin/ai-support/knowledge');
   await page.screenshot({path:'artifacts/collapsible-sidebar/admin-flyout.png'});
   await page.setViewportSize({width:1300,height:600});await expect(ai).toHaveCount(0);
 });

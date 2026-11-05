@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useAuth } from '@/components/auth/AuthContext';
@@ -112,7 +112,7 @@ export default function TeacherProfilePage() {
       : error ? <Card role="alert"><p>{error}</p><Button variant="warning" onClick={() => setReload(value => value + 1)}>Thử lại</Button></Card>
       : !profile ? <Card aria-busy="true"><LoadingSkeleton rows={3} /></Card>
       : <>
-        <Card className={styles.summary}>
+        <Card borderRole="users" className={styles.summary}>
           <section className={styles.summaryContent} aria-label="Tổng quan hồ sơ giảng viên">
             <ProfileAvatar user={profile} className={`${styles.avatar} ${styles.initials}`} />
             <div className={styles.summaryIdentity}>
@@ -124,7 +124,7 @@ export default function TeacherProfilePage() {
           {!editing && <button ref={editButton} type="button" className={`ui-button ui-button-outline ${styles.editButton}`} onClick={beginEdit}>Chỉnh sửa hồ sơ</button>}
         </Card>
         {notice && <p className={styles.success} role="status">{notice}</p>}
-        {editing ? <Card className={styles.sectionCard}>
+        {editing ? <Card borderRole="users" className={styles.sectionCard}>
           <form onSubmit={save} noValidate aria-labelledby="edit-profile-heading" aria-busy={saving}>
             <h2 id="edit-profile-heading">Chỉnh sửa hồ sơ</h2>
             <p className={styles.formNote}>{profileNote}</p>
@@ -164,17 +164,17 @@ export default function TeacherProfilePage() {
           </form>
         </Card> : <>
           <div className={styles.sections}>
-            <Card className={styles.sectionCard}><section aria-labelledby="teacher-information-heading">
+            <Card borderRole="users" className={styles.sectionCard}><section aria-labelledby="teacher-information-heading">
               <h2 id="teacher-information-heading">Thông tin giảng viên</h2>
               <dl className={styles.details}><div><dt>Họ và tên</dt><dd>{profile.full_name}</dd></div><div><dt>Vai trò</dt><dd>Giảng viên</dd></div></dl>
               <p className={styles.lockedNote}>{profileNote}</p>
             </section></Card>
-            <Card className={styles.sectionCard}><section aria-labelledby="teacher-contact-heading">
+            <Card borderRole="users" className={styles.sectionCard}><section aria-labelledby="teacher-contact-heading">
               <h2 id="teacher-contact-heading">Thông tin liên hệ</h2>
               <dl className={styles.details}><div><dt>Email</dt><dd>{profile.email}</dd></div><div><dt>Số điện thoại</dt><dd>{profile.phone || 'Chưa cập nhật'}</dd></div></dl>
             </section></Card>
           </div>
-          <Card className={`${styles.sectionCard} ${styles.account}`}><section aria-labelledby="teacher-account-heading">
+          <Card borderRole="users" className={`${styles.sectionCard} ${styles.account}`}><section aria-labelledby="teacher-account-heading">
             <h2 id="teacher-account-heading">Thông tin tài khoản</h2>
             <dl className={`${styles.details} ${styles.accountDetails}`}><div><dt>Trạng thái tài khoản</dt><dd><AccountStatus active={profile.is_active} /></dd></div>{date && <div><dt>Ngày tạo tài khoản</dt><dd>{date}</dd></div>}</dl>
           </section></Card>

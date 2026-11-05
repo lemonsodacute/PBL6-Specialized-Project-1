@@ -19,10 +19,11 @@
 .button[hidden] { display: none; }
 .button > svg { display: block; width: 22px; height: 22px; flex-shrink: 0; }
 .floating {
+  /* Viewport anchor: page content and scrolling must never alter this offset. */
   position: fixed;
   z-index: var(--z-floating, 30);
-  right: max(24px, env(safe-area-inset-right));
-  bottom: calc(24px + env(safe-area-inset-bottom) + var(--support-chat-obstacle-offset, 0px));
+  right: calc(24px + env(safe-area-inset-right));
+  bottom: calc(24px + env(safe-area-inset-bottom));
 }
 .close { position: relative; width: 44px; height: 44px; box-shadow: none; border-radius: var(--radius-sm); background: var(--surface-muted); color: var(--text-secondary); }
 .button:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
@@ -69,6 +70,18 @@
   .button:hover .tooltip { visibility: visible; opacity: 1; }
 }
 .button:active { transform: scale(.97); }
+.floating:is(:hover, :active) { transform: none; }
+/* The Student online-classroom reference uses a pink circle; the viewport anchor stays shared. */
+:global(body:has(.student-app-shell [data-student-online-classes])) .floating {
+  width: 64px;
+  height: 64px;
+  border: 1.5px solid var(--student-online-accent-ink);
+  border-radius: 50%;
+  background: var(--student-online-pink);
+  color: var(--student-online-accent-ink);
+  box-shadow: var(--student-online-small-shadow);
+}
+:global(body:has(.student-app-shell [data-student-online-classes])) .floating:hover { background: var(--student-online-pink-hover); }
 /* Match the existing dark-theme filled buttons while keeping a white icon. */
 :global(html[data-theme='dark']) .button { background: var(--color-primary); }
 @media (hover: hover) and (pointer: fine) {
@@ -80,7 +93,8 @@
 @media (max-width: 767px) {
   .button { width: 48px; height: 48px; }
   .close { width: 42px; height: 42px; }
-  .floating { right: max(16px, env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom) + var(--support-chat-obstacle-offset, 0px)); }
+  .floating { right: calc(16px + env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom)); }
+  :global(body:has(.student-app-shell [data-student-online-classes])) .floating { width: 56px; height: 56px; }
   .tooltip { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {

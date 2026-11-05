@@ -1,0 +1,5 @@
+{
+  "/student/exams/page": "app/student/exams/page.js",
+  "/student/grades/page": "app/student/grades/page.js",
+  "/student/history/page": "app/student/history/page.js"
+}

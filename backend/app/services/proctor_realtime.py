@@ -14,6 +14,7 @@ from app.core.security import decode_access_token
 from app.models.entities import User, UserRole
 from app.services.monitoring import ConnectionManager, manager as legacy_manager
 from app.services.proctor_events import exam_access, recipients
+from app.proctoring.diagnostics import diagnostic
 
 manager = ConnectionManager()
 scopes: dict[WebSocket, UUID | None] = {}
@@ -55,10 +56,13 @@ async def deliver(event):
     async def send(user_id, socket):
         try:
             await asyncio.wait_for(socket.send_json(public), timeout=3)
+            return True
         except Exception:
             scopes.pop(socket, None)
             await manager.disconnect(user_id, socket)
-    await asyncio.gather(*(send(*target) for target in targets))
+            return False
+    delivered=await asyncio.gather(*(send(*target) for target in targets))
+    diagnostic('websocket_delivery', message_type=event['type'], targets=len(targets), delivered=sum(delivered))
 
 
 async def after_commit(db, event):
@@ -144,6 +148,10 @@ async def listen():
 async def proctor_lifespan(_app):
     task = asyncio.create_task(listen()) if engine.dialect.name == 'postgresql' else None
     from app.proctoring.adapters import runtime
+    from app.proctoring.adapters import configured_models
+    diagnostic('startup', model_enabled=settings.PROCTOR_MODEL_ENABLED,
+        providers=[{'provider':provider,'interval_ms':profile.frame_interval_ms,'event_types':list(profile.policies)}
+            for provider,profile,_ in configured_models()])
     async def cleanup():
         while True:
             await asyncio.sleep(30)

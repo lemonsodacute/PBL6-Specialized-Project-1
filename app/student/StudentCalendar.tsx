@@ -1,4 +1,6 @@
 'use client';
+import { borderProps } from '@/components/ui/Border';
+
 
 import { ArrowRight, CalendarDays, ClipboardCheck, Video, ChartNoAxesCombined, X } from 'lucide-react';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -140,7 +142,7 @@ export default function StudentCalendar({ overview = false }: { overview?: boole
     const { event, kind } = entry;
     const title = <span className={styles.entryTitle}>{event.title}</span>;
     const timing = <span className={styles.entryTiming}>{kind !== 'single' && <i className={styles.entryMarker} aria-hidden="true" />}{entrySummary(entry, !agendaEntry)}</span>;
-    return <button type="button" className={`calendar-event ${event.type} ${event.type === 'class' ? 'live_class' : ''} ${styles.eventColor} ${styles.eventEntry} ${agendaEntry ? styles.agendaEntry : ''}`} style={calendarEventAppearance(event)} key={event.id}
+    return <button type="button" className={`calendar-event ${event.type} ${event.type === 'class' ? 'live_class' : ''} ${styles.eventColor} ${styles.eventEntry} ${agendaEntry ? styles.agendaEntry : ''}`} data-border-role={event.type==='exam'?'exams':'classes'} style={{...calendarEventAppearance(event),...borderProps(event.type==='exam'?'exams':'classes').style}} key={event.id}
       data-event-id={event.id} data-status={statusOf(event).status} data-marker={kind} data-open-ended={!event.end || undefined} aria-label={`${entrySummary(entry)}. ${eventLabel(event)}`} aria-haspopup="dialog" aria-controls={popover?.event?.id === event.id ? dialogId : undefined} aria-expanded={popover?.event?.id === event.id}
       onMouseEnter={e => openPopover({ event }, e.currentTarget, false)} onMouseLeave={closePopover} onFocus={e => openPopover({ event }, e.currentTarget, false)} onBlur={closePopover} onClick={e => openPopover({ event }, e.currentTarget, true)}>
       {kind === 'single' ? <>{title}{timing}</> : <>{timing}{title}</>}
@@ -163,16 +165,16 @@ export default function StudentCalendar({ overview = false }: { overview?: boole
   </div>;
   return <div className={`workspace-page student-calendar-page ${styles.page} ${overview ? styles.neoPage : ''}`}>
     {overview && <>
-      <header className={styles.welcome}>
+      <header className={styles.welcome} {...borderProps('users')}>
         <div><p>Xin chào, <strong>{user?.full_name ?? 'bạn'}</strong></p><h1>Hôm nay bạn có gì?</h1><span>Lên kế hoạch học tập, sẵn sàng cho kỳ thi tiếp theo.</span></div>
         <GreetingMascot className={styles.welcomeMascot} />
         <div className={styles.todayNote}><CalendarDays size={22} aria-hidden="true" /><time dateTime={new Date(now).toISOString()}>{new Date(now).toLocaleDateString('vi-VN', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</time></div>
       </header>
       {featuredExam ? <StudentHeroExam event={featuredExam} user={user} now={now} /> : !loading && !error && <div className={styles.noNextExam}><ClipboardCheck size={23} aria-hidden="true"/><div><strong>Chưa có kỳ thi sắp tới trong khoảng lịch đang xem.</strong><p>Bạn có thể xem các bài kiểm tra trong danh sách của mình.</p></div><Link href="/student/exams">Xem bài kiểm tra<ArrowRight size={17} aria-hidden="true"/></Link></div>}
       <nav className={styles.learningCards} aria-label="Không gian học tập">
-        <Link href="/student/live-classes" className={styles.learningCard} data-kind="live"><span className={styles.learningIcon}><Video size={24} aria-hidden="true" /></span><div><h3>Lớp học trực tuyến</h3><p>{nextClass ? nextClass.title : 'Mở không gian lớp học của bạn'}</p></div><ArrowRight size={20} aria-hidden="true" /></Link>
-        <Link href="/student/exams" className={styles.learningCard} data-kind="exam"><span className={styles.learningIcon}><ClipboardCheck size={24} aria-hidden="true" /></span><div><h3>Bài kiểm tra</h3><p>Tiếp tục, làm bài hoặc xem lịch thi</p></div><ArrowRight size={20} aria-hidden="true" /></Link>
-        <Link href="/student/grades" className={styles.learningCard} data-kind="result"><span className={styles.learningIcon}><ChartNoAxesCombined size={24} aria-hidden="true" /></span><div><h3>Điểm số / Kết quả</h3><p>Xem kết quả các bài đã hoàn thành</p></div><ArrowRight size={20} aria-hidden="true" /></Link>
+        <Link href="/student/live-classes" className={styles.learningCard} {...borderProps('classes')} data-kind="live"><span className={styles.learningIcon}><Video size={24} aria-hidden="true" /></span><div><h3>Lớp học trực tuyến</h3><p>{nextClass ? nextClass.title : 'Mở không gian lớp học của bạn'}</p></div><ArrowRight size={20} aria-hidden="true" /></Link>
+        <Link href="/student/exams" className={styles.learningCard} {...borderProps('exams')} data-kind="exam"><span className={styles.learningIcon}><ClipboardCheck size={24} aria-hidden="true" /></span><div><h3>Bài kiểm tra</h3><p>Tiếp tục, làm bài hoặc xem lịch thi</p></div><ArrowRight size={20} aria-hidden="true" /></Link>
+        <Link href="/student/grades" className={styles.learningCard} {...borderProps('success')} data-kind="result"><span className={styles.learningIcon}><ChartNoAxesCombined size={24} aria-hidden="true" /></span><div><h3>Điểm số / Kết quả</h3><p>Xem kết quả các bài đã hoàn thành</p></div><ArrowRight size={20} aria-hidden="true" /></Link>
       </nav>
     </>}
     <div className={overview ? styles.mainGrid : undefined}>
@@ -202,7 +204,7 @@ export default function StudentCalendar({ overview = false }: { overview?: boole
       <section aria-labelledby="upcoming-title" className={styles.upcomingSection}>
         <Card className={styles.compactCard}><div className={styles.sectionHeader}><h2 id="upcoming-title">Sắp diễn ra</h2><Link className="table-link" href="#student-calendar">Xem toàn bộ lịch</Link></div>
           {loading ? <LoadingSkeleton rows={2} /> : error ? <p className={styles.muted}>Chưa tải được sự kiện. Vui lòng thử lại ở lịch phía trên.</p>
-            : upcoming.length ? <div className={styles.upcomingList}>{upcoming.slice(0, 3).map(event => <div className={`${styles.eventRow} ${styles.eventColor} ${styles.upcomingEvent}`} style={calendarEventAppearance(event)} data-event-id={event.id} data-event-type={event.type === 'exam' ? 'exam' : 'live'} key={event.id} data-chat-avoid>
+            : upcoming.length ? <div className={styles.upcomingList}>{upcoming.slice(0, 3).map(event => <div className={`${styles.eventRow} ${styles.eventColor} ${styles.upcomingEvent}`} data-border-role={event.type==='exam'?'exams':'classes'} style={{...calendarEventAppearance(event),...borderProps(event.type==='exam'?'exams':'classes').style}} data-event-id={event.id} data-event-type={event.type === 'exam' ? 'exam' : 'live'} key={event.id} data-chat-avoid>
               <div className={styles.upcomingLabel}><span className={styles.upcomingIcon}>{event.type === 'exam' ? <ClipboardCheck size={18} aria-hidden="true" /> : <Video size={18} aria-hidden="true" />}</span><Badge tone={event.type === 'exam' ? 'info' : 'purple'}>{statusOf(event).label}</Badge></div>
               <div><h3>{event.title}</h3>{event.courseNames?.length ? <p className={styles.courseNames}>{event.courseNames.join(' · ')}</p> : null}{eventDetails(event, true)}</div><Link className="table-link" href={event.href} aria-label={`Xem ${event.title}`}>{event.exam && statusOf(event).canRetry ? 'Làm lại bài thi' : 'Xem chi tiết'}<ArrowRight size={16} aria-hidden="true" /></Link>
             </div>)}</div> : <p className={styles.muted}>Không có sự kiện sắp tới trong khoảng lịch đang xem.</p>}
@@ -218,7 +220,7 @@ export default function StudentCalendar({ overview = false }: { overview?: boole
     </>}
     {popover && createPortal(<aside ref={popoverRef} id={dialogId} tabIndex={-1} role="dialog" data-student-presentation="true" aria-label={popover.day ? `Sự kiện ngày ${formatCalendarDate(popover.day)}` : 'Chi tiết sự kiện'} className={`${styles.eventPopover} ${styles.refinedPopover}`} style={{ top: popover.top, left: popover.left, maxHeight: `calc(100dvh - ${popover.top + 12}px)` }} onMouseEnter={keepPopover} onMouseLeave={closePopover} onFocus={keepPopover} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) dismissPopover(); }}>
       <div className={styles.popoverHeader}><span>{popover.day ? formatCalendarDate(popover.day) : 'Chi tiết sự kiện'}</span><button type="button" aria-label="Đóng chi tiết lịch" onClick={() => dismissPopover(true)}><X size={18} aria-hidden="true" /></button></div>
-      {(popover.event ? [popover.event] : popover.entries!.map(entry => entry.event)).map(event => <article className={`${styles.eventColor} ${styles.popoverEvent}`} style={calendarEventAppearance(event)} data-event-id={event.id} key={event.id}>
+      {(popover.event ? [popover.event] : popover.entries!.map(entry => entry.event)).map(event => <article className={`${styles.eventColor} ${styles.popoverEvent}`} data-border-role={event.type==='exam'?'exams':'classes'} style={{...calendarEventAppearance(event),...borderProps(event.type==='exam'?'exams':'classes').style}} data-event-id={event.id} key={event.id}>
         <h3>{event.title}</h3>
         {event.courseNames?.length ? <p className={styles.courseNames}>{event.courseNames.join(' · ')}</p> : null}
         {eventDetails(event)}

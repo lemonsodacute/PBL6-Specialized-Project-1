@@ -37,11 +37,13 @@ test('owl pupils and soft beams follow the pointer, settle, and respect reduced 
   await expect.poll(()=>hero.locator('[data-pupil="right"]').getAttribute('transform')).toMatch(/^translate\([\d.]+ /);
   await page.screenshot({path:'artifacts/proctoowl-redesign/eye-spotlight-right.png'});
   await page.mouse.move(8,950);
-  await expect.poll(async()=>Number(await lights.evaluate(el=>el.style.opacity))).toBe(0);
-  await expect(hero.locator('[data-pupil="left"]')).toHaveAttribute('transform','translate(0 0)');
+  await expect.poll(async()=>Number(await lights.evaluate(el=>el.style.opacity))).toBeLessThan(.79);
+  await expect.poll(async()=>Number(await lights.evaluate(el=>el.style.opacity))).toBeGreaterThan(.77);
+  await expect(hero.locator('[data-pupil="left"]')).toHaveAttribute('transform',/^translate\(-/);
   await page.emulateMedia({reducedMotion:'reduce'});await expect(hero).toHaveAttribute('data-eye-tracking','static');
+  await expect(lights).toHaveCSS('opacity','0.78');
   const stopped=await hero.locator('[data-eye-beam="left"]').getAttribute('d');
-  await page.mouse.move(box.x+180,box.y+220);await expect(lights).toBeHidden();
+  await page.mouse.move(box.x+180,box.y+220);await expect(lights).toBeVisible();
   expect(await hero.locator('[data-eye-beam="left"]').getAttribute('d')).toBe(stopped);
   expect(await page.locator('#hero-title').innerHTML()).toBe(headline);
 });
@@ -52,7 +54,7 @@ test('touch has a static owl and the existing registration CTA stays usable',asy
     const page=await context.newPage();await page.goto(process.env.PLAYWRIGHT_BASE_URL??'http://localhost:3000');
     await expect(page.locator('[data-owl="proctoowl"]')).toBeVisible();
     await expect(page.locator('#trang-chu')).toHaveAttribute('data-eye-tracking','static');
-    await expect(page.locator('[class*="eyeLights"]')).toBeHidden();
+    await expect(page.locator('[class*="eyeLights"]')).toBeVisible();
     await page.getByRole('link',{name:'Bắt đầu ngay',exact:true}).tap();
     await expect(page).toHaveURL(/\/login\?mode=register$/);
     await expect(page.getByRole('heading',{name:'Đăng ký',exact:true})).toBeVisible();

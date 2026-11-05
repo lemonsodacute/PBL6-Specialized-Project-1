@@ -1,0 +1,197 @@
+/* [project]/components/ui/SupportChatButton.module.css [app-client] (css) */
+.SupportChatButton-module__wess8a__button {
+  box-sizing: border-box;
+  background: var(--color-primary);
+  width: 50px;
+  height: 50px;
+  color: var(--text-on-solid);
+  cursor: pointer;
+  box-shadow: var(--shadow-medium);
+  -webkit-tap-highlight-color: transparent;
+  border: 0;
+  border-radius: 12px;
+  flex-shrink: 0;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  transition: background-color .18s, transform .18s, box-shadow .18s;
+  display: inline-flex;
+}
+
+.SupportChatButton-module__wess8a__button[hidden] {
+  display: none;
+}
+
+.SupportChatButton-module__wess8a__button > svg {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.SupportChatButton-module__wess8a__floating {
+  z-index: var(--z-floating, 30);
+  right: calc(24px + env(safe-area-inset-right));
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  position: fixed;
+}
+
+.SupportChatButton-module__wess8a__close {
+  width: 44px;
+  height: 44px;
+  box-shadow: none;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  position: relative;
+}
+
+.SupportChatButton-module__wess8a__button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+}
+
+.SupportChatButton-module__wess8a__badge {
+  box-sizing: border-box;
+  border: 2px solid var(--surface);
+  background: var(--color-danger-btn);
+  width: 20px;
+  height: 20px;
+  color: var(--text-on-solid);
+  border-radius: 50%;
+  justify-content: center;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  position: absolute;
+  top: -3px;
+  right: -3px;
+}
+
+.SupportChatButton-module__wess8a__tooltip {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+  white-space: nowrap;
+  visibility: hidden;
+  opacity: 0;
+  border-radius: 6px;
+  padding: 6px 9px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  transition: opacity .15s, visibility .15s;
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 10px);
+  transform: translateY(-50%);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .08);
+}
+
+.SupportChatButton-module__wess8a__button:focus-visible .SupportChatButton-module__wess8a__tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .SupportChatButton-module__wess8a__button:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(15, 23, 42, .15);
+  }
+
+  .SupportChatButton-module__wess8a__button:hover .SupportChatButton-module__wess8a__tooltip {
+    visibility: visible;
+    opacity: 1;
+  }
+}
+
+.SupportChatButton-module__wess8a__button:active {
+  transform: scale(.97);
+}
+
+.SupportChatButton-module__wess8a__floating:-webkit-any(:hover, :active) {
+  transform: none;
+}
+
+.SupportChatButton-module__wess8a__floating:-moz-any(:hover, :active) {
+  transform: none;
+}
+
+.SupportChatButton-module__wess8a__floating:is(:hover, :active) {
+  transform: none;
+}
+
+body:has(.student-app-shell [data-student-online-classes]) .SupportChatButton-module__wess8a__floating {
+  border: 1.5px solid var(--student-online-accent-ink);
+  background: var(--student-online-pink);
+  width: 64px;
+  height: 64px;
+  color: var(--student-online-accent-ink);
+  box-shadow: var(--student-online-small-shadow);
+  border-radius: 50%;
+}
+
+body:has(.student-app-shell [data-student-online-classes]) .SupportChatButton-module__wess8a__floating:hover {
+  background: var(--student-online-pink-hover);
+}
+
+html[data-theme="dark"] .SupportChatButton-module__wess8a__button {
+  background: var(--color-primary);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme="dark"] .SupportChatButton-module__wess8a__button:hover {
+    background: var(--color-primary-hover);
+  }
+}
+
+body:has([role="menu"], .notification-panel, [role="dialog"]) .SupportChatButton-module__wess8a__floating {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body:has([role="menu"], .notification-panel, [role="dialog"]) .SupportChatButton-module__wess8a__floating .SupportChatButton-module__wess8a__tooltip {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media (max-width: 767px) {
+  .SupportChatButton-module__wess8a__button {
+    width: 48px;
+    height: 48px;
+  }
+
+  .SupportChatButton-module__wess8a__close {
+    width: 42px;
+    height: 42px;
+  }
+
+  .SupportChatButton-module__wess8a__floating {
+    right: calc(16px + env(safe-area-inset-right));
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+
+  body:has(.student-app-shell [data-student-online-classes]) .SupportChatButton-module__wess8a__floating {
+    width: 56px;
+    height: 56px;
+  }
+
+  .SupportChatButton-module__wess8a__tooltip {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .SupportChatButton-module__wess8a__button, .SupportChatButton-module__wess8a__tooltip {
+    transition: none;
+  }
+
+  .SupportChatButton-module__wess8a__button:hover, .SupportChatButton-module__wess8a__button:active {
+    transform: none;
+  }
+}
+
+/*# sourceMappingURL=components_ui_SupportChatButton_module_css_bad6b30c._.single.css.map*/

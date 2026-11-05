@@ -1,4 +1,4 @@
-.page { --student-box-outline:var(--workspace-topbar-profile-outline); --student-box-shadow:3px 3px 0 var(--workspace-topbar-outline); --student-calendar-shadow:6px 6px 0 var(--workspace-topbar-outline); --student-calendar-day-border:color-mix(in srgb,var(--color-primary) 28%,var(--surface)); display:grid; gap:24px; min-width:0; }
+.page { --student-box-outline:var(--workspace-topbar-profile-outline); --student-box-shadow:3px 3px 0 var(--workspace-topbar-outline); --student-calendar-shadow:6px 6px 0 var(--workspace-topbar-outline); --student-calendar-day-border:var(--procto-line); display:grid; gap:24px; min-width:0; }
 :global(html[data-theme='dark']) .page { --student-box-shadow:var(--dark-shadow); --student-calendar-shadow:var(--dark-shadow); --student-calendar-day-border:var(--dark-border-control); }
 .page > * { min-width:0; }
 .calendarSection { scroll-margin-top:88px; }
@@ -131,7 +131,7 @@
 .refinedCalendar .desktopGrid :global(.calendar-grid){min-width:0;align-items:stretch;gap:6px}
 .page .refinedCalendar :global(.calendar-weekdays span){padding:4px 0 6px;border:0;background:transparent;font-size:13px;font-weight:800;text-align:center}
 .page .refinedCalendar .desktopGrid :global(.calendar-grid .calendar-day){padding:5px;min-height:82px;border:2px solid var(--student-calendar-day-border);border-radius:14px;background:var(--surface);overflow:hidden}
-.page .refinedCalendar .desktopGrid :global(.calendar-day.outside){border-color:color-mix(in srgb,var(--student-calendar-day-border) 45%,var(--surface));background:var(--surface)}
+.page .refinedCalendar .desktopGrid :global(.calendar-day.outside){border-color:var(--procto-line);background:var(--surface)}
 .page .refinedCalendar .desktopGrid :global(.calendar-day > span){display:inline-block;min-width:0;height:auto;font-size:14px;font-weight:800;line-height:1.4}
 .page .refinedCalendar .desktopGrid :global(.calendar-day.outside > span){color:var(--text-placeholder)}
 .page .refinedCalendar .desktopGrid :global(.calendar-day.today){border:3px solid var(--student-box-outline);background:var(--student-yellow);color:var(--workspace-topbar-ink)}

@@ -2,6 +2,7 @@ import type {Notification,NotificationType} from '@/types';
 import {listQuery,readCollection} from './collection-query';
 
 export const notificationTypes:{value:NotificationType;label:string}[]=[
+  {value:'classroom_activity',label:'Lớp học trực tuyến'},
   {value:'support_message',label:'Tin nhắn hỗ trợ'},
   {value:'violation_alert',label:'Cảnh báo giám sát'},
   {value:'exam_summary',label:'Tổng kết kỳ thi'},
@@ -20,6 +21,7 @@ export function readNotifications(response:unknown){
   return result;
 }
 export function notificationTarget(item:Notification,role:string):string|null{
+  if(item.type==='classroom_activity')return role==='student'?'/student/live-classes':'/dashboard/live-classes';
   if(item.type==='support_message'&&item.related_conversation_id){
     const id=encodeURIComponent(item.related_conversation_id);
     return role==='admin'?`/admin/messages?conversation=${id}`:`/${role==='teacher'?'teacher':'student'}?chat=${id}`;

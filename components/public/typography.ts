@@ -1,10 +1,10 @@
-import { Baloo_2, Nunito } from 'next/font/google';
+import localFont from 'next/font/local';
 
 // Shared by Home and the workspaces; preload Latin and Vietnamese together.
-const display = Baloo_2({
-  subsets: ['latin', 'vietnamese'],
+const display = localFont({
+  src: './fonts/baloo2-latin-vietnamese.woff2',
   variable: '--font-public-heading',
-  weight: ['700', '800'],
+  weight: '400 800',
   style: 'normal',
   display: 'swap',
   // The body font is the whole-heading fallback if the display face is unavailable.
@@ -12,12 +12,13 @@ const display = Baloo_2({
   adjustFontFallback: false,
 });
 
-const body = Nunito({
-  subsets: ['latin', 'vietnamese'],
-  weight: ['400', '500', '600', '700', '800'],
+const body = localFont({
+  src: './fonts/nunito-latin-vietnamese.woff2',
+  weight: '200 1000',
   style: 'normal',
   variable: '--font-public-body',
   display: 'swap',
+  adjustFontFallback: false,
   fallback: ['Arial'],
 });
 

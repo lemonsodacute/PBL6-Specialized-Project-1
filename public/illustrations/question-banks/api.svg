@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="272" viewBox="0 0 720 272" fill="none">
+<title>JavaScript và giao tiếp API</title><path fill="#F0B23A" d="M0 0h720v272H0z"/><circle cx="-10" cy="-5" r="150" fill="#FFF" opacity=".18"/><circle cx="664" cy="270" r="175" fill="#FFF" opacity=".22"/>
+<path d="M158 65c-35 0-36 16-36 36v10c0 18-12 25-32 25 20 0 32 7 32 25v10c0 20 1 36 36 36M243 65c35 0 36 16 36 36v10c0 18 12 25 32 25-20 0-32 7-32 25v10c0 20-1 36-36 36" stroke="#183C48" stroke-width="14" stroke-linejoin="round"/>
+<rect x="391" y="54" width="268" height="68" rx="34" fill="#FFF"/><text x="525" y="97" fill="#183C48" text-anchor="middle" font-family="monospace" font-weight="700" font-size="27">GET /quiz</text><rect x="436" y="149" width="223" height="68" rx="34" fill="#213744"/><circle cx="467" cy="183" r="7" fill="#80C9A3"/><text x="546" y="193" fill="#FFD075" text-anchor="middle" font-family="monospace" font-weight="700" font-size="27">200 OK</text>
+</svg>

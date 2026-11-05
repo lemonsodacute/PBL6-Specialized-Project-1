@@ -1,0 +1,1004 @@
+/* [project]/components/layout/TeacherWorkspace.module.css [app-client] (css) */
+.TeacherWorkspace-module__xRePxG__shell.app-shell {
+  --workspace-sidebar-width: 320px;
+  --workspace-nav-inset: 12px;
+  --workspace-nav-radius: 34px;
+  --workspace-topbar-gutter: 36px;
+  --teacher-nav-bg: var(--color-primary);
+  --teacher-nav-ink: #cce5e7;
+  --teacher-nav-muted: #cce5e7;
+  --teacher-nav-selected: #fff;
+  --teacher-nav-selected-ink: #006d77;
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell).app-shell {
+  --shell-header-height: var(--shell-topbar-height);
+  --teacher-bar-bg: #fff;
+  --teacher-bar-ink: #143943;
+  --teacher-bar-muted: #597b83;
+  --teacher-bar-line: var(--procto-line);
+  --teacher-bar-soft: #deecee;
+  --teacher-bar-accent: #006d77;
+  --teacher-bar-hover: #edf5f5;
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell).app-shell {
+  --shell-header-height: var(--shell-topbar-height);
+  --teacher-bar-bg: #fff;
+  --teacher-bar-ink: #143943;
+  --teacher-bar-muted: #597b83;
+  --teacher-bar-line: var(--procto-line);
+  --teacher-bar-soft: #deecee;
+  --teacher-bar-accent: #006d77;
+  --teacher-bar-hover: #edf5f5;
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell).app-shell {
+  --shell-header-height: var(--shell-topbar-height);
+  --teacher-bar-bg: #fff;
+  --teacher-bar-ink: #143943;
+  --teacher-bar-muted: #597b83;
+  --teacher-bar-line: var(--procto-line);
+  --teacher-bar-soft: #deecee;
+  --teacher-bar-accent: #006d77;
+  --teacher-bar-hover: #edf5f5;
+}
+
+html[data-theme="dark"] .TeacherWorkspace-module__xRePxG__shell {
+  --teacher-nav-bg: var(--dark-sidebar);
+  --teacher-nav-ink: var(--dark-text-secondary);
+  --teacher-nav-muted: var(--dark-text-secondary);
+  --teacher-nav-selected: var(--dark-surface-2);
+  --teacher-nav-selected-ink: var(--dark-focus);
+}
+
+html[data-theme="dark"] :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) {
+  --teacher-bar-bg: var(--dark-surface-1);
+  --teacher-bar-ink: var(--dark-text-primary);
+  --teacher-bar-muted: var(--dark-text-secondary);
+  --teacher-bar-line: var(--dark-border);
+  --teacher-bar-soft: var(--dark-surface-2);
+  --teacher-bar-hover: var(--dark-surface-2);
+}
+
+html[data-theme="dark"] :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) {
+  --teacher-bar-bg: var(--dark-surface-1);
+  --teacher-bar-ink: var(--dark-text-primary);
+  --teacher-bar-muted: var(--dark-text-secondary);
+  --teacher-bar-line: var(--dark-border);
+  --teacher-bar-soft: var(--dark-surface-2);
+  --teacher-bar-hover: var(--dark-surface-2);
+}
+
+html[data-theme="dark"] :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) {
+  --teacher-bar-bg: var(--dark-surface-1);
+  --teacher-bar-ink: var(--dark-text-primary);
+  --teacher-bar-muted: var(--dark-text-secondary);
+  --teacher-bar-line: var(--dark-border);
+  --teacher-bar-soft: var(--dark-surface-2);
+  --teacher-bar-hover: var(--dark-surface-2);
+}
+
+.TeacherWorkspace-module__xRePxG__shell.app-shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar {
+  background: var(--teacher-nav-bg);
+  color: var(--teacher-nav-ink);
+  border: 0;
+  padding: 24px 18px;
+  box-shadow: 0 12px 28px rgba(9, 65, 72, .12);
+}
+
+.TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar .brand {
+  color: #fff;
+  letter-spacing: -.6px;
+  gap: 12px;
+  height: 64px;
+  margin-bottom: 16px;
+  padding: 8px 10px;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.TeacherWorkspace-module__xRePxG__shell[data-sidebar-collapsed="false"] .TeacherWorkspace-module__xRePxG__sidebar.sidebar .brand {
+  width: calc(100% - 38px);
+}
+
+.TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar .brand:before {
+  background-size: 38px 38px;
+  border-radius: 14px;
+  flex-basis: 46px;
+  width: 46px;
+  height: 48px;
+}
+
+.TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar .role-label {
+  color: var(--teacher-nav-muted);
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  margin: 0 0 14px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar nav {
+  gap: var(--shell-nav-gap);
+}
+
+.TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar nav a {
+  min-height: var(--shell-nav-item-height);
+  padding: var(--shell-nav-padding-block) var(--shell-nav-padding-inline);
+  gap: var(--shell-nav-item-gap);
+  color: var(--teacher-nav-ink);
+  font-size: var(--shell-nav-font-size);
+  text-align: left;
+  box-shadow: none;
+  border: 1px solid rgba(0, 0, 0, 0);
+  border-radius: 20px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar .sidebar-bottom a {
+  min-height: var(--shell-nav-item-height);
+  padding: var(--shell-nav-padding-block) var(--shell-nav-padding-inline);
+  gap: var(--shell-nav-item-gap);
+  color: var(--teacher-nav-ink);
+  font-size: var(--shell-nav-font-size);
+  text-align: left;
+  box-shadow: none;
+  border: 1px solid rgba(0, 0, 0, 0);
+  border-radius: 20px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar .nav-icon {
+  width: var(--shell-nav-icon-size);
+  height: var(--shell-nav-icon-size);
+  flex-basis: var(--shell-nav-icon-size);
+  color: inherit;
+  stroke-width: 1.7px;
+}
+
+.TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar nav a:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, .1);
+}
+
+.TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar .sidebar-bottom a:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, .1);
+}
+
+.TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar a[aria-current="page"] {
+  background: var(--teacher-nav-selected);
+  color: var(--teacher-nav-selected-ink);
+  box-shadow: none;
+  border-color: rgba(0, 0, 0, 0);
+  font-weight: 700;
+}
+
+.TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar a[aria-current="page"]:hover {
+  background: var(--teacher-nav-selected);
+  color: var(--teacher-nav-selected-ink);
+  box-shadow: none;
+  border-color: rgba(0, 0, 0, 0);
+  font-weight: 700;
+}
+
+.TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar a[aria-current="page"] .nav-icon {
+  color: inherit;
+}
+
+.TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar .sidebar-bottom {
+  gap: var(--shell-nav-gap);
+  border-top: 1px solid rgba(255, 255, 255, .2);
+  padding-top: 16px;
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell).app-shell .TeacherWorkspace-module__xRePxG__bar.topbar {
+  height: var(--shell-topbar-height);
+  min-height: var(--shell-topbar-height);
+  max-height: var(--shell-topbar-height);
+  padding: var(--shell-topbar-padding-block) var(--shell-topbar-padding-inline);
+  gap: var(--shell-topbar-gap);
+  border: 1px solid var(--teacher-bar-line);
+  background: var(--teacher-bar-bg);
+  color: var(--teacher-bar-ink);
+  border-radius: 26px;
+  box-shadow: 0 3px 12px rgba(18, 60, 65, .06);
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell).app-shell .TeacherWorkspace-module__xRePxG__bar.topbar {
+  height: var(--shell-topbar-height);
+  min-height: var(--shell-topbar-height);
+  max-height: var(--shell-topbar-height);
+  padding: var(--shell-topbar-padding-block) var(--shell-topbar-padding-inline);
+  gap: var(--shell-topbar-gap);
+  border: 1px solid var(--teacher-bar-line);
+  background: var(--teacher-bar-bg);
+  color: var(--teacher-bar-ink);
+  border-radius: 26px;
+  box-shadow: 0 3px 12px rgba(18, 60, 65, .06);
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell).app-shell .TeacherWorkspace-module__xRePxG__bar.topbar {
+  height: var(--shell-topbar-height);
+  min-height: var(--shell-topbar-height);
+  max-height: var(--shell-topbar-height);
+  padding: var(--shell-topbar-padding-block) var(--shell-topbar-padding-inline);
+  gap: var(--shell-topbar-gap);
+  border: 1px solid var(--teacher-bar-line);
+  background: var(--teacher-bar-bg);
+  color: var(--teacher-bar-ink);
+  border-radius: 26px;
+  box-shadow: 0 3px 12px rgba(18, 60, 65, .06);
+}
+
+.TeacherWorkspace-module__xRePxG__context {
+  align-items: center;
+  gap: var(--shell-profile-gap);
+  flex: auto;
+  min-width: 0;
+  display: flex;
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title {
+  min-height: var(--shell-role-height);
+  padding: var(--shell-role-padding-block) var(--shell-role-padding-inline);
+  align-items: center;
+  gap: var(--shell-role-gap);
+  background: var(--teacher-bar-accent);
+  color: #fff;
+  font-size: var(--shell-role-font-size);
+  white-space: nowrap;
+  border: 0;
+  border-radius: 17px;
+  flex: none;
+  font-weight: 800;
+  text-decoration: none;
+  display: inline-flex;
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title {
+  min-height: var(--shell-role-height);
+  padding: var(--shell-role-padding-block) var(--shell-role-padding-inline);
+  align-items: center;
+  gap: var(--shell-role-gap);
+  background: var(--teacher-bar-accent);
+  color: #fff;
+  font-size: var(--shell-role-font-size);
+  white-space: nowrap;
+  border: 0;
+  border-radius: 17px;
+  flex: none;
+  font-weight: 800;
+  text-decoration: none;
+  display: inline-flex;
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title {
+  min-height: var(--shell-role-height);
+  padding: var(--shell-role-padding-block) var(--shell-role-padding-inline);
+  align-items: center;
+  gap: var(--shell-role-gap);
+  background: var(--teacher-bar-accent);
+  color: #fff;
+  font-size: var(--shell-role-font-size);
+  white-space: nowrap;
+  border: 0;
+  border-radius: 17px;
+  flex: none;
+  font-weight: 800;
+  text-decoration: none;
+  display: inline-flex;
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title:before {
+  display: none;
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title:before {
+  display: none;
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title:before {
+  display: none;
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title:hover {
+  background: #005b64;
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title:hover {
+  background: #005b64;
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title:hover {
+  background: #005b64;
+}
+
+.TeacherWorkspace-module__xRePxG__contextArrow {
+  color: var(--teacher-bar-muted);
+  flex: none;
+}
+
+.TeacherWorkspace-module__xRePxG__currentPage {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  color: var(--teacher-bar-ink);
+  font-size: var(--shell-role-font-size);
+  font-weight: 700;
+  overflow: hidden;
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .header-actions {
+  gap: var(--shell-action-gap);
+  flex: none;
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .header-actions {
+  gap: var(--shell-action-gap);
+  flex: none;
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .header-actions {
+  gap: var(--shell-action-gap);
+  flex: none;
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .notification-bell {
+  width: var(--shell-control-size);
+  height: var(--shell-control-size);
+  min-height: var(--shell-control-size);
+  border: 1px solid var(--teacher-bar-line);
+  background: var(--teacher-bar-soft);
+  color: var(--teacher-bar-ink);
+  box-shadow: none;
+  border-radius: 17px;
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .notification-bell {
+  width: var(--shell-control-size);
+  height: var(--shell-control-size);
+  min-height: var(--shell-control-size);
+  border: 1px solid var(--teacher-bar-line);
+  background: var(--teacher-bar-soft);
+  color: var(--teacher-bar-ink);
+  box-shadow: none;
+  border-radius: 17px;
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .notification-bell {
+  width: var(--shell-control-size);
+  height: var(--shell-control-size);
+  min-height: var(--shell-control-size);
+  border: 1px solid var(--teacher-bar-line);
+  background: var(--teacher-bar-soft);
+  color: var(--teacher-bar-ink);
+  box-shadow: none;
+  border-radius: 17px;
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .shell-menu-button {
+  width: var(--shell-control-size);
+  height: var(--shell-control-size);
+  min-height: var(--shell-control-size);
+  border: 1px solid var(--teacher-bar-line);
+  background: var(--teacher-bar-soft);
+  color: var(--teacher-bar-ink);
+  box-shadow: none;
+  border-radius: 17px;
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .shell-menu-button {
+  width: var(--shell-control-size);
+  height: var(--shell-control-size);
+  min-height: var(--shell-control-size);
+  border: 1px solid var(--teacher-bar-line);
+  background: var(--teacher-bar-soft);
+  color: var(--teacher-bar-ink);
+  box-shadow: none;
+  border-radius: 17px;
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .shell-menu-button {
+  width: var(--shell-control-size);
+  height: var(--shell-control-size);
+  min-height: var(--shell-control-size);
+  border: 1px solid var(--teacher-bar-line);
+  background: var(--teacher-bar-soft);
+  color: var(--teacher-bar-ink);
+  box-shadow: none;
+  border-radius: 17px;
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .notification-bell:-webkit-any(:hover, [aria-expanded="true"]) {
+  background: var(--teacher-bar-hover);
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .notification-bell:-moz-any(:hover, [aria-expanded="true"]) {
+  background: var(--teacher-bar-hover);
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .notification-bell:is(:hover, [aria-expanded="true"]) {
+  background: var(--teacher-bar-hover);
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .notification-count {
+  top: var(--shell-unread-offset);
+  right: var(--shell-unread-offset);
+  min-width: var(--shell-unread-size);
+  height: var(--shell-unread-size);
+  border: 2px solid var(--teacher-bar-bg);
+  color: #fff;
+  font-size: var(--shell-unread-font-size);
+  background: #e82f45;
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .notification-count {
+  top: var(--shell-unread-offset);
+  right: var(--shell-unread-offset);
+  min-width: var(--shell-unread-size);
+  height: var(--shell-unread-size);
+  border: 2px solid var(--teacher-bar-bg);
+  color: #fff;
+  font-size: var(--shell-unread-font-size);
+  background: #e82f45;
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .notification-count {
+  top: var(--shell-unread-offset);
+  right: var(--shell-unread-offset);
+  min-width: var(--shell-unread-size);
+  height: var(--shell-unread-size);
+  border: 2px solid var(--teacher-bar-bg);
+  color: #fff;
+  font-size: var(--shell-unread-font-size);
+  background: #e82f45;
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user {
+  padding-left: var(--shell-action-gap);
+  border-left: 1px solid var(--teacher-bar-line);
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user {
+  padding-left: var(--shell-action-gap);
+  border-left: 1px solid var(--teacher-bar-line);
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user {
+  padding-left: var(--shell-action-gap);
+  border-left: 1px solid var(--teacher-bar-line);
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user > button {
+  height: var(--shell-profile-height);
+  min-height: var(--shell-profile-min-height);
+  max-width: 300px;
+  padding: var(--shell-profile-padding);
+  gap: var(--shell-profile-gap);
+  color: var(--teacher-bar-ink);
+  box-shadow: none;
+  background: none;
+  border: 0;
+  border-radius: 14px;
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user > button {
+  height: var(--shell-profile-height);
+  min-height: var(--shell-profile-min-height);
+  max-width: 300px;
+  padding: var(--shell-profile-padding);
+  gap: var(--shell-profile-gap);
+  color: var(--teacher-bar-ink);
+  box-shadow: none;
+  background: none;
+  border: 0;
+  border-radius: 14px;
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user > button {
+  height: var(--shell-profile-height);
+  min-height: var(--shell-profile-min-height);
+  max-width: 300px;
+  padding: var(--shell-profile-padding);
+  gap: var(--shell-profile-gap);
+  color: var(--teacher-bar-ink);
+  box-shadow: none;
+  background: none;
+  border: 0;
+  border-radius: 14px;
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user > button:-webkit-any(:hover, [aria-expanded="true"]) {
+  background: var(--teacher-bar-hover);
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user > button:-moz-any(:hover, [aria-expanded="true"]) {
+  background: var(--teacher-bar-hover);
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user > button:is(:hover, [aria-expanded="true"]) {
+  background: var(--teacher-bar-hover);
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name {
+  max-width: 220px;
+  color: var(--teacher-bar-ink);
+  gap: 2px;
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name {
+  max-width: 220px;
+  color: var(--teacher-bar-ink);
+  gap: 2px;
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name {
+  max-width: 220px;
+  color: var(--teacher-bar-ink);
+  gap: 2px;
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name strong {
+  font-size: var(--shell-name-font-size);
+  font-weight: 700;
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name strong {
+  font-size: var(--shell-name-font-size);
+  font-weight: 700;
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name strong {
+  font-size: var(--shell-name-font-size);
+  font-weight: 700;
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name small {
+  color: var(--teacher-bar-muted);
+  font-size: var(--shell-meta-font-size);
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name small {
+  color: var(--teacher-bar-muted);
+  font-size: var(--shell-meta-font-size);
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name small {
+  color: var(--teacher-bar-muted);
+  font-size: var(--shell-meta-font-size);
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-avatar {
+  width: var(--shell-avatar-size);
+  height: var(--shell-avatar-size);
+  background: var(--teacher-bar-accent);
+  color: #fff;
+  font-size: var(--shell-avatar-font-size);
+  border: 0;
+  border-radius: 16px;
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-avatar {
+  width: var(--shell-avatar-size);
+  height: var(--shell-avatar-size);
+  background: var(--teacher-bar-accent);
+  color: #fff;
+  font-size: var(--shell-avatar-font-size);
+  border: 0;
+  border-radius: 16px;
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-avatar {
+  width: var(--shell-avatar-size);
+  height: var(--shell-avatar-size);
+  background: var(--teacher-bar-accent);
+  color: #fff;
+  font-size: var(--shell-avatar-font-size);
+  border: 0;
+  border-radius: 16px;
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user > button > svg {
+  color: var(--teacher-bar-muted);
+  margin-left: auto;
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user > button > svg {
+  color: var(--teacher-bar-muted);
+  margin-left: auto;
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user > button > svg {
+  color: var(--teacher-bar-muted);
+  margin-left: auto;
+}
+
+:-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar :-webkit-any(a, button):focus-visible {
+  outline: 3px solid var(--teacher-bar-accent);
+  outline-offset: 4px;
+}
+
+:-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar :-moz-any(a, button):focus-visible {
+  outline: 3px solid var(--teacher-bar-accent);
+  outline-offset: 4px;
+}
+
+:is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar :is(a, button):focus-visible {
+  outline: 3px solid var(--teacher-bar-accent);
+  outline-offset: 4px;
+}
+
+@media (min-width: 1024px) {
+  .TeacherWorkspace-module__xRePxG__shell.app-shell[data-sidebar-collapsed="true"] {
+    --workspace-sidebar-width: 80px;
+  }
+
+  .TeacherWorkspace-module__xRePxG__shell[data-sidebar-collapsed="true"] .TeacherWorkspace-module__xRePxG__sidebar.sidebar {
+    padding: 18px 10px;
+  }
+
+  .TeacherWorkspace-module__xRePxG__shell[data-sidebar-collapsed="true"] .TeacherWorkspace-module__xRePxG__sidebar.sidebar .brand {
+    gap: 0;
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 22px;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .TeacherWorkspace-module__xRePxG__shell[data-sidebar-collapsed="true"] .TeacherWorkspace-module__xRePxG__sidebar.sidebar nav a {
+    min-height: var(--shell-collapsed-item-height);
+    height: var(--shell-collapsed-item-height);
+    border-radius: 16px;
+    gap: 0;
+    padding: 8px;
+  }
+
+  .TeacherWorkspace-module__xRePxG__shell[data-sidebar-collapsed="true"] .TeacherWorkspace-module__xRePxG__sidebar.sidebar .sidebar-bottom a {
+    min-height: var(--shell-collapsed-item-height);
+    height: var(--shell-collapsed-item-height);
+    border-radius: 16px;
+    gap: 0;
+    padding: 8px;
+  }
+
+  .TeacherWorkspace-module__xRePxG__shell[data-sidebar-collapsed="true"] .TeacherWorkspace-module__xRePxG__sidebar.sidebar .nav-icon {
+    width: var(--shell-collapsed-icon-size);
+    height: var(--shell-collapsed-icon-size);
+    flex-basis: var(--shell-collapsed-icon-size);
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1399px) {
+  .TeacherWorkspace-module__xRePxG__shell.app-shell {
+    --workspace-sidebar-width: 280px;
+    --workspace-topbar-gutter: 24px;
+  }
+
+  .TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar .brand {
+    gap: 9px;
+    padding-left: 4px;
+    padding-right: 4px;
+    font-size: 24px;
+  }
+
+  .TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar .brand:before {
+    background-size: 34px 34px;
+    flex-basis: 40px;
+    width: 40px;
+    height: 44px;
+  }
+
+  .TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar nav a {
+    font-size: var(--shell-nav-font-size);
+  }
+
+  .TeacherWorkspace-module__xRePxG__shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar .sidebar-bottom a {
+    font-size: var(--shell-nav-font-size);
+  }
+
+  :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name {
+    max-width: 160px;
+  }
+
+  :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name {
+    max-width: 160px;
+  }
+
+  :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name {
+    max-width: 160px;
+  }
+
+  :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name small {
+    display: none;
+  }
+
+  :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name small {
+    display: none;
+  }
+
+  :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name small {
+    display: none;
+  }
+
+  .TeacherWorkspace-module__xRePxG__currentPage {
+    font-size: var(--shell-role-font-size);
+  }
+
+  :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title {
+    font-size: var(--shell-role-font-size);
+  }
+
+  :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title {
+    font-size: var(--shell-role-font-size);
+  }
+
+  :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title {
+    font-size: var(--shell-role-font-size);
+  }
+
+  .TeacherWorkspace-module__xRePxG__context {
+    gap: var(--shell-profile-gap);
+  }
+}
+
+@media (max-width: 1023px) {
+  .TeacherWorkspace-module__xRePxG__shell.app-shell {
+    --workspace-nav-inset: 8px;
+    --workspace-topbar-gutter: 16px;
+  }
+
+  .TeacherWorkspace-module__xRePxG__shell.app-shell .TeacherWorkspace-module__xRePxG__sidebar.sidebar {
+    border-radius: 28px;
+    width: min(320px, 100vw - 32px);
+  }
+
+  .TeacherWorkspace-module__xRePxG__shell[data-sidebar-collapsed="false"] .TeacherWorkspace-module__xRePxG__sidebar.sidebar .brand {
+    width: calc(100% - 38px);
+    font-size: 24px;
+  }
+
+  :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title {
+    min-height: var(--shell-role-height);
+    font-size: var(--shell-role-font-size);
+    padding: var(--shell-role-padding-block) var(--shell-role-padding-inline);
+    gap: var(--shell-role-gap);
+  }
+
+  :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title {
+    min-height: var(--shell-role-height);
+    font-size: var(--shell-role-font-size);
+    padding: var(--shell-role-padding-block) var(--shell-role-padding-inline);
+    gap: var(--shell-role-gap);
+  }
+
+  :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title {
+    min-height: var(--shell-role-height);
+    font-size: var(--shell-role-font-size);
+    padding: var(--shell-role-padding-block) var(--shell-role-padding-inline);
+    gap: var(--shell-role-gap);
+  }
+
+  :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .header-actions {
+    gap: var(--shell-action-gap);
+  }
+
+  :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .header-actions {
+    gap: var(--shell-action-gap);
+  }
+
+  :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .header-actions {
+    gap: var(--shell-action-gap);
+  }
+
+  :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user {
+    padding-left: var(--shell-action-gap);
+  }
+
+  :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user {
+    padding-left: var(--shell-action-gap);
+  }
+
+  :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user {
+    padding-left: var(--shell-action-gap);
+  }
+
+  :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name {
+    display: none;
+  }
+
+  :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name {
+    display: none;
+  }
+
+  :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user-name {
+    display: none;
+  }
+
+  .TeacherWorkspace-module__xRePxG__currentPage {
+    font-size: var(--shell-role-font-size);
+  }
+
+  .TeacherWorkspace-module__xRePxG__context {
+    gap: var(--shell-profile-gap);
+  }
+}
+
+@media (max-width: 639px) {
+  :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell).app-shell {
+    --shell-header-height: var(--shell-topbar-height);
+  }
+
+  :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell).app-shell {
+    --shell-header-height: var(--shell-topbar-height);
+  }
+
+  :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell).app-shell {
+    --shell-header-height: var(--shell-topbar-height);
+  }
+
+  :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell).app-shell .TeacherWorkspace-module__xRePxG__bar.topbar {
+    height: var(--shell-topbar-height);
+    min-height: var(--shell-topbar-height);
+    max-height: var(--shell-topbar-height);
+    padding: var(--shell-topbar-padding-block) var(--shell-topbar-padding-inline);
+    gap: var(--shell-topbar-gap);
+    border-radius: 22px;
+    margin: 8px 8px 0;
+  }
+
+  :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell).app-shell .TeacherWorkspace-module__xRePxG__bar.topbar {
+    height: var(--shell-topbar-height);
+    min-height: var(--shell-topbar-height);
+    max-height: var(--shell-topbar-height);
+    padding: var(--shell-topbar-padding-block) var(--shell-topbar-padding-inline);
+    gap: var(--shell-topbar-gap);
+    border-radius: 22px;
+    margin: 8px 8px 0;
+  }
+
+  :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell).app-shell .TeacherWorkspace-module__xRePxG__bar.topbar {
+    height: var(--shell-topbar-height);
+    min-height: var(--shell-topbar-height);
+    max-height: var(--shell-topbar-height);
+    padding: var(--shell-topbar-padding-block) var(--shell-topbar-padding-inline);
+    gap: var(--shell-topbar-gap);
+    border-radius: 22px;
+    margin: 8px 8px 0;
+  }
+
+  .TeacherWorkspace-module__xRePxG__contextArrow {
+    display: none;
+  }
+
+  :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title {
+    display: none;
+  }
+
+  :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title {
+    display: none;
+  }
+
+  :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-title {
+    display: none;
+  }
+
+  :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .header-actions {
+    gap: var(--shell-action-gap);
+  }
+
+  :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .header-actions {
+    gap: var(--shell-action-gap);
+  }
+
+  :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .header-actions {
+    gap: var(--shell-action-gap);
+  }
+
+  :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .notification-bell {
+    width: var(--shell-control-size);
+    height: var(--shell-control-size);
+    min-height: var(--shell-control-size);
+    border-radius: 14px;
+  }
+
+  :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .notification-bell {
+    width: var(--shell-control-size);
+    height: var(--shell-control-size);
+    min-height: var(--shell-control-size);
+    border-radius: 14px;
+  }
+
+  :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .notification-bell {
+    width: var(--shell-control-size);
+    height: var(--shell-control-size);
+    min-height: var(--shell-control-size);
+    border-radius: 14px;
+  }
+
+  :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .shell-menu-button {
+    width: var(--shell-control-size);
+    height: var(--shell-control-size);
+    min-height: var(--shell-control-size);
+    border-radius: 14px;
+  }
+
+  :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .shell-menu-button {
+    width: var(--shell-control-size);
+    height: var(--shell-control-size);
+    min-height: var(--shell-control-size);
+    border-radius: 14px;
+  }
+
+  :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .shell-menu-button {
+    width: var(--shell-control-size);
+    height: var(--shell-control-size);
+    min-height: var(--shell-control-size);
+    border-radius: 14px;
+  }
+
+  :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user {
+    padding-left: var(--shell-action-gap);
+  }
+
+  :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user {
+    padding-left: var(--shell-action-gap);
+  }
+
+  :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user {
+    padding-left: var(--shell-action-gap);
+  }
+
+  :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user > button {
+    min-height: var(--shell-profile-min-height);
+    padding: var(--shell-profile-padding);
+    gap: var(--shell-profile-gap);
+  }
+
+  :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user > button {
+    min-height: var(--shell-profile-min-height);
+    padding: var(--shell-profile-padding);
+    gap: var(--shell-profile-gap);
+  }
+
+  :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-user > button {
+    min-height: var(--shell-profile-min-height);
+    padding: var(--shell-profile-padding);
+    gap: var(--shell-profile-gap);
+  }
+
+  :-webkit-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-avatar {
+    width: var(--shell-avatar-size);
+    height: var(--shell-avatar-size);
+    font-size: var(--shell-avatar-font-size);
+    border-radius: 13px;
+  }
+
+  :-moz-any(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-avatar {
+    width: var(--shell-avatar-size);
+    height: var(--shell-avatar-size);
+    font-size: var(--shell-avatar-font-size);
+    border-radius: 13px;
+  }
+
+  :is(.TeacherWorkspace-module__xRePxG__shell, .TeacherWorkspace-module__xRePxG__headerShell) .TeacherWorkspace-module__xRePxG__bar.topbar .topbar-avatar {
+    width: var(--shell-avatar-size);
+    height: var(--shell-avatar-size);
+    font-size: var(--shell-avatar-font-size);
+    border-radius: 13px;
+  }
+
+  .TeacherWorkspace-module__xRePxG__currentPage {
+    font-size: var(--shell-role-font-size);
+  }
+}
+
+/*# sourceMappingURL=components_layout_TeacherWorkspace_module_css_bad6b30c._.single.css.map*/

@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/components/ui/DottedCanvas.module.css"],"sourcesContent":["/* Extracted from LoginForm: both Login and workspace canvases use this exact paint. */\n.canvas,\n.canvas:global(.app-shell)[data-role='student'] {\n  /* Reset the full paint so the dark workspace glow cannot add extra layers. */\n  background: var(--login-canvas-bg) var(--login-canvas-pattern) 0 0 / var(--login-canvas-spacing) repeat;\n}\n\n/* One continuous canvas also paints the gutters around the rounded sidebar. */\n.canvas:global(.app-shell)[data-role='student'] > :global(.workspace) {\n  background: transparent;\n}\n\n/* The Student footer belongs to the canvas, rather than covering it with a flat fill. */\n.canvas:global(.app-shell)[data-role='student'] > :global(.workspace) > :global(.student-footer) {\n  background: transparent;\n}\n"],"names":[],"mappings":"AACA;;;;AAAA;;;;AAOA;;;;AAKA"}}]
+}

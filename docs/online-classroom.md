@@ -45,7 +45,7 @@ LIVEKIT_API_SECRET=<server-api-secret>
 - Dùng mẫu [infra/livekit/livekit.yaml](../infra/livekit/livekit.yaml) với self-hosted SFU. Điền key ID và URL webhook; cung cấp key/secret bằng secret manager/private config. Không publish file có secret.
 - **Tắt auto-create rooms**: self-hosted `room.auto_create: false`, hoặc tắt auto-create trong project LiveKit Cloud. Backend gọi CreateRoom sau khi khóa và kiểm tra session LIVE. Token không cấp `roomCreate`/`roomAdmin`. DeleteRoom khi kết thúc sẽ ngắt tất cả kết nối; token đã cấp không thể tạo lại phòng.
 - Cấu hình webhook trỏ về `/api/v1/live-classes/provider-webhook`. Backend kiểm chữ ký JWT và hash của raw body qua SDK, không nhận event từ browser chưa được xác thực. Endpoint phải truy cập được từ SFU. Proxy cần giữ Authorization header và raw body.
-- Cấu hình SFU không cho remote unmute. Bản này chỉ có điều khiển mic/camera của chính người dùng.
+- Cấu hình SFU không cho remote unmute. Giảng viên có thể tắt micro; yêu cầu bật micro gửi một lời nhắc để sinh viên tự xác nhận. Chính sách nguồn publish được thực thi tại SFU, gồm microphone và screen share.
 - Nếu SFU lỗi khi kết thúc, DB vẫn ENDED và chặn token ngay. `provider_close_pending` lưu bền; worker thử DeleteRoom lại mỗi 5 giây kể cả sau restart. Client kiểm trạng thái mỗi 5 giây và tự đóng media khi buổi đã kết thúc hoặc quyền bị thu hồi. Khi SFU không truy cập được, API trả thông báo lỗi, không chuyển sang phòng mẫu.
 - API secret không được gửi về browser. Room token TTL 60 giây, room/identity do backend xác định. SDK giữ kết nối/reconnect và cập nhật token của kết nối; frontend chỉ xin token lúc tham gia/thử lại. Phòng dài hơn access-token của ứng dụng tái dùng API refresh hiện có; chỉ cập nhật token nếu response vẫn thuộc cùng user.
 
@@ -63,7 +63,7 @@ Tham khảo chính thức: [Server configuration](https://github.com/livekit/liv
 
 Migration `0012_live_classroom` thêm `active_since`, `participant_sid`, `last_event_at` vào aggregate `class_attendance` đang có, giữ unique `(live_class_id, student_id)`. `joined_at` là lần đầu, `left_at` là lần rời cuối, `duration_sec` cộng các khoảng kết nối thật, không cộng thời gian đã rời. SID bảo vệ khỏi leave/webhook trễ và join trùng. Webhook `participant_left` xử lý cả đóng tab/crash mà browser không kịp gửi leave. Cần webhook hoạt động để điểm danh chính xác trong các tình huống này.
 
-Teacher xem điểm danh trực tiếp từ panel hoặc chọn **Xem chi tiết** sau buổi. ENDED/SCHEDULED mở trang thông tin, không xin quyền camera/mic. Camera/mic tắt vẫn tham gia được; mic meter không phải điều kiện tham gia. Participant count/tile lấy từ SFU, có cả giảng viên và các sinh viên khác. Chat text dùng data channel reliable, tối đa 1.000 ký tự, 200 tin trên mỗi client, không lưu lịch sử sau refresh.
+Teacher xem điểm danh trực tiếp từ panel hoặc chọn **Xem chi tiết** sau buổi. ENDED/SCHEDULED mở trang thông tin, không xin quyền camera/mic. Camera/mic tắt vẫn tham gia được; mic meter không phải điều kiện tham gia. Participant count/tile lấy từ SFU, có cả giảng viên và các sinh viên khác. Chat đi qua API xác thực quyền/policy và gửi qua data channel reliable của chính LiveKit, tối đa 1.000 ký tự, 200 tin trên mỗi client, không lưu lịch sử sau refresh. Client bỏ qua gói chat/control do participant tự gửi để không giả mạo tên hay quyền host. Reactions dùng gói ephemeral lossy, không ghi DB.
 
 ## Chẩn đoán lỗi kết nối (18/10/2026)
 
@@ -113,3 +113,38 @@ npx playwright test tests/e2e/live-classroom.spec.ts --output="$env:LOCALAPPDATA
 Fixture là các user/lớp riêng phục vụ test trong DB thật, không dùng làm fallback UI. File private chứa access token hết hạn theo cấu hình ứng dụng; không commit. Cleanup chỉ xóa đúng UUID của fixture, không xóa dữ liệu người dùng khác. Test mặc định skip nếu không bật `CLASSROOM_REAL_E2E=1`. Media trình duyệt được giả lập để test tự động; audio/video signaling/subscription, backend, SFU, DB và quyền truy cập đều chạy thật.
 
 Kiểm tra thủ công thêm hai máy với webcam thật và mạng production để xác nhận thiết bị/TURN: join, mic/camera, đổi thiết bị, mất mạng ngắn, refresh, đóng tab, logout, kết thúc phòng. Kiểm tra LED camera tắt sau leave/unmount/end và không có horizontal scroll trên mobile. Không suy ra năng lực hàng trăm người hay chất lượng mạng WAN từ test localhost.
+
+
+## Nâng cấp lớp học 24/10/2026
+
+Chạy migration `0024_classroom_controls` trước khi dùng frontend/backend mới. Migration chỉ mở rộng `live_classes` với `classroom_state` (JSONB) và `controls_sync_pending`; dùng lại bảng điểm danh, users, enrollment và notifications. Nhãn thông báo `classroom_activity` được thêm vào enum hiện có. Không tạo subsystem lớp học hay chat hỗ trợ mới.
+
+- `POST /{id}/admission`: kiểm membership/lifecycle/khóa/loại khỏi lớp trước khi xin token. Mặc định giữ luồng cũ (phòng chờ tắt, chat bật, sinh viên được bật mic, screen share sinh viên tắt). Khi bật phòng chờ, chỉ người được host duyệt mới nhận token. Teacher/admin đúng quyền không phải chờ.
+- `DELETE /{id}/admission`: hủy yêu cầu đang chờ; không thu hồi người đã được duyệt.
+- `POST /{id}/policy`: host cập nhật chat, nguồn screen share/mic, phòng chờ, khóa lớp. Lưu DB trước, sau đó cập nhật room metadata và participant grants thật tại SFU. Worker lifecycle có sẵn thử lại projection lỗi; token luôn theo policy DB mới nhất.
+- `POST /{id}/actions`: admit/reject/admit_all, mute/mute_all, request_unmute, remove, lower_hand/lower_all. Host không thể dùng endpoint này với lớp khác hoặc áp dụng thao tác sinh viên lên host. Remove lưu lệnh cấm tham gia lại cho buổi này trước khi ngắt SFU; webhook cũng từ chối token cũ của người đã bị loại.
+- `POST /{id}/hand`: lưu timestamp server, đồng bộ bằng participant metadata chỉ server được ghi. Không dùng client-supplied role/name để xác định host.
+- `POST /{id}/chat`: chỉ người có kết nối SFU và quyền chat được gửi. Tên/id/time là server tạo. Không có polling chat.
+
+Room metadata đồng bộ policy realtime, participant metadata đồng bộ host/giơ tay, track events đồng bộ mic/camera/screen share/active speaker/quality. Người đang ở ngoài SFU chờ duyệt dùng nhịp refresh session hiện có (tối đa khoảng 5 giây); danh sách video/participants trong lớp không poll. Hủy yêu cầu chờ khi rời phòng, pagehide hoặc unmount nếu trình duyệt gửi được request keepalive. Mất mạng tạm thời giữ reconnect của SDK, không gọi leave cho trạng thái RECONNECTING.
+
+`/live-class/[id]` dùng canvas riêng toàn viewport. Grid/speaker lưu lựa chọn tại localStorage; audio remote được gắn một lần ngoài grid nên đổi speaker/screen-share layout không phát âm thanh trùng. Video màn hình có vùng chính, camera ở dải bên dưới. Mobile dùng bảng participants/chat dạng bottom sheet có focus trap/Escape. Các điều khiển ít dùng vào Thêm; thiết bị chuyển bằng `switchActiveDevice` của SDK. Loa chỉ hiện khi browser có `setSinkId`. Fullscreen là browser API. Không có recording/captions/breakout/polls giả.
+
+Khóa Web Locks theo user/session ngăn tab thứ hai vào cùng lớp trên cùng origin nếu browser hỗ trợ. Trình duyệt không hỗ trợ vẫn được bảo vệ bởi LiveKit identity duy nhất và thông báo duplicate identity. Không cấp bí mật provider cho frontend. Attendance được tạo khi xác nhận SID thật, dừng khi leave/remove/end hoặc webhook disconnect; schema giữ MSSV từ user và thời lượng tích lũy thật.
+
+Kiểm thử nâng cấp có thể dùng runtime PostgreSQL QA tách biệt sẵn có:
+
+```powershell
+# từ backend, chuẩn bị DB QA và migration
+.venv/Scripts/python.exe scripts/release_qa_runtime.py prepare
+.venv/Scripts/python.exe scripts/release_qa_runtime.py run -- python -m alembic upgrade head
+# khởi động API qua cùng runtime và seed fixture bằng CLASSROOM_FIXTURE_PATH riêng
+# từ root, bật CLASSROOM_REAL_E2E=1, CLASSROOM_RELEASE_QA=1
+# đặt CLASSROOM_FIXTURE_PATH tới đúng fixture đó rồi chạy:
+npx playwright test tests/e2e/live-classroom.spec.ts
+```
+
+Media tự động là canvas/oscillator/screen capture giả lập chỉ trong test; API, SFU, data channel, permissions, DB và role auth thật. Cần kiểm tra webcam/micro thật và ICE/TURN khi triển khai nhiều máy. Không suy ra chất lượng WAN hay tải lớp lớn từ test localhost.
+
+
+Kết quả kiểm tra 24/10: 31 backend + 2 PostgreSQL concurrency + 8 browser/provider tests PASS; TypeScript và production build PASS. Xem [báo cáo nâng cấp](online-classroom-upgrade-report.md).

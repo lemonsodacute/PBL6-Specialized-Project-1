@@ -1,0 +1,638 @@
+/* [project]/components/student/AttemptCollection.module.css [app-client] (css) */
+.AttemptCollection-module__Iwu-0W__page.workspace-page {
+  --grades-outline: #153e45;
+  --grades-ink: #153e45;
+  --grades-muted: #567780;
+  --grades-paper: var(--student-exam-paper);
+  --grades-mint: #a6e8cf;
+  --grades-coral: #ff9074;
+  --grades-yellow: #ffdc4d;
+  --grades-shadow: 5px 5px 0 var(--grades-outline);
+  --grades-columns: minmax(0, 1.3fr) minmax(0, 1.1fr) minmax(0, 1.03fr) minmax(0, 1.03fr) minmax(174px, 1.2fr);
+  color: var(--grades-ink);
+  container: student-grades / inline-size;
+}
+
+html[data-theme="dark"] .AttemptCollection-module__Iwu-0W__page {
+  --grades-outline: var(--student-exam-outline);
+  --grades-ink: var(--student-exam-ink);
+  --grades-muted: var(--student-exam-muted);
+  --grades-shadow: var(--student-exam-shadow);
+}
+
+.AttemptCollection-module__Iwu-0W__page.AttemptCollection-module__Iwu-0W__history {
+  --grades-columns: minmax(165px, 1.8fr) 65px repeat(2, minmax(108px, 1.05fr)) minmax(85px, .85fr) minmax(112px, 1.1fr) minmax(154px, 1.5fr);
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__filters.ui-card {
+  box-shadow: none;
+  background: none;
+  border: 0;
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__filters > [role="search"] {
+  border: 3px solid var(--grades-outline);
+  background: var(--grades-paper);
+  box-shadow: var(--grades-shadow);
+  border-radius: 28px;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, .95fr) repeat(2, minmax(0, 1.16fr)) minmax(0, .95fr);
+  gap: 16px;
+  margin: 0;
+  padding: 22px 24px;
+  display: grid;
+}
+
+.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__filters > [role="search"] {
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, .9fr) repeat(2, minmax(0, 1.12fr)) minmax(0, 1.2fr);
+}
+
+.AttemptCollection-module__Iwu-0W__filters [role="search"] > label {
+  min-width: 0;
+  color: var(--grades-ink);
+  gap: 9px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__filters .ui-field {
+  border: 2px solid var(--grades-outline);
+  background: var(--grades-paper);
+  width: 100%;
+  min-width: 0;
+  height: 53px;
+  color: var(--grades-ink);
+  box-shadow: none;
+  border-radius: 18px;
+  padding-left: 15px;
+  padding-right: 15px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__filters input[type="search"] {
+  padding-left: 48px;
+  padding-right: 38px;
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__filters [role="search"] input[type="search"] {
+  border-radius: 18px;
+}
+
+.AttemptCollection-module__Iwu-0W__filters input[type="search"]::placeholder {
+  color: var(--grades-muted);
+  opacity: 1;
+}
+
+.AttemptCollection-module__Iwu-0W__filters label > div > svg {
+  color: var(--grades-muted);
+  left: 17px;
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__filters [role="search"] > button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results.ui-card {
+  box-shadow: none;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results .table-wrap {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results .ui-table {
+  min-width: 0;
+  color: var(--grades-ink);
+  background: none;
+  display: block;
+}
+
+.AttemptCollection-module__Iwu-0W__results thead {
+  display: block;
+}
+
+.AttemptCollection-module__Iwu-0W__results tbody {
+  display: block;
+}
+
+.AttemptCollection-module__Iwu-0W__results thead tr {
+  grid-template-columns: var(--grades-columns);
+  align-items: center;
+  gap: 16px;
+  display: grid;
+}
+
+.AttemptCollection-module__Iwu-0W__results tbody tr {
+  grid-template-columns: var(--grades-columns);
+  align-items: center;
+  gap: 16px;
+  display: grid;
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results thead th {
+  color: var(--grades-ink);
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.AttemptCollection-module__Iwu-0W__results thead tr {
+  padding: 5px 24px 16px 36px;
+}
+
+.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__results thead tr {
+  gap: 12px;
+}
+
+.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__results tbody tr {
+  gap: 12px;
+}
+
+.AttemptCollection-module__Iwu-0W__results tbody {
+  gap: 22px;
+  display: grid;
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results tbody tr {
+  border: 3px solid var(--grades-outline);
+  background: var(--grades-paper);
+  min-height: 154px;
+  box-shadow: var(--grades-shadow);
+  border-radius: 28px;
+  padding: 18px 24px 18px 36px;
+  position: relative;
+}
+
+.AttemptCollection-module__Iwu-0W__results tbody tr:before {
+  content: "";
+  border: 2px solid var(--grades-outline);
+  background: var(--grades-mint);
+  border-radius: 999px;
+  width: 10px;
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  left: 13px;
+  right: auto;
+}
+
+.AttemptCollection-module__Iwu-0W__results tr[data-result-tone="terminated"]:before {
+  background: var(--grades-coral);
+}
+
+.AttemptCollection-module__Iwu-0W__results tr[data-result-tone="automatic"]:before {
+  background: var(--grades-yellow);
+}
+
+.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__results tr[data-result-tone="working"]:before {
+  background: var(--grades-yellow);
+}
+
+.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__results tr[data-result-tone="not-started"]:before {
+  background: var(--student-exam-panel);
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results tbody td {
+  min-width: 0;
+  color: var(--grades-ink);
+  text-align: left;
+  border: 0;
+  padding: 0;
+  font-size: 16px;
+  display: block;
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results tbody td:before {
+  display: none;
+}
+
+.AttemptCollection-module__Iwu-0W__exam {
+  overflow-wrap: anywhere;
+  gap: 4px;
+  min-width: 0;
+  display: grid;
+}
+
+.AttemptCollection-module__Iwu-0W__exam > strong {
+  color: var(--grades-ink);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.AttemptCollection-module__Iwu-0W__exam > span {
+  color: var(--grades-muted);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.AttemptCollection-module__Iwu-0W__score {
+  border: 2px solid var(--grades-outline);
+  background: var(--student-exam-panel);
+  color: var(--primary);
+  box-shadow: 2px 3px 0 var(--grades-outline);
+  white-space: nowrap;
+  border-radius: 18px;
+  align-items: baseline;
+  gap: 4px;
+  padding: 6px 13px;
+  display: inline-flex;
+}
+
+.AttemptCollection-module__Iwu-0W__score > strong {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.AttemptCollection-module__Iwu-0W__score > span {
+  color: var(--grades-muted);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.AttemptCollection-module__Iwu-0W__pendingScore {
+  border: 2px solid var(--grades-outline);
+  background: var(--grades-mint);
+  color: var(--student-exam-accent-ink);
+  border-radius: 999px;
+  align-items: center;
+  padding: 6px 15px;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.5;
+  display: inline-flex;
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results .ui-badge {
+  border: 2px solid var(--grades-outline);
+  background: var(--grades-mint);
+  color: var(--student-exam-accent-ink);
+  border-radius: 999px;
+  align-items: center;
+  padding: 6px 15px;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.5;
+  display: inline-flex;
+}
+
+.AttemptCollection-module__Iwu-0W__pendingScore {
+  background: var(--grades-yellow);
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results [data-result-tone="terminated"] .ui-badge {
+  background: var(--grades-coral);
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results [data-result-tone="automatic"] .ui-badge {
+  background: var(--grades-yellow);
+}
+
+.AttemptCollection-module__Iwu-0W__page.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__results [data-result-tone="working"] .ui-badge {
+  background: var(--grades-yellow);
+}
+
+.AttemptCollection-module__Iwu-0W__page.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__results [data-result-tone="not-started"] .ui-badge {
+  background: var(--student-exam-panel);
+  color: var(--grades-ink);
+}
+
+.AttemptCollection-module__Iwu-0W__attemptNumber {
+  border: 2px solid var(--grades-outline);
+  background: var(--student-exam-panel);
+  min-width: 44px;
+  min-height: 44px;
+  color: var(--primary);
+  box-shadow: 2px 3px 0 var(--grades-outline);
+  font-variant-numeric: tabular-nums;
+  border-radius: 16px;
+  place-items: center;
+  padding: 4px 10px;
+  font-size: 21px;
+  font-weight: 800;
+  display: inline-grid;
+}
+
+.AttemptCollection-module__Iwu-0W__duration {
+  color: var(--grades-ink);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.AttemptCollection-module__Iwu-0W__submittedTime {
+  color: var(--grades-ink);
+  font-variant-numeric: tabular-nums;
+  gap: 3px;
+  font-size: 17px;
+  display: grid;
+}
+
+.AttemptCollection-module__Iwu-0W__submittedTime small {
+  color: var(--grades-muted);
+  font-size: 16px;
+}
+
+.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__submittedTime {
+  font-size: 15px;
+}
+
+.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__submittedTime small {
+  font-size: 14px;
+}
+
+.AttemptCollection-module__Iwu-0W__page.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__results .ui-badge {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__resultLink {
+  border: 3px solid var(--grades-outline);
+  background: var(--grades-yellow);
+  max-width: 100%;
+  min-height: 46px;
+  color: var(--student-exam-accent-ink);
+  box-shadow: 2px 3px 0 var(--grades-outline);
+  border-radius: 999px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 17px;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.4;
+  text-decoration: none;
+  transition: transform .15s, box-shadow .15s;
+  display: inline-flex;
+}
+
+.AttemptCollection-module__Iwu-0W__resultLink svg {
+  flex-shrink: 0;
+}
+
+.AttemptCollection-module__Iwu-0W__page.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__resultLink {
+  gap: 8px;
+  padding-left: 12px;
+  padding-right: 12px;
+  font-size: 13px;
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__resultLink:hover {
+  box-shadow: 3px 4px 0 var(--grades-outline);
+  transform: translate(-1px, -1px);
+}
+
+.AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__resultLink:active {
+  box-shadow: none;
+  transform: translate(2px, 2px);
+}
+
+.AttemptCollection-module__Iwu-0W__page :-webkit-any(a, button, input, select, [tabindex]):focus-visible {
+  outline: 3px solid var(--workspace-topbar-focus);
+  outline-offset: 4px;
+}
+
+.AttemptCollection-module__Iwu-0W__page :-moz-any(a, button, input, select, [tabindex]):focus-visible {
+  outline: 3px solid var(--workspace-topbar-focus);
+  outline-offset: 4px;
+}
+
+.AttemptCollection-module__Iwu-0W__page :is(a, button, input, select, [tabindex]):focus-visible {
+  outline: 3px solid var(--workspace-topbar-focus);
+  outline-offset: 4px;
+}
+
+@container student-grades (width <= 960px) {
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__filters > [role="search"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .AttemptCollection-module__Iwu-0W__filters [role="search"] > label:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@container student-grades (width <= 900px) {
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results thead {
+    clip-path: inset(50%);
+    white-space: nowrap;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    position: absolute;
+    overflow: hidden;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results tbody tr {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px 20px;
+    padding: 22px 22px 22px 36px;
+  }
+
+  .AttemptCollection-module__Iwu-0W__results tbody td:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results tbody td:nth-child(2) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+    display: flex;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results tbody td:nth-child(3) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+    display: flex;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results tbody td:nth-child(4) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+    display: flex;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results tbody td:nth-child(2):before {
+    content: attr(data-label);
+    color: var(--grades-muted);
+    font-size: 13px;
+    font-weight: 700;
+    display: block;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results tbody td:nth-child(3):before {
+    content: attr(data-label);
+    color: var(--grades-muted);
+    font-size: 13px;
+    font-weight: 700;
+    display: block;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results tbody td:nth-child(4):before {
+    content: attr(data-label);
+    color: var(--grades-muted);
+    font-size: 13px;
+    font-weight: 700;
+    display: block;
+  }
+
+  .AttemptCollection-module__Iwu-0W__results tbody td:last-child {
+    align-self: end;
+  }
+}
+
+@container student-grades (width <= 1000px) {
+  .AttemptCollection-module__Iwu-0W__page.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__results thead {
+    clip-path: inset(50%);
+    white-space: nowrap;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    position: absolute;
+    overflow: hidden;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__results tbody tr {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+    gap: 20px;
+    padding: 22px 22px 22px 36px;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__results tbody td:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__results tbody td:not(:first-child):not(:last-child) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+    display: flex;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__results tbody td:not(:first-child):not(:last-child):before {
+    content: attr(data-label);
+    color: var(--grades-muted);
+    font-size: 13px;
+    font-weight: 700;
+    display: block;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__results tbody td:last-child {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}
+
+@container student-grades (width <= 600px) {
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__filters > [role="search"] {
+    border-radius: 24px;
+    gap: 18px 12px;
+    padding: 20px 16px;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__filters .ui-field {
+    border-radius: 14px;
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 14px;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__filters input[type="search"] {
+    padding-left: 42px;
+    padding-right: 38px;
+    font-size: 16px;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__filters [role="search"] input[type="search"] {
+    border-radius: 14px;
+  }
+
+  .AttemptCollection-module__Iwu-0W__filters [role="search"] > label {
+    font-size: 14px;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results tbody tr {
+    border-radius: 24px;
+    gap: 18px 12px;
+    padding: 20px 16px 20px 30px;
+  }
+
+  .AttemptCollection-module__Iwu-0W__results tbody tr:before {
+    width: 8px;
+    left: 10px;
+  }
+
+  .AttemptCollection-module__Iwu-0W__exam > strong {
+    font-size: 19px;
+  }
+
+  .AttemptCollection-module__Iwu-0W__exam > span {
+    font-size: 14px;
+  }
+
+  .AttemptCollection-module__Iwu-0W__pendingScore {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results .ui-badge {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__results tbody td:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__resultLink {
+    width: 100%;
+  }
+
+  .AttemptCollection-module__Iwu-0W__submittedTime {
+    font-size: 16px;
+  }
+
+  .AttemptCollection-module__Iwu-0W__submittedTime small {
+    font-size: 14px;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__results tbody tr {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 12px;
+    padding: 20px 16px 20px 30px;
+  }
+
+  .AttemptCollection-module__Iwu-0W__page.AttemptCollection-module__Iwu-0W__history .AttemptCollection-module__Iwu-0W__results tbody td:last-child {
+    width: 100%;
+  }
+}
+
+@container student-grades (width <= 360px) {
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__filters > [role="search"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .AttemptCollection-module__Iwu-0W__page .AttemptCollection-module__Iwu-0W__resultLink {
+    transition: none;
+  }
+}
+
+/*# sourceMappingURL=components_student_AttemptCollection_module_css_bad6b30c._.single.css.map*/

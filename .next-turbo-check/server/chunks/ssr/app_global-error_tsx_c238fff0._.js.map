@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///D:/ChauAnh/PBL6%20new/app/global-error.tsx"],"sourcesContent":["\"use client\";\n\nexport default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {\n  return <html lang=\"vi\"><body><main className=\"route-error\" role=\"alert\"><div className=\"route-error-card\"><p className=\"eyebrow\">Hệ thống</p><h1>Ứng dụng cần được tải lại</h1><p>Đã xảy ra lỗi ngoài dự kiến.</p><button className=\"ui-button ui-button-warning ui-button-md\" onClick={() => reset()}>Tải lại</button></div></main></body></html>;\n}\n"],"names":[],"mappings":";;;;;AAAA;;AAEe,SAAS,YAAY,EAAE,KAAK,EAA6D;IACtG,qBAAO,8OAAC;QAAK,MAAK;kBAAK,cAAA,8OAAC;sBAAK,cAAA,8OAAC;gBAAK,WAAU;gBAAc,MAAK;0BAAQ,cAAA,8OAAC;oBAAI,WAAU;;sCAAmB,8OAAC;4BAAE,WAAU;sCAAU;;;;;;sCAAY,8OAAC;sCAAG;;;;;;sCAA8B,8OAAC;sCAAE;;;;;;sCAAgC,8OAAC;4BAAO,WAAU;4BAA2C,SAAS,IAAM;sCAAS;;;;;;;;;;;;;;;;;;;;;;;;;;;AACzS","debugId":null}}]
+}

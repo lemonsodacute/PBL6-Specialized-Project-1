@@ -13,9 +13,9 @@ export const adminNavItems: readonly AdminNavItem[] = [
   ] },
   { label: 'Quản lý đề thi', href: '/dashboard/exams' },
   { label: 'Tin nhắn', href: '/admin/messages' },
-  { label: 'AI Support', children: [
-    { label: 'Knowledge Base', href: '/admin/ai-support/knowledge' },
-    { label: 'AI Activity', href: '/admin/ai-support/activity' },
+  { label: 'Hỗ trợ AI', children: [
+    { label: 'Kho tri thức', href: '/admin/ai-support/knowledge' },
+    { label: 'Hoạt động AI', href: '/admin/ai-support/activity' },
   ] },
   { label: 'Báo cáo & thống kê', href: '/dashboard/reports' },
   { label: 'Nhật ký hệ thống', href: '/dashboard/action-logs', activePaths: ['/admin/action-logs'] },

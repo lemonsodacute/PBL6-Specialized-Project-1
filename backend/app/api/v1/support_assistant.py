@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import func, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -16,8 +17,10 @@ from app.core.config import get_settings
 from app.core.database import get_db
 from app.models.entities import AttemptStatus, ExamAttempt, SupportConversation, SupportSession, SupportTurn, SupportMessage, User, UserRole
 from app.services import support_knowledge as kb, support_realtime as realtime
+from app.services import support_academic as academic
 from app.services.support_assistant_provider import get_support_provider, SupportProviderUnavailable, SupportProviderNotConfigured
-from app.services.ai_provider import provider_configured, provider_status, ai_trace
+from app.services.ai_provider import AIProviderError, provider_configured, provider_status, ai_trace
+from app.services.support_academic_presentation import format_academic_answer
 from app.services.ai_metrics import measure
 from app.services.audit import record_audit
 from app.models.entities import AIActivity
@@ -83,6 +86,20 @@ def snapshot(db, row):
     category = kb.category_for(row.role, row.category)
     active_articles = {a['id'] for a in kb.articles(db) if a['role'] == row.role and a['is_active']}
     topic = next((item for item in (category or {}).get('topics', []) if item['id'] == row.topic), None)
+    owner = db.get(User, row.user_id)
+    messages, scope_cache = [], {}
+    for turn in turns(db, row):
+        data_sources = [s for s in turn.sources if s.get('kind') == 'system_data']
+        authorized = True
+        for source in data_sources:
+            key = json.dumps(source.get('scope', {}), sort_keys=True)
+            if key not in scope_cache:
+                scope_cache[key] = owner.role == UserRole(row.role) and owner.is_active and academic.source_still_authorized(db, owner, source)
+            authorized = authorized and scope_cache[key]
+        messages.append({'id': turn.id, 'user_text': turn.user_text,
+            'assistant_text': turn.assistant_text if authorized else 'Dữ liệu trong câu trả lời này không còn thuộc phạm vi bạn được phép xem.',
+            'action': turn.action, 'sources': turn.sources if authorized else [],
+            'used_provider': turn.used_provider, 'created_at': turn.created_at})
     return {'id': row.id, 'status': row.status, 'phase': row.phase, 'category': row.category,
         'title': ' · '.join(filter(None, [(category or {}).get('label', 'Vấn đề khác'), (topic or {}).get('label')])),
         'topic': row.topic, 'created_at': row.created_at, 'updated_at': row.updated_at,
@@ -91,11 +108,10 @@ def snapshot(db, row):
         'provider_error': provider_status()['error'],
         'ai_error': row.summary.get('ai_error') if row.phase == 'UNAVAILABLE' else None,
         'support_error': row.summary.get('support_error') if row.phase == 'ESCALATE' else None,
-        'conversation_id': row.conversation_id, 'summary': row.summary, 'greeting': GREETING,
+        'conversation_id': row.conversation_id, 'summary': {k: v for k, v in row.summary.items() if k not in ('data_pending', 'data_retry', 'data_context')}, 'greeting': GREETING,
         'categories': [{'id': c['id'], 'label': c['label']} for c in kb.categories(row.role)],
         'topics': [{'id': t['id'], 'label': t['label']} for t in (category or {}).get('topics', []) if t['article_id'] in active_articles],
-        'messages': [{'id': t.id, 'user_text': t.user_text, 'assistant_text': t.assistant_text,
-                      'action': t.action, 'sources': t.sources, 'used_provider': t.used_provider, 'created_at': t.created_at} for t in turns(db, row)]}
+        'messages': messages}
 
 
 def close_session(db, row, actor):
@@ -198,7 +214,60 @@ def answer_from_articles(row, articles):
     return text, sources
 
 
-def provider_answer(db, row, query, body):
+def provider_budget_available(db, row):
+    settings = get_settings()
+    now = datetime.now(timezone.utc)
+    for since, limit in ((now - timedelta(minutes=1), settings.SUPPORT_AI_PER_MINUTE),
+            (now - timedelta(days=1), settings.SUPPORT_AI_PER_DAY)):
+        count = db.scalar(select(func.count()).select_from(SupportTurn).join(SupportSession).where(
+            SupportSession.user_id == row.user_id, SupportTurn.used_provider.is_(True), SupportTurn.created_at > since))
+        if count >= limit:
+            return False
+    return True
+
+
+def provider_answer(db, row, query, body, user):
+    lookup = (academic.Lookup.model_validate(row.summary['data_retry'])
+        if body.action == 'retry' and row.summary.get('data_retry') else
+        academic.detect_lookup(query) or academic.resolve_followup(query, row.summary.get('data_pending')))
+    if lookup:
+        lookup = academic.resolve_context(lookup, row.summary.get('data_context'))
+        try:
+            # Roll back only the failed lookup, retaining session locks and allowing
+            # a safe failure response/audit without falling through to KB or an LLM.
+            with db.begin_nested():
+                result = academic.execute_lookup(db, user, lookup)
+        except HTTPException as exc:
+            if exc.status_code not in (403, 404):
+                raise
+            result = {'academic_report': True, 'status': 'denied'}
+            record_audit(db, action='AI_SUPPORT_DATA_ACCESS', user_id=user.id, entity_type='support_session', entity_id=row.id,
+                metadata={'intent': lookup.intent, 'tool': 'academic_lookup', 'outcome': 'denied', 'success': False})
+        except (SQLAlchemyError, TimeoutError):
+            result = {'status': 'unavailable'}
+            record_audit(db, action='AI_SUPPORT_DATA_ACCESS', user_id=user.id, entity_type='support_session', entity_id=row.id,
+                metadata={'intent': lookup.intent, 'tool': 'academic_lookup', 'outcome': 'unavailable', 'success': False})
+        answer, sources, pending = academic.format_result(result, lookup)
+        row.phase = 'UNAVAILABLE' if result['status'] == 'unavailable' else 'DATA'
+        row.summary = {k: v for k, v in row.summary.items() if k not in ('data_pending', 'data_retry', 'data_context', 'ai_error', 'support_error')}
+        if pending:
+            row.summary = {**row.summary, 'data_pending': pending}
+        context = academic.result_context(result, lookup)
+        if context is not None:
+            row.summary = {**row.summary, 'data_context': context}
+        if result['status'] == 'unavailable':
+            row.summary = {**row.summary, 'data_retry': lookup.model_dump(mode='json')}
+        used_provider = False
+        if result['status'] in ('report', 'results') and provider_configured() and provider_budget_available(db, row):
+            used_provider = True
+            try:
+                answer = format_academic_answer(answer, result, lookup.intent)
+            except AIProviderError as exc:
+                # A presentation failure never removes valid DB facts or turns
+                # into a generated academic answer. No raw provider errors logged.
+                ai_trace('academic_presentation', feature='support', parse_success=False, error_code=exc.code)
+        return answer, sources, used_provider
+    row.summary = {key: value for key, value in row.summary.items() if key not in ('data_pending', 'data_retry', 'data_context')}
     row.summary = {key: value for key, value in row.summary.items() if key not in ('ai_error', 'support_error')}
     if kb.is_greeting(query):
         row.phase = 'CATEGORY'; row.category = None; row.topic = None
@@ -230,15 +299,10 @@ def provider_answer(db, row, query, body):
     if immediate or not articles:
         answer, sources = answer_from_articles(row, immediate)
         return answer, sources, False
-    settings = get_settings()
-    now = datetime.now(timezone.utc)
-    for since, limit in ((now - timedelta(minutes=1), settings.SUPPORT_AI_PER_MINUTE), (now - timedelta(days=1), settings.SUPPORT_AI_PER_DAY)):
-        count = db.scalar(select(func.count()).select_from(SupportTurn).join(SupportSession).where(
-            SupportSession.user_id == row.user_id, SupportTurn.used_provider.is_(True), SupportTurn.created_at > since))
-        if count >= limit:
-            row.phase = 'UNAVAILABLE'
-            row.summary = {**row.summary, 'ai_error': {'code': 'AI_RATE_LIMITED', 'message': 'Đã đạt giới hạn AI tạm thời. Vui lòng thử lại sau.'}}
-            return 'Đã đạt giới hạn AI tạm thời. Vui lòng thử lại sau. Bạn có thể liên hệ System Admin để được hỗ trợ.', [], False
+    if not provider_budget_available(db, row):
+        row.phase = 'UNAVAILABLE'
+        row.summary = {**row.summary, 'ai_error': {'code': 'AI_RATE_LIMITED', 'message': 'Đã đạt giới hạn AI tạm thời. Vui lòng thử lại sau.'}}
+        return 'Đã đạt giới hạn AI tạm thời. Vui lòng thử lại sau. Bạn có thể liên hệ System Admin để được hỗ trợ.', [], False
     # Only an allowlisted, query-free help route may enter provider context.
     route = body.route.split('?')[0].split('#')[0]
     if route not in {a['route'].split('?')[0].split('#')[0] for a in kb.articles(db) if a['role'] == row.role and a['is_active']}:
@@ -270,13 +334,13 @@ def build_summary(db, row):
     history = turns(db, row)
     category = kb.category_for(row.role, row.category)
     issues = [kb.redact(t.user_text) for t in history if t.action in ('topic', 'message') and t.user_text and not kb.is_greeting(t.user_text)]
-    steps = list(dict.fromkeys(step for t in history for source in t.sources for step in source['steps']))
+    steps = list(dict.fromkeys(step for t in history for source in t.sources if source.get('kind') != 'system_data' for step in source['steps']))
     confirmed = bool(row.summary.get('confirmed_unresolved'))
     error = row.summary.get('ai_error') if row.phase == 'UNAVAILABLE' else None
     error = error or provider_status()['error']
     owner = db.get(User, row.user_id)
     topic = next((item for item in (category or {}).get('topics', []) if item['id'] == row.topic), None)
-    articles = {a['id']: {'id': a['id'], 'title': a['title'], 'route': a['route']} for t in history for a in t.sources}
+    articles = {a['id']: {'id': a['id'], 'title': a['title'], 'route': a['route']} for t in history for a in t.sources if a.get('kind') != 'system_data'}
     articles.update({a['id']: a for a in row.summary.get('retrieved_articles', [])})
     return {'user_name': owner.full_name, 'role': row.role, 'student_code': owner.student_code,
         'category': (category or {}).get('label', 'Vấn đề khác'), 'subcategory': (topic or {}).get('label'),
@@ -328,6 +392,7 @@ def command(session_id: UUID, body: Command, background_tasks: BackgroundTasks,
             if not category:
                 raise HTTPException(422, 'Category not available for your role')
             row.category = body.value; row.topic = None; row.phase = 'DETAIL'
+            row.summary = {k: v for k, v in row.summary.items() if k not in ('data_pending', 'data_retry', 'data_context')}
             user_text = category['label']; answer = 'Bạn đang gặp vấn đề gì? Chọn nội dung bên dưới hoặc mô tả chi tiết.'
         elif body.action == 'clarify':
             if row.summary.get('support_error', {}).get('code') != 'SUPPORT_KNOWLEDGE_NOT_FOUND' or row.phase != 'ESCALATE':
@@ -356,9 +421,11 @@ def command(session_id: UUID, body: Command, background_tasks: BackgroundTasks,
             else:
                 if not user_text:
                     raise HTTPException(422, 'Enter a support question')
-                query = user_text
+                # Resolve MSSV before outbound-AI redaction. The stored user turn
+                # remains redacted, and the RAG provider still receives kb.redact().
+                query = body.text
             with measure() as metrics:
-                answer, sources, used_provider = provider_answer(db, row, query, body)
+                answer, sources, used_provider = provider_answer(db, row, query, body, user)
             metrics.update(success=row.phase != 'UNAVAILABLE', error_code=(row.summary.get('ai_error') or {}).get('code'),
                 kb_miss=(row.summary.get('support_error') or {}).get('code') == 'SUPPORT_KNOWLEDGE_NOT_FOUND')
             db.add(AIActivity(id=uuid4(), feature='support', actor_id=user.id, session_id=row.id,

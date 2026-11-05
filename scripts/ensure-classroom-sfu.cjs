@@ -14,7 +14,7 @@ if (['ws://localhost:7880', 'ws://127.0.0.1:7880'].includes(url)) {
     const powershell = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
     const result = spawnSync(powershell, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'start-classroom-sfu.ps1'), '-Background'], { cwd: root, stdio: 'inherit', windowsHide: true });
     if (result.error || result.status !== 0) {
-      console.error('[classroom] Could not start local LiveKit. Run scripts/start-classroom-sfu.ps1 and inspect its diagnostic.');
+      console.error('[classroom] Could not start local LiveKit. Follow the diagnostic above; retry with npm run dev:sfu.');
       process.exit(result.status || 1);
     }
   }

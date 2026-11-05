@@ -19,7 +19,7 @@ from app.core.config import Settings
 from app.core.database import get_db
 from app.core.security import create_access_token
 from app.main import app
-from app.models.entities import Class, ClassAttendance, ClassEnrollment, LiveClass, StudentCardReference, User, UserRole
+from app.models.entities import Class, ClassAttendance, ClassEnrollment, ClassRecording, LiveClass, StudentCardReference, User, UserRole
 from app.services.classroom_attendance import connected, disconnected, utc
 from app.services.classroom_provider import LiveKitProvider, get_classroom_provider, room_name
 
@@ -33,6 +33,9 @@ class TestProvider(LiveKitProvider):
         self.closed = []
         self.removed = []
         self.fail_close = False
+        self.events = []
+        self.policies = []
+        self.updated = []
 
     async def ensure_room(self, name): self.created.append(name)
     async def close_room(self, name):
@@ -40,6 +43,11 @@ class TestProvider(LiveKitProvider):
         self.closed.append(name)
     async def participant(self, name, identity): return self.current.get(identity)
     async def remove(self, name, identity): self.removed.append(identity); self.current.pop(identity, None)
+    async def participants(self, name): return list(self.current.values())
+    async def metadata(self, item, value): self.policies.append(value['policy'].copy())
+    async def permissions(self, item, participant, value): self.updated.append(value)
+    async def send(self, name, topic, value, identities=None): self.events.append((topic, value, identities))
+    async def mute(self, name, participant): self.events.append(('mute', participant.identity))
 
 
 class LiveClassroomTests(TestCase):
@@ -50,7 +58,7 @@ class LiveClassroomTests(TestCase):
         def configure(connection, _):
             connection.execute('PRAGMA foreign_keys=ON')
             connection.create_function('gen_random_uuid', 0, lambda: uuid4().hex)
-        for model in (User, StudentCardReference, Class, ClassEnrollment, LiveClass, ClassAttendance): model.__table__.create(self.engine)
+        for model in (User, StudentCardReference, Class, ClassEnrollment, LiveClass, ClassAttendance, ClassRecording): model.__table__.create(self.engine)
         self.db = self.enterContext(Session(self.engine, expire_on_commit=False))
         self.teacher, self.other, self.student, self.outsider = [User(id=uuid4(), full_name='Classroom Test', email=f'{uuid4()}@example.test', password_hash='unused', role=role, is_active=True) for role in (UserRole.teacher, UserRole.teacher, UserRole.student, UserRole.student)]
         self.db.add_all([self.teacher, self.other, self.student, self.outsider]); self.db.flush()
@@ -59,6 +67,7 @@ class LiveClassroomTests(TestCase):
         self.db.add_all([self.cls, self.other_cls]); self.db.flush()
         self.db.add(ClassEnrollment(id=uuid4(), class_id=self.cls.id, student_id=self.student.id)); self.db.commit()
         self.provider = TestProvider()
+        self.notifications = self.enterContext(patch('app.api.v1.live_classes.create_notification'))
         self.enterContext(patch.dict(app.dependency_overrides, {get_db: lambda: self.db, get_classroom_provider: lambda: self.provider}))
         self.enterContext(patch('app.api.v1.live_classes.get_classroom_provider', return_value=self.provider))
         self.enterContext(patch('app.services.classroom_lifecycle.get_settings', return_value=Settings(_env_file=None)))
@@ -83,7 +92,7 @@ class LiveClassroomTests(TestCase):
     def live(self): self.assertEqual(self.post('start').status_code, 200)
 
     def connect(self, sid='PA_current'):
-        self.provider.current[str(self.student.id)] = SimpleNamespace(sid=sid)
+        self.provider.current[str(self.student.id)] = SimpleNamespace(sid=sid, identity=str(self.student.id), metadata='{}', tracks=[])
         return self.post('join', self.student, {'participant_sid': sid})
 
     def webhook(self, event_name, sid, *, at=None, signed=True):
@@ -257,5 +266,121 @@ class LiveClassroomTests(TestCase):
         self.assertEqual(self.post('leave', self.student, {'participant_sid': 'PA_current'}).status_code, 200)
         rows = self.client.get(f'/api/v1/live-classes/{self.id}/attendance', headers=self.headers()).json()['data']
         self.assertEqual(len(rows), 1); self.assertIsNotNone(rows[0]['left_at'])
+
+    def test_waiting_room_admission_required_before_token_and_join(self):
+        self.live()
+        self.assertEqual(self.post('policy', body={'waiting_room': True}).status_code, 200)
+        self.assertEqual(self.post('admission', self.student).json()['data']['status'], 'waiting')
+        self.assertIsNone(self.row())
+        self.assertEqual(self.post('token', self.student).json()['error']['code'], 'WAITING_FOR_ADMISSION')
+        waiting = self.client.get(f'/api/v1/live-classes/{self.id}', headers=self.headers()).json()['data']['waiting']
+        self.assertEqual(waiting[0]['id'], str(self.student.id))
+        self.assertEqual(self.post('actions', self.student, {'action': 'admit_all'}).status_code, 403)
+        self.assertEqual(self.post('actions', body={'action': 'admit_all'}).status_code, 200)
+        self.assertEqual(self.post('token', self.student).status_code, 200)
+        self.assertEqual(self.connect().status_code, 200)
+
+    def test_rejection_and_removal_block_tokens_and_stale_signed_join(self):
+        self.live(); self.connect()
+        self.assertEqual(self.post('actions', body={'action': 'remove', 'participant_id': str(self.student.id)}).status_code, 200)
+        self.assertIn(str(self.student.id), self.provider.removed)
+        self.assertIsNone(self.row().active_since)
+        for action in ('token', 'admission'):
+            self.assertEqual(self.post(action, self.student).json()['error']['code'], 'REMOVED_BY_TEACHER')
+        self.assertEqual(self.webhook('participant_joined', 'PA_stale').status_code, 200)
+        self.assertEqual(self.provider.removed.count(str(self.student.id)), 2)
+
+    def test_lock_blocks_new_entry_but_keeps_connected_participants(self):
+        self.live()
+        self.assertEqual(self.post('policy', body={'locked': True}).status_code, 200)
+        self.assertEqual(self.post('token', self.student).json()['error']['code'], 'ROOM_LOCKED')
+        self.assertEqual(self.post('token').status_code, 200)
+        self.post('policy', body={'locked': False}); self.connect()
+        self.post('policy', body={'locked': True})
+        self.assertEqual(self.connect().status_code, 200)
+        self.post('leave', self.student, {'participant_sid': 'PA_current'})
+        self.assertEqual(self.post('token', self.student).json()['error']['code'], 'ROOM_LOCKED')
+
+    def test_policy_enforces_signed_track_sources_and_host_retains_share(self):
+        self.live()
+        self.post('policy', body={'unmute': False, 'screen_share': False})
+        for actor, expected in ((self.student, ['camera']), (self.teacher, ['camera', 'microphone', 'screen_share', 'screen_share_audio'])):
+            data = self.post('token', actor).json()['data']
+            claims = jwt.decode(data['token'], self.provider.settings.LIVEKIT_API_SECRET, algorithms=['HS256'])
+            self.assertEqual(claims['video']['canPublishSources'], expected)
+        self.assertEqual(self.post('policy', self.student, {'chat': False}).status_code, 403)
+        self.assertEqual(self.post('policy', self.other, {'chat': False}).status_code, 404)
+
+    def test_provider_leave_ends_lock_exemption_but_stale_leave_does_not(self):
+        self.live(); self.connect('PA_old'); self.connect('PA_new')
+        self.post('policy', body={'locked': True})
+        self.webhook('participant_left', 'PA_old')
+        self.assertEqual(self.post('token', self.student).status_code, 200)
+        self.webhook('participant_left', 'PA_new')
+        self.assertEqual(self.post('token', self.student).json()['error']['code'], 'ROOM_LOCKED')
+
+    def test_chat_cannot_bypass_host_policy_or_spoof_sender(self):
+        self.live(); self.connect()
+        sent = self.post('chat', self.student, {'text': 'Hello classroom', 'name': 'Forged teacher'})
+        self.assertEqual(sent.status_code, 200)
+        self.assertEqual(sent.json()['data']['sender'], str(self.student.id))
+        self.assertEqual(sent.json()['data']['name'], self.student.full_name)
+        self.assertEqual(self.provider.events[-1][0], 'classroom-chat')
+        self.post('policy', body={'chat': False})
+        self.assertEqual(self.post('chat', self.student, {'text': 'Blocked'}).json()['error']['code'], 'CHAT_DISABLED')
+        self.assertEqual(self.post('chat', self.outsider, {'text': 'Blocked'}).status_code, 404)
+        self.assertEqual(self.post('chat', self.student, {'text': 'x' * 1001}).status_code, 422)
+
+    def test_hand_order_persists_until_lowered_by_owner_or_host(self):
+        self.live(); self.connect()
+        first = self.post('hand', self.student, {'raised': True}).json()['data']['raised_at']
+        second = self.post('hand', self.student, {'raised': True}).json()['data']['raised_at']
+        self.assertEqual(first, second)
+        self.post('actions', body={'action': 'lower_hand', 'participant_id': str(self.student.id)})
+        self.assertIsNone(self.provider.updated[-1]['members'][str(self.student.id)]['hand'])
+        self.assertEqual(self.post('hand', self.student, {'raised': False}).status_code, 200)
+        self.assertEqual(self.post('actions', self.student, {'action': 'lower_all'}).status_code, 403)
+
+    def test_mute_and_request_unmute_are_separate_and_never_remote_unmute(self):
+        self.live(); self.connect()
+        self.assertEqual(self.post('actions', body={'action': 'mute_all'}).status_code, 200)
+        self.assertEqual(self.provider.events[-1], ('mute', str(self.student.id)))
+        self.assertEqual(self.post('actions', body={'action': 'request_unmute', 'participant_id': str(self.student.id)}).status_code, 200)
+        self.assertEqual(self.provider.events[-1], ('classroom-control', {'type': 'request_unmute'}, [str(self.student.id)]))
+        self.post('policy', body={'unmute': False})
+        self.assertEqual(self.post('actions', body={'action': 'request_unmute', 'participant_id': str(self.student.id)}).status_code, 409)
+
+    def test_failed_projection_is_durable_and_restricts_future_tokens(self):
+        self.live()
+        with patch.object(self.provider, 'metadata', AsyncMock(side_effect=HTTPException(503))):
+            self.assertEqual(self.post('policy', body={'locked': True}).status_code, 503)
+        item = self.db.get(LiveClass, UUID(self.id))
+        self.assertTrue(item.controls_sync_pending)
+        self.assertEqual(self.post('token', self.student).json()['error']['code'], 'ROOM_LOCKED')
+
+    def test_waiting_roster_is_private_and_notifications_reuse_existing_service(self):
+        self.live(); self.assertTrue(self.notifications.called)
+        self.post('policy', body={'waiting_room': True}); self.post('admission', self.student)
+        own = self.client.get(f'/api/v1/live-classes/{self.id}', headers=self.headers(self.student)).json()['data']
+        self.assertEqual(own['waiting'], [])
+        self.assertNotIn('members', own)
+
+    def test_provider_updates_actual_grants_and_mutes_only_audio(self):
+        import asyncio
+        from app.services.classroom_controls import state
+        real = LiveKitProvider()
+        participant = api.ParticipantInfo(identity=str(self.student.id), metadata='{}', tracks=[
+            api.TrackInfo(sid='TR_microphone', source=api.TrackSource.MICROPHONE),
+            api.TrackInfo(sid='TR_camera', source=api.TrackSource.CAMERA)])
+        self.live()
+        item = self.db.get(LiveClass, UUID(self.id))
+        value = state(item); value['policy']['unmute'] = False
+        with patch.object(real, '_call', AsyncMock()) as remote:
+            asyncio.run(real.permissions(item, participant, value))
+            request = remote.call_args.args[1]
+            self.assertEqual(list(request.permission.can_publish_sources), [api.TrackSource.CAMERA])
+            asyncio.run(real.mute(room_name(item.id), participant))
+            request = remote.call_args.args[1]
+            self.assertEqual(request.track_sid, 'TR_microphone'); self.assertTrue(request.muted)
 
 

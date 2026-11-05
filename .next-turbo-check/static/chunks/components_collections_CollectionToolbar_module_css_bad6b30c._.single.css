@@ -1,0 +1,245 @@
+/* [project]/components/collections/CollectionToolbar.module.css [app-client] (css) */
+.CollectionToolbar-module___0OfPa__toolbar {
+  margin: 0 0 var(--layout-gap);
+  border: 1px solid var(--border);
+  border-radius: var(--panel-radius);
+  background: var(--surface-muted);
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  display: flex;
+}
+
+.CollectionToolbar-module___0OfPa__toolbarWithActions {
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  min-width: 0;
+  display: flex;
+}
+
+.CollectionToolbar-module___0OfPa__toolbarWithActions:has( + *) {
+  margin-bottom: 20px;
+}
+
+.CollectionToolbar-module___0OfPa__toolbarWithActions > .CollectionToolbar-module___0OfPa__toolbar {
+  flex: 540px;
+  margin-bottom: 0;
+}
+
+.CollectionToolbar-module___0OfPa__actions {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin-left: auto;
+  display: flex;
+}
+
+.CollectionToolbar-module___0OfPa__mascotActions {
+  position: relative;
+}
+
+.CollectionToolbar-module___0OfPa__toolbarMascot {
+  pointer-events: none;
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 24px;
+}
+
+.CollectionToolbar-module___0OfPa__toolbarMascot[hidden] {
+  display: none;
+}
+
+.CollectionToolbar-module___0OfPa__toolbarMascot svg {
+  max-width: none;
+  height: 100%;
+}
+
+@media (max-width: 767px) {
+  .CollectionToolbar-module___0OfPa__toolbarMascot {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .CollectionToolbar-module___0OfPa__toolbarWithActions > .CollectionToolbar-module___0OfPa__toolbar, .CollectionToolbar-module___0OfPa__actions {
+    flex-basis: 100%;
+  }
+
+  .CollectionToolbar-module___0OfPa__actions > * {
+    flex: auto;
+  }
+}
+
+.CollectionToolbar-module___0OfPa__field {
+  min-width: 120px;
+  color: var(--text-secondary);
+  flex: 140px;
+  gap: 8px;
+  font-size: 13px;
+  display: grid;
+}
+
+.CollectionToolbar-module___0OfPa__field:has(input[type="date"]) {
+  min-width: min(100%, 168px);
+}
+
+.CollectionToolbar-module___0OfPa__field:has(input[type="datetime-local"]) {
+  min-width: min(100%, 240px);
+}
+
+.CollectionToolbar-module___0OfPa__searchField {
+  flex: 2 260px;
+}
+
+.CollectionToolbar-module___0OfPa__search {
+  align-items: center;
+  display: flex;
+  position: relative;
+}
+
+.CollectionToolbar-module___0OfPa__search > svg {
+  pointer-events: none;
+  width: 18px;
+  height: 18px;
+  color: var(--text-secondary);
+  position: absolute;
+  left: 12px;
+}
+
+.CollectionToolbar-module___0OfPa__search input {
+  min-width: 0;
+  height: 44px;
+  padding-left: 40px;
+  padding-right: 44px;
+}
+
+.CollectionToolbar-module___0OfPa__clearSearch {
+  width: 40px;
+  height: 40px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  background: none;
+  border: 0;
+  place-items: center;
+  padding: 4px;
+  display: grid;
+  position: absolute;
+  right: 2px;
+}
+
+.CollectionToolbar-module___0OfPa__search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.CollectionToolbar-module___0OfPa__field select, .CollectionToolbar-module___0OfPa__field input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+}
+
+.CollectionToolbar-module___0OfPa__lookupControl {
+  gap: 6px;
+  min-width: 0;
+  display: flex;
+}
+
+.CollectionToolbar-module___0OfPa__lookupControl select {
+  flex: 1;
+  width: 0;
+}
+
+.CollectionToolbar-module___0OfPa__lookupControl button {
+  height: 44px;
+}
+
+.CollectionToolbar-module___0OfPa__extraFilters {
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  flex-basis: 100%;
+  gap: 16px;
+  padding-top: 16px;
+  display: flex;
+}
+
+.CollectionToolbar-module___0OfPa__pagination {
+  margin: var(--layout-gap) 0;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-top: 16px;
+  font-size: 13px;
+  display: flex;
+}
+
+.CollectionToolbar-module___0OfPa__pages {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  display: flex;
+}
+
+.CollectionToolbar-module___0OfPa__pages button {
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+}
+
+.CollectionToolbar-module___0OfPa__pages > span {
+  align-items: center;
+  gap: 6px;
+  display: inline-flex;
+}
+
+.CollectionToolbar-module___0OfPa__pageSize {
+  white-space: nowrap;
+  align-items: center;
+  gap: 8px;
+  display: flex;
+}
+
+.CollectionToolbar-module___0OfPa__pageSize select {
+  width: 80px;
+}
+
+.CollectionToolbar-module___0OfPa__empty {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 28px 12px;
+}
+
+@media (max-width: 600px) {
+  .CollectionToolbar-module___0OfPa__field {
+    flex-basis: calc(50% - 6px);
+    min-width: 0;
+  }
+
+  .CollectionToolbar-module___0OfPa__toolbar .CollectionToolbar-module___0OfPa__searchField {
+    flex-basis: 100%;
+  }
+
+  .CollectionToolbar-module___0OfPa__pagination {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    display: grid;
+  }
+
+  .CollectionToolbar-module___0OfPa__pagination > [role="status"] {
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+
+  .CollectionToolbar-module___0OfPa__pages {
+    grid-column: 1 / -1;
+  }
+}
+
+/*# sourceMappingURL=components_collections_CollectionToolbar_module_css_bad6b30c._.single.css.map*/

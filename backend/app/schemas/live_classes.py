@@ -1,5 +1,6 @@
 from datetime import datetime
 from uuid import UUID
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -29,3 +30,24 @@ class LiveClassCreate(BaseModel):
 
 class ClassroomConnection(BaseModel):
     participant_sid: str = Field(min_length=1, max_length=100, pattern=r'^PA_[a-zA-Z0-9_-]+$')
+
+
+class ClassroomPolicyPatch(BaseModel):
+    chat: bool | None = None
+    screen_share: bool | None = None
+    unmute: bool | None = None
+    waiting_room: bool | None = None
+    locked: bool | None = None
+
+
+class ClassroomAction(BaseModel):
+    action: Literal['admit', 'reject', 'admit_all', 'mute', 'mute_all', 'request_unmute', 'remove', 'lower_hand', 'lower_all']
+    participant_id: UUID | None = None
+
+
+class ClassroomHand(BaseModel):
+    raised: bool
+
+
+class ClassroomMessage(BaseModel):
+    text: str = Field(min_length=1, max_length=1000)

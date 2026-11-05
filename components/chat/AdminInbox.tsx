@@ -1,12 +1,14 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Inbox, MessagesSquare, Search } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthContext';
 import { supportChat, supportRole, chatTime, type SupportConversation as Conversation } from '@/lib/support-chat';
 import { notificationTime } from '@/lib/notifications';
 import { useSupportChat } from './SupportChatProvider';
 import { SupportConversation } from './SupportConversation';
-import styles from './SupportChat.module.css';
+import { borderProps } from '@/components/ui/Border';
+import styles from './AdminInbox.module.css';
 
 const filters = [['all', 'Đang hỗ trợ'], ['unread', 'Chưa đọc'], ['student', 'Sinh viên'], ['teacher', 'Giảng viên'], ['closed', 'Đã đóng']];
 export function AdminInbox() {
@@ -57,15 +59,17 @@ export function AdminInbox() {
   if (user?.role !== 'admin') return null;
   return <div className={styles.inboxPage}>
     <div className={styles.pageHeading}><h1 className="workspace-page-title">Tin nhắn hỗ trợ</h1><p>Hộp thư hỗ trợ sinh viên và giảng viên.{count > 0 ? ` ${count} tin nhắn chưa đọc.` : ''}</p></div>
-    <div className={`${styles.inbox} ${selected ? styles.hasSelection : ''}`}>
-      <aside className={styles.list} aria-label="Cuộc trò chuyện">
-        <div className={styles.listTools}><h2>Cuộc trò chuyện</h2><input type="search" aria-label="Tìm cuộc trò chuyện" placeholder="Tìm tên, email, MSSV..." value={query} onChange={event => setQuery(event.target.value)} />
-          <div className={styles.filters} aria-label="Lọc cuộc trò chuyện">{filters.map(([value, label]) => <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
+    <div className={`${styles.inbox} ${selected ? styles.hasSelection : ''}`} {...borderProps('users')}>
+      <aside className={styles.list} aria-label="Cuộc trò chuyện" {...borderProps('users')}>
+        <div className={styles.listTools}><div className={styles.listHeading}><h2>Cuộc trò chuyện</h2><span className={styles.inboxCount} aria-label={`${items.length} cuộc trò chuyện đã tải`}>{loading ? '…' : items.length}</span></div>
+          <div className={styles.search}><Search size={21} aria-hidden="true" /><input type="search" aria-label="Tìm cuộc trò chuyện" placeholder="Tìm tên, email, MSSV..." value={query} onChange={event => setQuery(event.target.value)} /></div>
+          <div className={styles.statusTabs} role="group" aria-label="Trạng thái cuộc trò chuyện">{filters.filter(([value]) => value === 'all' || value === 'closed').map(([value, label]) => <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
+          <div className={styles.filters} role="group" aria-label="Lọc cuộc trò chuyện">{filters.filter(([value]) => value !== 'all' && value !== 'closed').map(([value, label]) => <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
         </div>
         {error && <div className={styles.error} role="alert">{error} <button type="button" onClick={() => void load()}>Thử lại</button></div>}
         <div className={styles.listScroll}>
           {loading && <p className={styles.empty} role="status">Đang tải hộp thư...</p>}
-          {!loading && !error && !items.length && <p className={styles.empty}>{search || filter !== 'all' ? 'Không có cuộc trò chuyện phù hợp.' : 'Chưa có yêu cầu hỗ trợ.'}</p>}
+          {!loading && !error && !items.length && <div className={styles.empty}><span className={styles.emptyIcon}><Inbox size={39} strokeWidth={1.7} aria-hidden="true" /></span><strong>{search || filter !== 'all' ? 'Không có cuộc trò chuyện phù hợp.' : 'Chưa có yêu cầu hỗ trợ.'}</strong><p>{search || filter !== 'all' ? 'Thử thay đổi từ khóa hoặc bộ lọc để tìm cuộc trò chuyện.' : 'Khi sinh viên hoặc giảng viên gửi tin nhắn, cuộc trò chuyện sẽ hiện ở đây.'}</p></div>}
           {items.map(item => <button key={item.id} type="button" className={`${styles.listItem} ${selected?.id === item.id ? styles.activeItem : ''}`} onClick={() => setSelected(item)} aria-current={selected?.id === item.id ? 'true' : undefined}>
             <span className={styles.avatar} aria-hidden="true">{item.owner.full_name.split(/\s+/).filter(Boolean).slice(-2).map(word => word[0]).join('').toUpperCase()}</span>
             <span className={styles.itemContent}><span className={styles.itemTitle}><strong>{item.owner.full_name}</strong>{item.unread_count > 0 && <span className={styles.count} aria-label={`${item.unread_count} chưa đọc`}>{item.unread_count}</span>}</span>
@@ -80,7 +84,7 @@ export function AdminInbox() {
         </div>
       </aside>
       <div className={styles.detail}>{selected ? <SupportConversation key={`${user.id}:${selected.id}`} conversation={selected} onBack={() => setSelected(null)} />
-        : <div className={styles.empty}>Chọn một cuộc trò chuyện để bắt đầu.</div>}</div>
+        : <div className={styles.placeholder}><span className={styles.placeholderIcon}><MessagesSquare size={53} strokeWidth={1.7} aria-hidden="true" /></span><h2>Chọn một cuộc trò chuyện để bắt đầu</h2><p>Nội dung trao đổi và thông tin người gửi sẽ hiển thị tại đây.</p></div>}</div>
     </div>
   </div>;
 }

@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button, Card, Select } from '@/components/ui';
 
-export function DeviceSetup({ busy, onJoin, onLeave }: { busy: boolean; onJoin: (stream: MediaStream, denied?: boolean) => Promise<void>; onLeave: () => void }) {
+export function DeviceSetup({ busy, onJoin, onLeave }: { busy: boolean; onJoin: (stream: MediaStream, denied?: boolean, outputDevice?: string) => Promise<void>; onLeave: () => void }) {
   const stream = useRef<MediaStream | null>(null);
   const preview = useRef<HTMLVideoElement>(null);
   const transferred = useRef(false);
@@ -12,6 +12,8 @@ export function DeviceSetup({ busy, onJoin, onLeave }: { busy: boolean; onJoin: 
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [videoId, setVideoId] = useState('');
   const [audioId, setAudioId] = useState('');
+  const [outputId, setOutputId] = useState('');
+  const [outputSupported, setOutputSupported] = useState(false);
   const [camera, setCamera] = useState(false);
   const [microphone, setMicrophone] = useState(false);
   const [loading, setLoading] = useState({ video: true, audio: true });
@@ -48,11 +50,12 @@ export function DeviceSetup({ busy, onJoin, onLeave }: { busy: boolean; onJoin: 
     } catch (cause) {
       if (!mounted.current || version !== generation.current[kind]) return;
       const name = cause instanceof Error ? cause.name : '';
-      setErrors(e => ({ ...e, [kind]: name === 'NotAllowedError' ? 'Bạn chưa cấp quyền. Có thể tham gia với thiết bị này tắt.' : 'Không mở được thiết bị. Kiểm tra kết nối và quyền truy cập của trình duyệt.' }));
+      setErrors(e => ({ ...e, [kind]: name === 'NotAllowedError' ? 'Bạn chưa cấp quyền. Có thể tham gia với thiết bị này tắt.' : name === 'NotFoundError' ? (kind === 'video' ? 'Không tìm thấy camera.' : 'Không tìm thấy microphone.') : name === 'NotReadableError' ? 'Thiết bị đang được ứng dụng khác sử dụng.' : 'Không mở được thiết bị. Kiểm tra kết nối và quyền truy cập của trình duyệt.' }));
     } finally { finish(); if (mounted.current && version === generation.current[kind]) setLoading(s => ({ ...s, [kind]: false })); }
   };
   useEffect(() => {
     mounted.current = true; transferred.current = false; stream.current = new MediaStream();
+    setOutputSupported('setSinkId' in HTMLMediaElement.prototype);
     // Wait for the mount commit. Strict Mode discards its first effect before
     // this callback runs, so it never opens and immediately stops that camera.
     const initialize = window.setTimeout(() => { void acquire('video', true); void acquire('audio', true); }, 0);
@@ -85,7 +88,7 @@ export function DeviceSetup({ busy, onJoin, onLeave }: { busy: boolean; onJoin: 
     if (!capture || transferred.current) return;
     capture.getTracks().filter(t => t.readyState !== 'live').forEach(t => capture.removeTrack(t));
     transferred.current = true;
-    await onJoin(capture, Boolean(errors.video || errors.audio));
+    await onJoin(capture, Boolean(errors.video || errors.audio), outputId || undefined);
   };
-  return <Card className="classroom-device-card"><h2>Cài đặt thiết bị</h2><p>Kiểm tra camera và mic trước khi vào phòng. Bạn có thể tham gia với camera hoặc mic tắt.</p><div className="classroom-device-layout"><div className="classroom-preview"><video ref={preview} autoPlay muted playsInline aria-label="Xem trước camera" />{!camera && <span>Camera đang tắt</span>}</div><div className="classroom-device-fields"><label>Camera device<Select aria-label="Camera device" value={videoId} disabled={busy || loading.video} onChange={e => { setVideoId(e.target.value); void acquire('video', true, e.target.value); }}><option value="">Camera mặc định</option>{devices.filter(d => d.kind === 'videoinput').map((d, i) => <option key={d.deviceId || i} value={d.deviceId}>{d.label || `Camera ${i + 1}`}</option>)}</Select></label><small role="status">{loading.video ? 'Đang mở camera…' : camera ? 'Camera hoạt động' : 'Camera tắt'}</small>{errors.video && <p role="alert">{errors.video}</p>}<Button variant="outline" disabled={busy || loading.video} onClick={() => void acquire('video', !camera, videoId)}>{camera ? 'Tắt camera' : 'Bật camera'}</Button><label>Microphone<Select aria-label="Microphone device" value={audioId} disabled={busy || loading.audio} onChange={e => { setAudioId(e.target.value); void acquire('audio', true, e.target.value); }}><option value="">Mic mặc định</option>{devices.filter(d => d.kind === 'audioinput').map((d, i) => <option key={d.deviceId || i} value={d.deviceId}>{d.label || `Microphone ${i + 1}`}</option>)}</Select></label><meter min={0} max={100} value={level} aria-label="Mức âm thanh microphone" /><small role="status">{loading.audio ? 'Đang mở mic…' : microphone ? 'Microphone hoạt động' : 'Microphone tắt'}</small>{errors.audio && <p role="alert">{errors.audio}</p>}<Button variant="outline" disabled={busy || loading.audio} onClick={() => void acquire('audio', !microphone, audioId)}>{microphone ? 'Tắt mic' : 'Bật mic'}</Button></div></div><div className="classroom-setup-actions"><Button variant="outline" disabled={busy} onClick={onLeave}>Quay lại danh sách</Button><Button disabled={busy || loading.audio || loading.video} onClick={() => void join()}>{busy ? 'Đang kết nối…' : 'Vào phòng'}</Button></div></Card>;
+  return <Card borderRole="classes" className="classroom-device-card"><h2>Cài đặt thiết bị</h2><p>Kiểm tra camera và mic trước khi vào phòng. Bạn có thể tham gia với camera hoặc mic tắt.</p><div className="classroom-device-layout"><div className="classroom-preview"><video ref={preview} autoPlay muted playsInline aria-label="Xem trước camera" />{!camera && <span>Camera đang tắt</span>}</div><div className="classroom-device-fields"><label>Camera device<Select aria-label="Camera device" value={videoId} disabled={busy || loading.video} onChange={e => { setVideoId(e.target.value); void acquire('video', true, e.target.value); }}><option value="">Camera mặc định</option>{devices.filter(d => d.kind === 'videoinput').map((d, i) => <option key={d.deviceId || i} value={d.deviceId}>{d.label || `Camera ${i + 1}`}</option>)}</Select></label><small role="status">{loading.video ? 'Đang mở camera…' : camera ? 'Camera hoạt động' : 'Camera tắt'}</small>{errors.video && <p role="alert">{errors.video}</p>}<Button variant="outline" disabled={busy || loading.video} onClick={() => void acquire('video', !camera, videoId)}>{camera ? 'Tắt camera' : 'Bật camera'}</Button><label>Microphone<Select aria-label="Microphone device" value={audioId} disabled={busy || loading.audio} onChange={e => { setAudioId(e.target.value); void acquire('audio', true, e.target.value); }}><option value="">Mic mặc định</option>{devices.filter(d => d.kind === 'audioinput').map((d, i) => <option key={d.deviceId || i} value={d.deviceId}>{d.label || `Microphone ${i + 1}`}</option>)}</Select></label><meter min={0} max={100} value={level} aria-label="Mức âm thanh microphone" /><small role="status">{loading.audio ? 'Đang mở mic…' : microphone ? 'Microphone hoạt động' : 'Microphone tắt'}</small>{errors.audio && <p role="alert">{errors.audio}</p>}<Button variant="outline" disabled={busy || loading.audio} onClick={() => void acquire('audio', !microphone, audioId)}>{microphone ? 'Tắt mic' : 'Bật mic'}</Button>{outputSupported && <label>Loa / tai nghe<Select aria-label="Loa / tai nghe" value={outputId} onChange={event => setOutputId(event.target.value)}><option value="">Loa mặc định</option>{devices.filter(device => device.kind === 'audiooutput').map((device, index) => <option key={device.deviceId || index} value={device.deviceId}>{device.label || `Loa ${index + 1}`}</option>)}</Select></label>}</div></div><div className="classroom-setup-actions"><Button variant="outline" disabled={busy} onClick={onLeave}>Quay lại danh sách</Button><Button disabled={busy || loading.audio || loading.video} onClick={() => void join()}>{busy ? 'Đang kết nối…' : 'Vào phòng'}</Button></div></Card>;
 }

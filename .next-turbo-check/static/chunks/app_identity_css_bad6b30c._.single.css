@@ -1,0 +1,407 @@
+/* [project]/app/identity.css [app-client] (css) */
+.identity-layout {
+  grid-template-columns: minmax(0, 1fr) 300px;
+  align-items: start;
+  gap: 24px;
+  display: grid;
+}
+
+.identity-layout .identity-card {
+  min-width: 0;
+  max-width: none;
+}
+
+.identity-card-heading {
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  display: flex;
+}
+
+.identity-card-heading h2, .identity-guide h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.identity-card-heading p, .identity-guide p {
+  color: var(--color-slate-veil);
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.identity-card-heading .ui-badge {
+  flex-shrink: 0;
+}
+
+.identity-page .identity-camera, .verify-page .identity-camera {
+  aspect-ratio: 4 / 3;
+  isolation: isolate;
+  min-height: 0;
+}
+
+.identity-camera video {
+  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  transform: scaleX(-1);
+}
+
+.identity-camera:not(.is-on) video {
+  visibility: hidden;
+}
+
+.identity-camera .identity-oval {
+  pointer-events: none;
+  width: 36%;
+  height: 66%;
+  box-shadow: 0 0 0 1000px rgba(9, 19, 34, .15);
+}
+
+.identity-camera p {
+  z-index: 1;
+  background: rgba(9, 19, 34, .75);
+  border-radius: 6px;
+  padding: 8px 12px;
+  line-height: 1.5;
+  bottom: 14px;
+  left: 14px;
+  right: 14px;
+}
+
+.identity-camera-placeholder {
+  text-align: center;
+  color: var(--media-text);
+  gap: 12px;
+  padding: 32px 20px;
+  display: grid;
+  position: relative;
+}
+
+.identity-camera-placeholder > span:first-child {
+  color: var(--primary);
+  font-size: 52px;
+  line-height: 1;
+}
+
+.identity-camera-placeholder > strong {
+  color: var(--text-on-solid);
+  font-size: 17px;
+}
+
+.identity-camera-placeholder > span:last-child {
+  font-size: 12px;
+}
+
+.identity-live {
+  color: var(--media-text);
+  background: rgba(9, 19, 34, .75);
+  border-radius: 5px;
+  padding: 5px 9px;
+  font-size: 11px;
+  position: absolute;
+  top: 14px;
+  left: 14px;
+}
+
+.identity-live:before {
+  content: "";
+  background: var(--color-success);
+  border-radius: 50%;
+  width: 6px;
+  height: 6px;
+  margin-right: 7px;
+  display: inline-block;
+}
+
+.identity-photo-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  display: grid;
+}
+
+.identity-photo {
+  border: 2px solid var(--color-mist-border);
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px;
+  display: grid;
+}
+
+.identity-photo.selected {
+  border-color: var(--student-primary, var(--info));
+  background: var(--info-soft);
+}
+
+.identity-photo:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.identity-photo:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.identity-photo img, .identity-photo-empty {
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.identity-photo img {
+  transform: scaleX(-1);
+}
+
+.identity-photo-empty {
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  place-items: center;
+  font-size: 24px;
+  display: grid;
+}
+
+.identity-photo strong {
+  color: var(--color-ink-charcoal);
+  font-size: 13px;
+}
+
+.identity-photo small {
+  color: var(--color-slate-veil);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.identity-sidebar {
+  gap: 20px;
+  display: grid;
+}
+
+.identity-guide ol {
+  color: var(--color-slate-veil);
+  gap: 14px;
+  margin: 18px 0;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.7;
+  list-style: decimal;
+  display: grid;
+}
+
+.identity-guide li::marker {
+  color: var(--student-primary, var(--info));
+  font-weight: 700;
+}
+
+.identity-guide > p:last-child {
+  border-top: 1px solid var(--color-mist-border);
+  padding-top: 12px;
+}
+
+.identity-consent {
+  cursor: pointer;
+  align-items: flex-start;
+  line-height: 1.65;
+}
+
+.identity-consent input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--student-primary, var(--info));
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.identity-message {
+  border: 1px solid rgba(0, 0, 0, 0);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.identity-message p {
+  margin: 4px 0 0;
+}
+
+.identity-message.success, .identity-page .identity-badge-success {
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: var(--success-soft);
+}
+
+.identity-message.warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+  border-color: var(--warning-soft);
+}
+
+.identity-message.error {
+  background: var(--error-soft);
+  color: var(--error);
+  border-color: var(--error-soft);
+}
+
+.identity-page > .identity-message {
+  margin-bottom: 20px;
+}
+
+.identity-trial-preview {
+  background: var(--surface-muted);
+  border-radius: 8px;
+  align-items: center;
+  gap: 18px;
+  padding: 12px;
+  display: flex;
+}
+
+.identity-trial-preview img {
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 6px;
+  width: 120px;
+  transform: scaleX(-1);
+}
+
+.identity-trial-preview p {
+  color: var(--color-slate-veil);
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.identity-manage {
+  gap: 8px;
+  margin-top: 18px;
+  display: grid;
+}
+
+.identity-delete-confirm {
+  border-top: 1px solid var(--color-mist-border);
+  margin-top: 16px;
+  padding-top: 16px;
+}
+
+.identity-delete-confirm .identity-actions {
+  margin-top: 12px;
+}
+
+.identity-return {
+  margin: 18px 0;
+  font-size: 13px;
+}
+
+.identity-return a, .identity-message a, .verify-card > a {
+  color: var(--student-primary, var(--info));
+  text-underline-offset: 3px;
+  text-decoration: underline;
+}
+
+.verify-steps {
+  padding: 0;
+  list-style: none;
+}
+
+.verify-steps li {
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  color: var(--color-slate-veil);
+  white-space: nowrap;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.verify-steps li.active {
+  background: var(--primary-soft);
+  color: var(--student-primary, var(--primary));
+}
+
+.verify-steps li[aria-current="step"] {
+  box-shadow: inset 0 0 0 1px;
+}
+
+.verify-card > p {
+  color: var(--color-slate-veil);
+  margin: 0;
+  line-height: 1.7;
+}
+
+.verify-card > .ui-button {
+  justify-self: start;
+}
+
+.identity-complete-icon {
+  background: var(--success-soft);
+  width: 54px;
+  height: 54px;
+  color: var(--success);
+  border-radius: 50%;
+  place-items: center;
+  font-size: 28px;
+  display: grid;
+}
+
+@media (max-width: 1100px) {
+  .identity-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .identity-sidebar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .identity-sidebar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .identity-card-heading {
+    flex-wrap: wrap;
+  }
+
+  .identity-photo-grid {
+    gap: 6px;
+  }
+
+  .identity-photo {
+    padding: 5px;
+  }
+
+  .identity-photo small {
+    font-size: 10px;
+  }
+
+  .identity-trial-preview {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .identity-trial-preview img {
+    width: 90px;
+  }
+
+  .identity-actions .ui-button, .identity-footer .ui-button {
+    flex-grow: 1;
+  }
+
+  .identity-camera p {
+    font-size: 11px;
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+  }
+}
+
+/*# sourceMappingURL=app_identity_css_bad6b30c._.single.css.map*/

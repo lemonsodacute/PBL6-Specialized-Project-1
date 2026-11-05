@@ -1,6 +1,14 @@
 import { ApiError } from './api';
 
 export const classroomErrors = {
+  INTERNET_OFFLINE: 'Thiết bị đang mất kết nối Internet. Kiểm tra mạng để kết nối lại.',
+  TOKEN_EXPIRED: 'Quyền kết nối đã hết hạn hoặc không còn hợp lệ. Vui lòng thử lại để nhận quyền mới.',
+  ROOM_UNAVAILABLE: 'Phòng học hiện không còn khả dụng. Vui lòng tải lại thông tin buổi học.',
+  ROOM_LOCKED: 'Lớp học hiện đã được khóa bởi giảng viên.',
+  WAITING_FOR_ADMISSION: 'Đang chờ giảng viên cho vào lớp.',
+  ADMISSION_REJECTED: 'Giảng viên đã từ chối yêu cầu tham gia buổi học này.',
+  REMOVED_BY_TEACHER: 'Bạn đã được giảng viên đưa ra khỏi lớp.',
+  DUPLICATE_TAB: 'Tài khoản của bạn đã tham gia lớp trong một tab khác.',
   ROOM_NOT_LIVE: 'Buổi học chưa bắt đầu.',
   SESSION_ENDED: 'Buổi học đã kết thúc.',
   SESSION_NOT_FOUND: 'Không tìm thấy buổi học hoặc bạn không có quyền truy cập.',

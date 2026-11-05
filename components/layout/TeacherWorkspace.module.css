@@ -1,0 +1,197 @@
+/* Teacher sidebar and shared teacher/admin topbar. The page canvas retains its existing paint. */
+.shell:global(.app-shell) {
+  --workspace-sidebar-width: 260px;
+  --workspace-nav-inset: 16px;
+  --workspace-nav-radius: 32px;
+  --workspace-topbar-gutter: 36px;
+  --teacher-nav-bg: var(--color-primary);
+  --teacher-nav-ink: #cce5e7;
+  --teacher-nav-muted: #cce5e7;
+  --teacher-nav-selected: #ffffff;
+  --teacher-nav-selected-ink: #006d77;
+}
+
+:is(.shell, .headerShell):global(.app-shell) {
+  --shell-header-height: var(--shell-topbar-height);
+  --teacher-bar-bg: #ffffff;
+  --teacher-bar-ink: #143943;
+  --teacher-bar-muted: #597b83;
+  --teacher-bar-line: var(--procto-line);
+  --teacher-bar-soft: #deecee;
+  --teacher-bar-accent: #006d77;
+  --teacher-bar-hover: #edf5f5;
+}
+
+:global(html[data-theme='dark']) .shell {
+  --teacher-nav-bg: var(--dark-sidebar);
+  --teacher-nav-ink: var(--dark-text-secondary);
+  --teacher-nav-muted: var(--dark-text-secondary);
+  --teacher-nav-selected: var(--dark-surface-2);
+  --teacher-nav-selected-ink: var(--dark-focus);
+}
+
+:global(html[data-theme='dark']) :is(.shell, .headerShell) {
+  --teacher-bar-bg: var(--dark-surface-1);
+  --teacher-bar-ink: var(--dark-text-primary);
+  --teacher-bar-muted: var(--dark-text-secondary);
+  --teacher-bar-line: var(--dark-border);
+  --teacher-bar-soft: var(--dark-surface-2);
+  --teacher-bar-hover: var(--dark-surface-2);
+}
+
+.shell:global(.app-shell) .sidebar:global(.sidebar) {
+  padding: 20px 16px;
+  border: 0;
+  background: var(--teacher-nav-bg);
+  color: var(--teacher-nav-ink);
+  box-shadow: 0 12px 28px rgb(9 65 72 / 12%);
+}
+.shell .sidebar:global(.sidebar) :global(.brand) {
+  height: 64px;
+  padding: 10px;
+  margin-bottom: 16px;
+  gap: 9px;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -.045em;
+}
+.shell[data-sidebar-collapsed='false'] .sidebar:global(.sidebar) :global(.brand) { width: calc(100% - 38px); }
+.shell .sidebar:global(.sidebar) :global(.brand)::before { width: 36px; height: 36px; flex-basis: 36px; border-radius: 10px; background-size: 30px 30px; }
+.shell .sidebar:global(.sidebar) :global(.role-label) { padding: 8px 12px; margin: 0 0 12px; color: var(--teacher-nav-muted); font-size: 11px; line-height: 1.5; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.shell .sidebar:global(.sidebar) :global(nav) { gap: var(--shell-nav-gap); }
+.shell .sidebar:global(.sidebar) :global(nav a), .shell .sidebar:global(.sidebar) :global(.sidebar-bottom a) {
+  min-height: 44px;
+  padding: 10px 12px;
+  gap: 12px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  color: var(--teacher-nav-ink);
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 400;
+  text-align: left;
+  text-decoration: none;
+  box-shadow: none;
+}
+.shell .sidebar:global(.sidebar) :global(.nav-icon) { width: var(--shell-nav-icon-size); height: var(--shell-nav-icon-size); flex-basis: var(--shell-nav-icon-size); color: inherit; stroke-width: 1.7; }
+.shell .sidebar:global(.sidebar) :global(nav a:hover), .shell .sidebar:global(.sidebar) :global(.sidebar-bottom a:hover) { color: #ffffff; background: rgb(255 255 255 / 10%); }
+.shell .sidebar:global(.sidebar) :global(a[aria-current='page']), .shell .sidebar:global(.sidebar) :global(a[aria-current='page']:hover) {
+  border-color: transparent;
+  background: var(--teacher-nav-selected);
+  color: var(--teacher-nav-selected-ink);
+  box-shadow: none;
+  font-weight: 700;
+}
+.shell .sidebar:global(.sidebar) :global(a[aria-current='page'] .nav-icon) { color: inherit; }
+.shell .sidebar:global(.sidebar) :global(.sidebar-bottom) { gap: var(--shell-nav-gap); padding-top: 16px; border-top: 1px solid rgb(255 255 255 / 20%); }
+
+:is(.shell, .headerShell):global(.app-shell) .bar:global(.topbar) {
+  height: var(--shell-topbar-height);
+  min-height: var(--shell-topbar-height);
+  max-height: var(--shell-topbar-height);
+  padding: var(--shell-topbar-padding-block) var(--shell-topbar-padding-inline);
+  gap: var(--shell-topbar-gap);
+  border: 1px solid var(--teacher-bar-line);
+  border-radius: 26px;
+  background: var(--teacher-bar-bg);
+  color: var(--teacher-bar-ink);
+  box-shadow: 0 3px 12px rgb(18 60 65 / 6%);
+}
+.context { display: flex; align-items: center; flex: 1 1 auto; min-width: 0; gap: var(--shell-profile-gap); }
+:is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-title) {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: var(--shell-role-height);
+  padding: var(--shell-role-padding-block) var(--shell-role-padding-inline);
+  gap: var(--shell-role-gap);
+  border: 0;
+  border-radius: 17px;
+  background: var(--teacher-bar-accent);
+  color: #ffffff;
+  font-size: var(--shell-role-font-size);
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+:is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-title)::before { display: none; }
+:is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-title:hover) { background: #005b64; }
+.contextArrow { flex: 0 0 auto; color: var(--teacher-bar-muted); }
+.currentPage { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--teacher-bar-ink); font-size: var(--shell-role-font-size); font-weight: 700; }
+:is(.shell, .headerShell) .bar:global(.topbar) :global(.header-actions) { flex: 0 0 auto; gap: var(--shell-action-gap); }
+:is(.shell, .headerShell) .bar:global(.topbar) :global(.notification-bell), :is(.shell, .headerShell) .bar:global(.topbar) :global(.shell-menu-button) {
+  width: var(--shell-control-size);
+  height: var(--shell-control-size);
+  min-height: var(--shell-control-size);
+  border: 1px solid var(--teacher-bar-line);
+  border-radius: 17px;
+  background: var(--teacher-bar-soft);
+  color: var(--teacher-bar-ink);
+  box-shadow: none;
+}
+:is(.shell, .headerShell) .bar:global(.topbar) :global(.notification-bell:is(:hover, [aria-expanded='true'])) { background: var(--teacher-bar-hover); }
+:is(.shell, .headerShell) .bar:global(.topbar) :global(.notification-count) { top: var(--shell-unread-offset); right: var(--shell-unread-offset); min-width: var(--shell-unread-size); height: var(--shell-unread-size); border: 2px solid var(--teacher-bar-bg); background: #e82f45; color: #ffffff; font-size: var(--shell-unread-font-size); }
+:is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-user) { padding-left: var(--shell-action-gap); border-left: 1px solid var(--teacher-bar-line); }
+:is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-user > button) {
+  height: var(--shell-profile-height);
+  min-height: var(--shell-profile-min-height);
+  max-width: 300px;
+  padding: var(--shell-profile-padding);
+  gap: var(--shell-profile-gap);
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--teacher-bar-ink);
+  box-shadow: none;
+}
+:is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-user > button:is(:hover, [aria-expanded='true'])) { background: var(--teacher-bar-hover); }
+:is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-user-name) { max-width: 220px; gap: 2px; color: var(--teacher-bar-ink); }
+:is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-user-name strong) { font-size: var(--shell-name-font-size); font-weight: 700; }
+:is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-user-name small) { color: var(--teacher-bar-muted); font-size: var(--shell-meta-font-size); }
+:is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-avatar) { width: var(--shell-avatar-size); height: var(--shell-avatar-size); border: 0; border-radius: 16px; background: var(--teacher-bar-accent); color: #ffffff; font-size: var(--shell-avatar-font-size); }
+:is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-user > button > svg) { margin-left: auto; color: var(--teacher-bar-muted); }
+:is(.shell, .headerShell) .bar:global(.topbar) :global(:is(a, button):focus-visible) { outline: 3px solid var(--teacher-bar-accent); outline-offset: 4px; }
+
+@media (min-width: 1024px) {
+  .shell:global(.app-shell)[data-sidebar-collapsed='true'] { --workspace-sidebar-width: 80px; }
+  .shell[data-sidebar-collapsed='true'] .sidebar:global(.sidebar) { padding: 18px 10px; }
+  .shell[data-sidebar-collapsed='true'] .sidebar:global(.sidebar) :global(.brand) { width: 52px; height: 52px; margin: 0 auto 22px; padding: 0; gap: 0; font-size: 0; }
+  .shell[data-sidebar-collapsed='true'] .sidebar:global(.sidebar) :global(nav a), .shell[data-sidebar-collapsed='true'] .sidebar:global(.sidebar) :global(.sidebar-bottom a) { min-height: var(--shell-collapsed-item-height); height: var(--shell-collapsed-item-height); padding: 8px; gap: 0; border-radius: 16px; }
+  .shell[data-sidebar-collapsed='true'] .sidebar:global(.sidebar) :global(.nav-icon) { width: var(--shell-collapsed-icon-size); height: var(--shell-collapsed-icon-size); flex-basis: var(--shell-collapsed-icon-size); }
+}
+
+@media (min-width: 1024px) and (max-width: 1399px) {
+  .shell:global(.app-shell) { --workspace-sidebar-width: 260px; --workspace-topbar-gutter: 24px; }
+  .shell .sidebar:global(.sidebar) :global(.brand) { padding-inline: 4px; gap: 9px; font-size: 24px; }
+  .shell .sidebar:global(.sidebar) :global(.brand)::before { width: 36px; height: 36px; flex-basis: 36px; background-size: 30px 30px; }
+  .shell .sidebar:global(.sidebar) :global(nav a), .shell .sidebar:global(.sidebar) :global(.sidebar-bottom a) { font-size: var(--shell-nav-font-size); }
+  :is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-user-name) { max-width: 160px; }
+  :is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-user-name small) { display: none; }
+  :is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-title), .currentPage { font-size: var(--shell-role-font-size); }
+  .context { gap: var(--shell-profile-gap); }
+}
+
+@media (max-width: 1023px) {
+  .shell:global(.app-shell) { --workspace-nav-inset: 8px; --workspace-topbar-gutter: 16px; }
+  .shell:global(.app-shell) .sidebar:global(.sidebar) { width: min(280px, calc(100vw - 48px)); border-radius: 24px; }
+  .shell[data-sidebar-collapsed='false'] .sidebar:global(.sidebar) :global(.brand) { width: calc(100% - 38px); font-size: 24px; }
+  :is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-title) { min-height: var(--shell-role-height); font-size: var(--shell-role-font-size); padding: var(--shell-role-padding-block) var(--shell-role-padding-inline); gap: var(--shell-role-gap); }
+  :is(.shell, .headerShell) .bar:global(.topbar) :global(.header-actions) { gap: var(--shell-action-gap); }
+  :is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-user) { padding-left: var(--shell-action-gap); }
+  :is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-user-name) { display: none; }
+  .currentPage { font-size: var(--shell-role-font-size); }
+  .context { gap: var(--shell-profile-gap); }
+}
+
+@media (max-width: 639px) {
+  :is(.shell, .headerShell):global(.app-shell) { --shell-header-height: var(--shell-topbar-height); }
+  :is(.shell, .headerShell):global(.app-shell) .bar:global(.topbar) { height: var(--shell-topbar-height); min-height: var(--shell-topbar-height); max-height: var(--shell-topbar-height); padding: var(--shell-topbar-padding-block) var(--shell-topbar-padding-inline); margin: 8px 8px 0; gap: var(--shell-topbar-gap); border-radius: 22px; }
+  :is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-title), .contextArrow { display: none; }
+  :is(.shell, .headerShell) .bar:global(.topbar) :global(.header-actions) { gap: var(--shell-action-gap); }
+  :is(.shell, .headerShell) .bar:global(.topbar) :global(.notification-bell), :is(.shell, .headerShell) .bar:global(.topbar) :global(.shell-menu-button) { width: var(--shell-control-size); height: var(--shell-control-size); min-height: var(--shell-control-size); border-radius: 14px; }
+  :is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-user) { padding-left: var(--shell-action-gap); }
+  :is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-user > button) { min-height: var(--shell-profile-min-height); padding: var(--shell-profile-padding); gap: var(--shell-profile-gap); }
+  :is(.shell, .headerShell) .bar:global(.topbar) :global(.topbar-avatar) { width: var(--shell-avatar-size); height: var(--shell-avatar-size); border-radius: 13px; font-size: var(--shell-avatar-font-size); }
+  .currentPage { font-size: var(--shell-role-font-size); }
+}

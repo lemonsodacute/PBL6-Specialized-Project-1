@@ -2,6 +2,7 @@ import { ApiError } from './api';
 import { aiErrorMessage, type AIProviderStatus } from './ai-provider';
 import type { QuestionDifficulty, QuestionType } from '@/types';
 import type { SelectionQuestion } from './question-selection';
+import { nearDuplicateQuestion, type DraftQualityCheck, type DocumentQualitySummary } from './question-quality';
 
 export type DocumentImage = { id: string; page: number | null; position: Record<string, unknown> | null;
   nearby_paragraph: string; nearest_section?: string; question_number: number | null; mime_type: string; byte_count: number; temp_url: string };
@@ -12,12 +13,14 @@ export type DocumentDraft = {
   explanation: string; source_page: number | null; source_section: string;
   source_chunk_id: string; source_excerpt: string; warnings: string[]; duplicate: boolean;
   images?: DocumentImage[]; warning_codes?: string[];
+  quality_check?: DraftQualityCheck | null;
 };
 export type DocumentSession = {
   id: string; filename: string; expires_at: string; character_count: number; warnings: string[];
   sections?: { text: string; page: number | null; label: string }[];
   questions: DocumentDraft[]; batches: { index: number; count: number; complete: boolean; error?: { code: string; message: string } | null; generated_count?: number }[];
   config?: DocumentConfiguration | null; imported_count?: number | null;
+  quality_summary?: DocumentQualitySummary;
   file_type?: string; page_count?: number | null; page_count_estimated?: boolean;
   image_count?: number; images?: DocumentImage[]; preview_text?: string;
   structured_question_count?: number | null; structure_parsed?: boolean;
@@ -45,6 +48,8 @@ export function updateDocumentDraft(original: DocumentDraft, edited: SelectionQu
     topic: edited.topic, default_points: edited.default_points, options: edited.type.startsWith('mcq_') ? options : [],
     answers: Array.isArray(answer) ? answer.map(String) : typeof answer === 'string' && answer ? [answer] : [],
     explanation: edited.explanation ?? '', warnings: [],
+    duplicate: normalizeDraftContent(original.content) === normalizeDraftContent(edited.content) ? original.duplicate : false,
+    quality_check: original.quality_check ? { ...original.quality_check, status: 'review', flags: ['EDITED_AFTER_CHECK'], grounded: null, assessed_difficulty: null } : undefined,
     images: edited.images?.map(image => [...documentImages, ...(original.images ?? [])].find(item => item.id === image.id))
       .filter((image): image is DocumentImage => !!image) ?? original.images };
 }
@@ -87,6 +92,10 @@ export function documentImportReview(drafts: DocumentDraft[], selectedIds: strin
     const issues = draftProblems(draft);
     const content = normalizeDraftContent(draft.content);
     if (existing.has(content)) issues.push('Câu hỏi này có thể đã tồn tại trong ngân hàng. Vui lòng sửa hoặc bỏ chọn câu trùng.');
+    else if (existingContents.some(old => nearDuplicateQuestion(draft.content, old))) issues.push('Câu hỏi gần trùng hoặc diễn đạt lại nội dung đã có trong ngân hàng.');
+    if (draft.quality_check?.flags.includes('POTENTIAL_DUPLICATE')) issues.push('Câu hỏi có thể trùng nội dung. Vui lòng sửa hoặc bỏ chọn.');
+    if (selected.has(draft.id) && selection.some(other => other.id !== draft.id && nearDuplicateQuestion(draft.content, other.content)))
+      issues.push('Câu hỏi gần trùng với câu khác đang chọn. Vui lòng chỉ chọn một câu.');
     if (selected.has(draft.id) && (counts.get(content) ?? 0) > 1) issues.push('Nội dung trùng với câu khác đang chọn. Vui lòng chỉ chọn một câu hoặc sửa nội dung.');
     const images = draft.images ?? [];
     if (images.some(image => !imageIds.has(image.id)) || new Set(images.map(image => image.id)).size !== images.length)
