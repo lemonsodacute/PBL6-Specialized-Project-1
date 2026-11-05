@@ -166,12 +166,16 @@ function RealStudentAttemptPage() {
       const transferred = entryMediaConfirmed.current && hasRequiredTracks(settings.require_camera, Boolean(settings.require_mic));
       const completed = hasExamDeviceSetup(id, { camera: settings.require_camera, microphone: Boolean(settings.require_mic) });
       if (transferred) confirmDeviceEntry(settings.require_camera, Boolean(settings.require_mic));
-      setEntryState({ attemptId: id, phase: !(settings.require_camera || settings.require_mic) || transferred ? 'complete' : completed ? 'pending' : 'required' });
-      if (settings.require_fullscreen) {
+      const entryReady = !(settings.require_camera || settings.require_mic) || transferred;
+      setEntryState({ attemptId: id, phase: entryReady ? 'complete' : completed ? 'pending' : 'required' });
+      // Device setup comes first. Never overlay its dialog with the fullscreen prompt.
+      if (settings.require_fullscreen && entryReady) {
         const doc = document as Document & { webkitFullscreenElement?: Element };
         const isFull = Boolean(doc.fullscreenElement || doc.webkitFullscreenElement);
         if (isFull) fullscreenHasEntered.current = true;
         setFullscreenBlocked(!isFull);
+      } else {
+        setFullscreenBlocked(false);
       }
     }).catch(cause => { if (active) { stopEntryMedia(); setError(friendlyError(cause, 'Không tải được bài làm.')); } }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
