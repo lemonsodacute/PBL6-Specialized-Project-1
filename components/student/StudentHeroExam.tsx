@@ -23,7 +23,7 @@ export function StudentHeroExam({ event, user, now }: { event: CalendarEvent; us
   if (!event.exam) return null;
   const exam = { ...event.exam, end_time: event.end?.toISOString() ?? '' };
   const state = getStudentExamState(exam, user?.id, now);
-  const target = studentExamActionTarget(exam, state) ?? event.href;
+  const target = state.canRetry ? `/student/exams/${encodeURIComponent(exam.id)}/verify` : studentExamActionTarget(exam, state) ?? event.href;
   const days = Math.max(0, Math.ceil((event.start.getTime() - now) / 86_400_000));
   const requirement = event.exam as typeof event.exam & { require_camera?: boolean; require_mic?: boolean };
   const needsDevices = requirement.require_camera || requirement.require_mic;
@@ -37,7 +37,7 @@ export function StudentHeroExam({ event, user, now }: { event: CalendarEvent; us
     <StudentOwl />
     <div className={styles.card} data-exam-status={state.status}>
       <div className={styles.exam}>
-        <span className={styles.status}>{state.status === 'upcoming' ? days > 1 ? `Còn ${days} ngày` : 'Sắp diễn ra' : state.label}</span>
+        <span className={styles.status}>{state.canRetry ? `Có thể làm lại · Còn ${Math.max(0,(exam.max_attempts??1)-state.attempts.length)} lượt` : state.status === 'upcoming' ? days > 1 ? `Còn ${days} ngày` : 'Sắp diễn ra' : state.label}</span>
         <p className={styles.context}>Kỳ thi trong khoảng lịch đang xem</p>
         <h2>{event.exam.title}</h2>
         {!!event.courseNames?.length && <p className={styles.course}>{event.courseNames.join(' · ')}</p>}
@@ -46,7 +46,8 @@ export function StudentHeroExam({ event, user, now }: { event: CalendarEvent; us
           <li><CalendarDays size={19} aria-hidden="true"/><span>Đóng: <strong>{formatCalendarDateTime(event.exam.end_time)}</strong></span></li>
           {event.durationMinutes !== undefined && <li><Clock3 size={19} aria-hidden="true"/><span>Thời lượng làm bài: <strong>{event.durationMinutes} phút</strong></span></li>}
         </ul>
-        <Link className="ui-button ui-button-primary" href={target}>{state.action === 'resume' ? state.actionLabel : 'Chuẩn bị'}<ArrowRight size={17} aria-hidden="true"/></Link>
+        <Link className="ui-button ui-button-primary" href={target}>{state.canRetry ? 'Làm lại bài thi' : state.action === 'resume' ? state.actionLabel : 'Chuẩn bị'}<ArrowRight size={17} aria-hidden="true"/></Link>
+        {state.canRetry && state.attempt && <Link className="ui-button ui-button-outline" href={`/student/attempts/${encodeURIComponent(state.attempt.id)}/result`}>Xem kết quả lần trước</Link>}
       </div>
       <aside className={styles.readiness} aria-label="Chuẩn bị trước giờ thi">
         <h3>Chuẩn bị trước giờ thi</h3>
