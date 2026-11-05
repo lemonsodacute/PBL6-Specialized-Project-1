@@ -132,7 +132,7 @@ def list_exams(
     page: int = Query(1,ge=1), limit: int = Query(20,ge=1,le=100), status: ExamStatus | None = Query(default=None),
     q: str = Query('',max_length=255), class_id: UUID|None=None, teacher_id: UUID|None=None, exam_id:UUID|None=None,
     require_camera: bool|None=None, require_mic: bool|None=None, period: str|None=None, sort: str='newest',monitoring_only:bool=False,
-    from_time:datetime|None=None,to_time:datetime|None=None, actionable_only:bool=False,
+    from_time:datetime|None=None,to_time:datetime|None=None, actionable_only:bool=False, include_completed:bool=False,
     db: Session = Depends(get_db), user: User = Depends(current_user),
 ):
     limit = max(1, min(limit, 100))
@@ -191,13 +191,21 @@ def list_exams(
             db.commit()
         own = select(ExamAttempt.id).where(ExamAttempt.exam_id == Exam.id, ExamAttempt.student_id == user.id).correlate(Exam)
         working = own.where(ExamAttempt.status == AttemptStatus.in_progress).exists()
+        completed = own.where(ExamAttempt.status.in_(
+            (AttemptStatus.submitted, AttemptStatus.auto_submitted, AttemptStatus.terminated)
+        )).exists()
         attempt_count = select(func.count()).select_from(ExamAttempt).where(
             ExamAttempt.exam_id == Exam.id, ExamAttempt.student_id == user.id,
         ).correlate(Exam).scalar_subquery()
-        query = query.where(or_(working, and_(
-            Exam.status.in_((ExamStatus.published, ExamStatus.ongoing)), Exam.end_time > now,
+        eligible = and_(
+            Exam.status.in_((ExamStatus.published, ExamStatus.ongoing)),
+            Exam.end_time > now,
             attempt_count < Exam.max_attempts,
-        )))
+        )
+        # The student exam catalogue can show completed attempts even if the
+        # configured limit or end date prevents a retake. The card will explain
+        # the actual policy instead of displaying an empty catalogue.
+        query = query.where(or_(working, eligible, completed) if include_completed else or_(working, eligible))
     query=ordered(query,sort,{'newest':Exam.created_at.desc(),'oldest':Exam.created_at.asc(),'name':func.lower(Exam.title).asc(),'start_time':Exam.start_time.asc()},Exam.id)
     # Return all actionable exams so history/page boundaries never hide work.
     # History remains paginated on /attempts/mine.
@@ -259,11 +267,33 @@ def update_exam(exam_id: UUID, payload: ExamUpdateContent, db: Session = Depends
         raise _not_found('Exam not found')
     if user.role != UserRole.admin and exam.created_by != user.id:
         raise _forbidden('Only the creator or an admin can edit this exam')
+    values = payload.model_dump(exclude_unset=True)
     if db.scalar(select(ExamAttempt.id).where(ExamAttempt.exam_id == exam.id).limit(1)):
-        raise HTTPException(409, detail={'code': 'EXAM_HAS_ATTEMPTS', 'message': 'Cannot edit an exam that already has attempts', 'details': None})
+        # Existing submissions, grading and proctoring logs are immutable.
+        # Only a *larger* retake allowance or a later deadline is safe to edit.
+        def same_value(key: str, value: object) -> bool:
+            current = getattr(exam, key)
+            if isinstance(current, datetime) and isinstance(value, datetime):
+                def utc(value: datetime) -> datetime:
+                    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
+                return utc(current) == utc(value)
+            return current == value
+
+        changed = {key: value for key, value in values.items() if not same_value(key, value)}
+        if set(changed) - {'max_attempts', 'end_time'}:
+            raise HTTPException(409, detail={'code': 'EXAM_HAS_ATTEMPTS', 'message': 'Chỉ có thể tăng số lượt làm và gia hạn sau khi đã có bài nộp.', 'details': None})
+        if 'max_attempts' in changed and changed['max_attempts'] < exam.max_attempts:
+            raise HTTPException(422, detail={'code': 'INVALID_RETAKE_LIMIT', 'message': 'Số lần làm tối đa không được giảm khi đã có lượt thi.', 'details': None})
+        if 'end_time' in changed:
+            proposed = changed['end_time']
+            current_end = exam.end_time
+            proposed = proposed.replace(tzinfo=timezone.utc) if proposed.tzinfo is None else proposed.astimezone(timezone.utc)
+            current_end = current_end.replace(tzinfo=timezone.utc) if current_end.tzinfo is None else current_end.astimezone(timezone.utc)
+            if proposed < current_end:
+                raise HTTPException(422, detail={'code': 'INVALID_EXAM_END_TIME', 'message': 'Không thể rút ngắn hạn thi sau khi đã có lượt làm.', 'details': None})
+        values = changed
     if payload.status in (ExamStatus.published, ExamStatus.ongoing):
         require_supported_exam(db, exam.id)
-    values = payload.model_dump(exclude_unset=True)
     try:
         validate_exam_period(values.get('start_time', exam.start_time), values.get('end_time', exam.end_time))
     except ValueError:
