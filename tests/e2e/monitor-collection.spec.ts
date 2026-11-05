@@ -64,7 +64,7 @@ for (const width of [375, 768, 1440]) test(`monitor collection layout, metrics a
   await expect(active.getByText('Lượt đang thi')).toHaveCount(3);
   await expect(active.locator('dd').first()).toHaveText('6');
   await expect(active.getByRole('link', { name: 'Mở giám sát: Đề thi active-0', exact: true })).toHaveAttribute('href', '/dashboard/monitor/active-0');
-  await expect(page.getByRole('link', { name: 'Xem báo cáo: Đề thi ended', exact: true })).toHaveAttribute('href', '/dashboard/exams/ended/attempts');
+  await expect(page.getByRole('link', { name: 'Xem báo cáo: Đề thi ended', exact: true })).toHaveAttribute('href', '/dashboard/monitor/ended');
   await expect(page.getByRole('navigation', { name: 'Phân trang', exact: true })).toHaveCount(0);
   await expect(page.getByRole('combobox', { name: 'Số kết quả mỗi trang' })).toHaveCount(0);
   await expect(page.getByText('Đã xuất bản', { exact: true })).toHaveCount(0);

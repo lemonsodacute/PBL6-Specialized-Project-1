@@ -87,6 +87,10 @@
 .document-options li { padding: 6px 0; overflow-wrap: anywhere; }
 .document-options .ui-badge { margin-left: 12px; }
 .document-source { margin: 20px 0; color: var(--text-secondary); font-size: 13px; }
+.document-quality-check { display:grid; gap:8px; margin:12px 0; }
+.document-quality-check > .ui-badge { justify-self:start; }
+.document-quality-check p { margin:0; }
+.document-quality-check summary { min-height:44px; cursor:pointer; color:var(--text-secondary); }
 .document-source summary { cursor: pointer; min-height: 36px; }
 .document-source blockquote { margin: 12px 0 0; padding: 12px 16px; border-left: 3px solid var(--color-info); background: var(--surface-muted); line-height:1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
 .document-warning { color: var(--warning); font-size: 14px; }

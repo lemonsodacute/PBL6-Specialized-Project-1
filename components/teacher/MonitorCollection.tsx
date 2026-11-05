@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { Search, Clock, ArrowRight, TriangleAlert, Play, Check, RefreshCw } from 'lucide-react';
@@ -11,7 +11,6 @@ import { resultDate } from '@/lib/teacher-results';
 import { monitoringCount, monitoringLabels, monitoringPage, monitoringPhase, monitoringPhases, readAllPages,
   type MonitoringExam, type MonitoringPhase } from '@/lib/teacher-monitor';
 import styles from './MonitorCollection.module.css';
-import { BarChart, ChartCard, KpiCard } from '@/components/analytics/Charts';
 
 function Icon({ name }: { name: 'search' | 'clock' | 'arrow' | 'warning' | 'play' | 'check' | 'refresh' }) {
   const Glyph = { search: Search, clock: Clock, arrow: ArrowRight, warning: TriangleAlert, play: Play, check: Check, refresh: RefreshCw }[name];
@@ -69,8 +68,8 @@ function ExamCard({ exam, phase, refreshKey }: { exam: MonitoringExam; phase: Mo
   const attempts = summary?.total ?? monitoringCount(exam.attempt_count);
   const classes = exam.classes.map(cls => cls.name).join(' · ') || 'Chưa giao lớp';
   const action = phase === 'ended' ? 'Xem báo cáo' : phase === 'open' ? 'Mở giám sát' : 'Xem chi tiết';
-  const href = phase === 'ended' ? `/dashboard/exams/${exam.id}/attempts` : `/dashboard/monitor/${exam.id}`;
-  return <Card className={`${styles.examCard} ${phase === 'open' ? styles.activeCard : ''}`}>
+  const href = `/dashboard/monitor/${exam.id}`;
+  return <Card borderRole={summary?.violations ? 'warning' : 'exams'} className={`${styles.examCard} ${phase === 'open' ? styles.activeCard : ''}`}>
     <div className={styles.cardStatus}>
       <Badge className={`${styles.status} ${styles[phase]}`}><span className={styles.dot} />{monitoringLabels[phase]}</Badge>
       {attempts !== undefined && <span className={styles.attempts}>{attempts} lượt làm bài</span>}
@@ -134,15 +133,6 @@ export default function MonitorCollection() {
     {result.loading && <LoadingSkeleton rows={3} />}
     {result.error && <Card role="alert" className={styles.error}><p>{result.error}</p><Button onClick={refresh}>Thử lại</Button></Card>}
     {!result.loading && !result.error && <div className={styles.results}>
-      <div className="an-grid an-grid-equal an-monitor-summary" aria-label="Tổng quan giám sát">
-        <div className="an-kpis an-kpis-compact">
-          {result.total != null && <KpiCard label="Đề thi phù hợp" value={result.total.toLocaleString('vi-VN')} detail="Tổng kết quả theo bộ lọc hiện tại" icon={<Search size={19} aria-hidden="true" />} />}
-          <KpiCard label="Đang diễn ra trên trang" value={result.rows.filter(exam => monitoringPhase(exam,now)==='open').length} detail={`${result.rows.length} đề thi trên trang ${page}`} tone="blue" icon={<Play size={19} aria-hidden="true" />} />
-        </div>
-        <ChartCard title="Phân bố đề thi giám sát" description={`Trạng thái của ${result.rows.length} đề thi trên trang ${page}`} footer="Số liệu theo đề thi, không phải số phiên hoặc tổng sự kiện cảnh báo.">
-          <BarChart label="Trạng thái đề thi trên trang" items={monitoringPhases.map((phase,index)=>({label:monitoringLabels[phase],value:result.rows.filter(exam=>monitoringPhase(exam,now)===phase).length,tone:(['brand','blue','purple','warning'] as const)[index]}))} />
-        </ChartCard>
-      </div>
       {result.rows.length ? monitoringPhases.map(phase => {
         const exams = result.rows.filter(exam => monitoringPhase(exam, now) === phase);
         return exams.length ? <section key={phase} className={styles.section} aria-labelledby={`monitor-${phase}`}>
