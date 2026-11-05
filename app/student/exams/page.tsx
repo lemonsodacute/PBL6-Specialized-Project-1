@@ -27,7 +27,7 @@ export default function StudentExamsPage(){
   const grouped=useMemo(()=>{
     const groups=groupStudentActionableExams(exams,user?.id,now);
     if(collection.values.period){
-      for(const group of actionableExamGroups)groups[group]=groups[group].filter(item=>item.state.status===collection.values.period);
+      for(const group of actionableExamGroups)groups[group]=groups[group].filter(item=>item.state.status===collection.values.period || (collection.values.period==='open'&&item.state.canRetry));
     }
     return groups;
   },[exams,user?.id,now,collection.values.period]);

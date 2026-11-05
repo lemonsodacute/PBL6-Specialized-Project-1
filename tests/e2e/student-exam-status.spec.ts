@@ -31,10 +31,16 @@ test('not_started and unknown states are not treated as submitted',()=>{
 test('completed attempts retain results while eligible retry is a separate action',()=>{
   const attempt={id:'done',status:'submitted',attempt_number:1};const state=getStudentExamState({...base,max_attempts:2,allow_review:true,attempt},'student',now);
   expect(state.action).toBe('result');expect(state.canRetry).toBe(true);expect(studentExamActionTarget(base,state)).toBe('/student/attempts/done/result');
-  expect(getStudentExamState({...base,max_attempts:2,allow_review:false,attempt},'student',now).canRetry).toBe(false);
+  const hiddenAnswers=getStudentExamState({...base,max_attempts:2,allow_review:false,attempt},'student',now);
+  expect(hiddenAnswers.canRetry).toBe(true);
+  expect(hiddenAnswers.group).toBe('open');
+  expect(hiddenAnswers.action).toBe('result');
+  expect(getStudentExamState({...base,max_attempts:1,attempt},'student',now).canRetry).toBe(false);
+  expect(getStudentExamState({...base,max_attempts:2,attempt,status:'closed'},'student',now).canRetry).toBe(false);
+  expect(getStudentExamState({...base,max_attempts:2,attempt},'student',Date.parse('2026-10-14T00:00:00Z')).canRetry).toBe(false);
 });
 
-test('actionable groups exclude every completed state and sort deadlines/start times independently of API order',()=>{
+test('actionable groups include completed exams only when another attempt is allowed, sorting deadlines',()=>{
   const exams:ExamLike[]=[
     {...base,id:'open-later'},
     {...base,id:'working-later',attempt:{id:'w1',status:'in_progress',server_deadline_at:'2026-10-12T14:00:00Z'}},
@@ -43,12 +49,13 @@ test('actionable groups exclude every completed state and sort deadlines/start t
     {...base,id:'working-sooner',attempt:{id:'w2',status:'in_progress',server_deadline_at:'2026-10-12T13:00:00Z'}},
     {...base,id:'upcoming-sooner',start_time:'2026-10-12T15:00:00Z'},
     ...['SUBMITTED','AUTO_SUBMITTED','COMPLETED','GRADED','FINALIZED','TERMINATED'].map(status=>({...base,id:status,attempt:{id:status,status}})),
+    {...base,id:'retry',max_attempts:3,allow_review:false,attempt:{id:'attempt-retry',exam_id:'retry',status:'submitted',attempt_number:1}},
     {...base,id:'ended',end_time:'2026-10-11T00:00:00Z'},
     {...base,id:'draft',status:'draft'},
   ];
   const groups=groupStudentActionableExams(exams,'student',now);
   expect(groups.current.map(row=>row.exam.id)).toEqual(['working-sooner','working-later']);
-  expect(groups.open.map(row=>row.exam.id)).toEqual(['open-sooner','open-later']);
+  expect(groups.open.map(row=>row.exam.id)).toEqual(['open-sooner','open-later','retry']);
   expect(groups.upcoming.map(row=>row.exam.id)).toEqual(['upcoming-sooner','upcoming-later']);
   expect(exams[0].id).toBe('open-later');
 });
@@ -182,4 +189,21 @@ test('successful submission stops the attempt and updates exams/results without 
   await expect(card(page,'Đề C đã nộp')).toHaveCount(0);
   await expect(page.locator('.student-exam-section h2')).toHaveText(['Đang diễn ra','Sắp diễn ra']);
   expect(await page.evaluate(()=>performance.getEntriesByType('navigation').map(item=>(item as PerformanceNavigationTiming).type))).toEqual(['navigate']);
+});
+
+test('submitted multi-attempt exam remains actionable on student exam cards and links to a new verification flow',async({page})=>{
+  const fixture=await setup(page);
+  const original=fixture.rows[2];
+  const attempt={...original.attempt!,id:'retry-attempt-1',exam_id:'RETRY',attempt_number:1};
+  fixture.rows.push({...original,id:'RETRY',title:'Bài được làm nhiều lần',allow_review:false,max_attempts:3,attempt,attempts:[attempt]});
+  await page.goto('/student/exams');
+  const retry=card(page,'Bài được làm nhiều lần');
+  await expect(retry).toBeVisible();
+  await expect(retry.getByText('Đã làm 1/3 lần')).toBeVisible();
+  await expect(retry.getByRole('button',{name:'Làm lại bài thi',exact:true})).toBeEnabled();
+  await expect(retry.getByRole('button',{name:'Xem kết quả',exact:true})).toBeEnabled();
+  await retry.getByRole('button',{name:'Làm lại bài thi',exact:true}).click();
+  await expect(page).toHaveURL(/\/student\/exams\/RETRY\/verify$/);
+  await page.goto('/student/classes/class-1');
+  await expect(card(page,'Bài được làm nhiều lần').getByRole('button',{name:'Làm lại bài thi',exact:true})).toBeEnabled();
 });

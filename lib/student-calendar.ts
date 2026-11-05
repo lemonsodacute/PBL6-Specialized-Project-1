@@ -30,7 +30,7 @@ export function calendarEventStatus(event: CalendarEvent, studentId?: string, no
     if (status && isCompletedAttempt(status)) return { status, label: studentAttemptLabel(status) };
     const state = getStudentExamState({ ...event.exam, status: status === 'ended' ? 'closed' : status,
       end_time: event.end?.toISOString() ?? '' }, studentId, now);
-    return { status: state.status, label: state.label };
+    return { status: state.status, label: state.canRetry ? 'Có thể làm lại' : state.label, canRetry: state.canRetry };
   }
   const status = event.sourceStatus?.toLowerCase();
   if (status === 'cancelled') return { status: 'unavailable', label: 'Đã hủy' };

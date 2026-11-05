@@ -27,8 +27,12 @@ export function getExamAttempts(exam: ExamLike, studentId?: string): AttemptLike
 
 export function canRetryExam(exam: ExamLike, attempts: AttemptLike[], now = Date.now()) {
   const own = getExamAttempts({...exam, attempt:null, attempts});
-  return Boolean(own.some(item=>isCompletedAttempt(item.status)) && exam.allow_review === true
-    && (exam.max_attempts ?? 1) > own.length && exam.status !== 'closed' && exam.status !== 'draft'
+  // "allow_review" controls whether students may view answers, not whether
+  // they may use another attempt. Backend /attempts/start enforces max_attempts.
+  return Boolean(own.some(item=>isCompletedAttempt(item.status))
+    && !own.some(item=>item.status.toLowerCase()==='in_progress')
+    && (exam.max_attempts ?? 1) > own.length
+    && ['published','ongoing'].includes(exam.status ?? '')
     && now >= Date.parse(exam.start_time) && now <= Date.parse(exam.end_time));
 }
 
@@ -42,7 +46,8 @@ export function getStudentExamState(exam: ExamLike, studentId?: string, now = Da
   const completed = attempts.find(item=>isCompletedAttempt(item.status));
   if (completed) {
     const status = completed.status.toLowerCase() as StudentExamStatus;
-    return {...base,attempt:completed,status,label:studentAttemptLabel(status),group:'completed',action:'result',actionLabel:getStudentFinalScore(completed)===null?'Xem bài đã nộp':'Xem kết quả',canRetry:canRetryExam(exam,attempts,now)};
+    const canRetry = canRetryExam(exam,attempts,now);
+    return {...base,attempt:completed,status,label:studentAttemptLabel(status),group:canRetry?'open':'completed',action:'result',actionLabel:getStudentFinalScore(completed)===null?'Xem bài đã nộp':'Xem kết quả',canRetry};
   }
   if (attempt && attemptStatus !== 'not_started') return {...base,status:'unavailable',label:'Chưa xác định được trạng thái bài làm',group:'unavailable',action:'none',actionLabel:'Chưa thể làm bài'};
   const start = Date.parse(exam.start_time), end = Date.parse(exam.end_time);

@@ -15,7 +15,6 @@ import { useAuth } from '@/components/auth/AuthContext';
 import { formatCalendarDate, formatCalendarTime } from '@/lib/calendar-date';
 import { calendarDayKey as key, calendarEventStatus, mapCalendarEvents, type CalendarEvent as EventItem, type CalendarExam, type CalendarClass } from '@/lib/student-calendar';
 import { calendarDayEntries, calendarEventAppearance, isSingleDayCalendarEvent, type CalendarDayEntry } from '@/lib/student-calendar-presentation';
-import { isCompletedAttempt } from '@/lib/studentExamStatus';
 import { StudentHeroExam } from '@/components/student/StudentHeroExam';
 import styles from './StudentCalendar.module.css';
 
@@ -96,8 +95,8 @@ export default function StudentCalendar({ overview = false }: { overview?: boole
   const calendarDays = useMemo(() => days.map(day => ({ day, entries: calendarDayEntries(day, events, days[0], new Date(now)) })), [days, events, now]);
   const statusOf = (event: EventItem) => calendarEventStatus(event, user?.id, now);
   const upcoming = events.filter(event => {
-    const status = statusOf(event).status;
-    return (event.end ?? event.start).getTime() >= now && !isCompletedAttempt(status) && status !== 'ended' && status !== 'unavailable';
+    const state = statusOf(event);
+    return (event.end ?? event.start).getTime() >= now && (state.canRetry || !['submitted','auto_submitted','completed','graded','finalized','terminated'].includes(state.status)) && state.status !== 'ended' && state.status !== 'unavailable';
   }).sort((a, b) => a.start.getTime() - b.start.getTime());
   const nextExam = !loading && !error ? upcoming.find(event => event.type === 'exam') : undefined;
   const nextClass = !loading && !error ? upcoming.find(event => event.type === 'class') : undefined;
@@ -205,7 +204,7 @@ export default function StudentCalendar({ overview = false }: { overview?: boole
           {loading ? <LoadingSkeleton rows={2} /> : error ? <p className={styles.muted}>Chưa tải được sự kiện. Vui lòng thử lại ở lịch phía trên.</p>
             : upcoming.length ? <div className={styles.upcomingList}>{upcoming.slice(0, 3).map(event => <div className={`${styles.eventRow} ${styles.eventColor} ${styles.upcomingEvent}`} style={calendarEventAppearance(event)} data-event-id={event.id} data-event-type={event.type === 'exam' ? 'exam' : 'live'} key={event.id} data-chat-avoid>
               <div className={styles.upcomingLabel}><span className={styles.upcomingIcon}>{event.type === 'exam' ? <ClipboardCheck size={18} aria-hidden="true" /> : <Video size={18} aria-hidden="true" />}</span><Badge tone={event.type === 'exam' ? 'info' : 'purple'}>{statusOf(event).label}</Badge></div>
-              <div><h3>{event.title}</h3>{event.courseNames?.length ? <p className={styles.courseNames}>{event.courseNames.join(' · ')}</p> : null}{eventDetails(event, true)}</div><Link className="table-link" href={event.href} aria-label={`Xem ${event.title}`}>Xem chi tiết<ArrowRight size={16} aria-hidden="true" /></Link>
+              <div><h3>{event.title}</h3>{event.courseNames?.length ? <p className={styles.courseNames}>{event.courseNames.join(' · ')}</p> : null}{eventDetails(event, true)}</div><Link className="table-link" href={event.href} aria-label={`Xem ${event.title}`}>{event.exam && statusOf(event).canRetry ? 'Làm lại bài thi' : 'Xem chi tiết'}<ArrowRight size={16} aria-hidden="true" /></Link>
             </div>)}</div> : <p className={styles.muted}>Không có sự kiện sắp tới trong khoảng lịch đang xem.</p>}
         </Card>
       </section>
@@ -223,7 +222,7 @@ export default function StudentCalendar({ overview = false }: { overview?: boole
         <h3>{event.title}</h3>
         {event.courseNames?.length ? <p className={styles.courseNames}>{event.courseNames.join(' · ')}</p> : null}
         {eventDetails(event)}
-        <Link href={event.href} className="table-link">Xem chi tiết<ArrowRight size={16} aria-hidden="true" /></Link>
+        <Link href={event.href} className="table-link">{event.exam && statusOf(event).canRetry ? 'Làm lại bài thi' : 'Xem chi tiết'}<ArrowRight size={16} aria-hidden="true" /></Link>
       </article>)}
     </aside>, document.body)}
   </div>;
