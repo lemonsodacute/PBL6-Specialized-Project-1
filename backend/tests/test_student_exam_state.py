@@ -115,7 +115,8 @@ class StudentExamStateTests(TestCase):
         self.db.add_all([upcoming,ended,draft]);self.db.flush()
         for exam in (upcoming,ended,draft):self.db.add(ExamAssignment(exam_id=exam.id,student_id=self.student.id))
         self.db.commit()
-        expected={str(self.exams[0].id),str(self.exams[1].id),str(upcoming.id)}
+        # A completed exam with remaining capacity is still actionable.
+        expected={str(self.exams[0].id),str(self.exams[1].id),str(self.exams[2].id),str(upcoming.id)}
         for status in (AttemptStatus.submitted,AttemptStatus.auto_submitted,AttemptStatus.terminated):
             self.submitted.status=status;self.db.commit()
             self.assertEqual({row['id'] for row in self.actionable()['data']},expected)
@@ -129,8 +130,8 @@ class StudentExamStateTests(TestCase):
             self.make_attempt(exam,self.student,AttemptStatus.submitted,score=0)
         self.db.commit()
         data=self.actionable('&page=9&limit=1')
-        self.assertEqual(data['meta']['total'],2)
-        self.assertEqual({row['id'] for row in data['data']},{str(self.exams[0].id),str(self.exams[1].id)})
+        self.assertEqual(data['meta']['total'],3)
+        self.assertEqual({row['id'] for row in data['data']},{str(exam.id) for exam in self.exams})
         self.assertIsNone(data['meta']['page'])
 
     def test_all_actionable_exams_are_returned_even_over_page_limit(self):
@@ -140,14 +141,69 @@ class StudentExamStateTests(TestCase):
                       duration_minutes=60,max_attempts=1,status=ExamStatus.published)
             self.db.add(exam);self.db.flush();self.db.add(ExamAssignment(exam_id=exam.id,student_id=self.student.id))
         self.db.commit();data=self.actionable('&limit=20')
-        self.assertEqual(data['meta']['total'],24);self.assertEqual(len(data['data']),24)
+        self.assertEqual(data['meta']['total'],25);self.assertEqual(len(data['data']),25)
 
     def test_expired_working_attempt_is_finalized_before_actionable_filter(self):
         self.working.server_deadline_at=datetime.now(timezone.utc)-timedelta(minutes=1);self.db.commit()
-        self.assertEqual([row['id'] for row in self.actionable()['data']],[str(self.exams[0].id)])
+        self.assertEqual({row['id'] for row in self.actionable()['data']},{str(exam.id) for exam in self.exams})
         response=self.get('/attempts/mine?completed_only=true').json()
         row=next(item for item in response['data'] if item['id']==str(self.working.id))
         self.assertEqual(row['status'],'auto_submitted')
+
+    def test_student_catalogue_keeps_completed_after_limit_or_exam_end(self):
+        # Unlike actionable_only, include_completed lists earlier completed
+        # results even if the student cannot currently retake the exam.
+        self.exams[2].max_attempts = 1
+        self.db.commit()
+        response = self.actionable('&include_completed=true')
+        rows = {row['id']: row for row in response['data']}
+        completed = rows[str(self.exams[2].id)]
+        self.assertEqual(completed['max_attempts'], 1)
+        self.assertEqual(len(completed['attempts']), 1)
+        self.assertEqual(completed['attempt']['status'], 'submitted')
+
+        self.exams[2].end_time = datetime.now(timezone.utc) - timedelta(minutes=1)
+        self.db.commit()
+        self.assertNotIn(str(self.exams[2].id), {row['id'] for row in self.actionable()['data']})
+        self.assertIn(str(self.exams[2].id), {row['id'] for row in self.actionable('&include_completed=true')['data']})
+
+    def test_teacher_can_increase_attempts_and_extend_deadline_without_mutating_old_attempt(self):
+        exam = self.exams[2]
+        original = self.submitted.id
+        teacher_headers = self.fixture.headers(self.fixture.teacher)
+        changed = self.client.patch(
+            f'/api/v1/exams/{exam.id}', headers=teacher_headers,
+            json={'max_attempts': 4},
+        )
+        self.assertEqual(changed.status_code, 200, changed.text)
+        self.assertEqual(changed.json()['data']['max_attempts'], 4)
+        self.assertEqual(self.db.get(ExamAttempt, original).status, AttemptStatus.submitted)
+
+        extended = exam.end_time + timedelta(days=1)
+        result = self.client.patch(
+            f'/api/v1/exams/{exam.id}', headers=teacher_headers,
+            json={'end_time': extended.isoformat()},
+        )
+        self.assertEqual(result.status_code, 200, result.text)
+        self.assertEqual(exam.end_time, extended)
+        self.assertEqual(self.db.get(ExamAttempt, original).status, AttemptStatus.submitted)
+
+        for payload, code in [
+            ({'max_attempts': 2}, 422),
+            ({'end_time': (extended-timedelta(days=2)).isoformat()}, 422),
+            ({'title': 'Changed after submission'}, 409),
+            ({'duration_minutes': 80}, 409),
+        ]:
+            response = self.client.patch(f'/api/v1/exams/{exam.id}', headers=teacher_headers, json=payload)
+            self.assertEqual(response.status_code, code, response.text)
+
+    def test_student_cannot_change_retakes_or_exam_window(self):
+        result = self.client.patch(
+            f'/api/v1/exams/{self.exams[2].id}',
+            headers=self.fixture.headers(self.student),
+            json={'max_attempts': 10},
+        )
+        self.assertIn(result.status_code, (401, 403))
 
     def test_results_only_completed_history_includes_working_and_start_date_filter(self):
         completed=self.get('/attempts/mine?completed_only=true').json()['data']
