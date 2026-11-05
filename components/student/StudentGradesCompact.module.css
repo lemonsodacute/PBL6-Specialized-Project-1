@@ -1,0 +1,263 @@
+/*
+ * Grade-list-only density. Historical attempts and other workspace pages
+ * keep their own styles. All overrides are anchored to the route's .page.
+ */
+.page:global(.workspace-page) {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  width: 100%;
+  max-width: 1480px;
+  min-width: 0;
+  padding: 18px 24px 32px;
+}
+
+.page:global(.workspace-page) :global(.workspace-page-title) {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.2;
+  letter-spacing: -.02em;
+}
+
+.subtitle {
+  margin: -4px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 45px;
+  padding: 8px 14px;
+  border: 2px solid var(--workspace-topbar-outline, var(--border));
+  border-radius: 13px;
+  background: var(--surface);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--text-primary) 14%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat span { color: var(--text-secondary); font-size: 12px; font-weight: 600; }
+.stat strong { color: var(--text-primary); font-size: 18px; line-height: 1; font-weight: 800; }
+
+.page .filterCard {
+  margin: 0;
+  padding: 7px 10px;
+  border: 2px solid var(--workspace-topbar-outline, var(--border));
+  border-radius: 16px;
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--text-primary) 14%, transparent);
+}
+
+.filterCard :global(fieldset[role="search"]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 7px 10px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.filterCard :global(fieldset[role="search"] > label) {
+  min-width: 112px;
+  flex: 1 1 118px;
+  gap: 4px;
+  font-size: 11px;
+  line-height: 1.1;
+}
+.filterCard :global(fieldset[role="search"] > label:first-child) { flex: 1.8 1 190px; }
+.filterCard :global(fieldset[role="search"] > label:has(input[type="date"])) { min-width: 130px; }
+
+.filterCard :global(.ui-field),
+.filterCard :global(fieldset[role="search"] input),
+.filterCard :global(fieldset[role="search"] select) {
+  box-sizing: border-box;
+  height: 36px;
+  min-height: 36px;
+  border: 2px solid var(--workspace-topbar-outline, var(--border));
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.filterCard :global(fieldset[role="search"] label:has(input[type="search"]) input) {
+  padding-left: 34px;
+  padding-right: 32px;
+}
+
+.filterCard :global(fieldset[role="search"] label:has(input[type="search"]) svg) {
+  width: 15px;
+  height: 15px;
+  left: 10px;
+}
+
+.filterCard :global(fieldset[role="search"] button) {
+  min-height: 32px;
+  padding: 4px 9px;
+  font-size: 11px;
+}
+
+.page .tableCard {
+  min-width: 0;
+  padding: 12px 14px 8px;
+  border: 2px solid var(--workspace-topbar-outline, var(--border));
+  border-radius: 16px;
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--text-primary) 14%, transparent);
+}
+
+.tableCard :global(.table-wrap) {
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tableCard :global(.ui-table) {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tableCard :global(.ui-table thead th) {
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.tableCard :global(.ui-table tbody tr) {
+  height: 60px;
+}
+
+.tableCard :global(.ui-table tbody td) {
+  padding: 7px 10px;
+  vertical-align: middle;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.examTitle {
+  max-width: 280px;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.submittedAt {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.score {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  background: var(--surface-muted);
+}
+
+.tableCard :global(.ui-badge) {
+  padding: 3px 8px;
+  border-width: 1px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.tableCard .resultLink {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 32px;
+  height: 32px;
+  padding: 0 10px;
+  border: 2px solid var(--workspace-topbar-outline, var(--border));
+  border-radius: 9px;
+  background: var(--surface);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--text-primary) 14%, transparent);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.tableCard .resultLink:hover { background: var(--surface-muted); }
+.tableCard .resultLink:focus-visible,
+.filterCard :global(:is(button, input, select):focus-visible) {
+  outline: 3px solid var(--workspace-topbar-focus, var(--primary));
+  outline-offset: 2px;
+}
+
+/* Only the grades route reduces the shared student top bar. */
+:global(.app-shell.student-app-shell):has(.page) :global(.topbar) {
+  box-sizing: border-box;
+  height: 58px;
+  min-height: 58px;
+  padding: 5px 16px;
+  gap: 10px;
+  border-width: 2px;
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--text-primary) 14%, transparent);
+}
+
+:global(.app-shell.student-app-shell):has(.page) :global(.topbar .topbar-title) {
+  min-height: 34px;
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+:global(.app-shell.student-app-shell):has(.page) :global(.topbar .notification-bell),
+:global(.app-shell.student-app-shell):has(.page) :global(.topbar .shell-menu-button) {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  border-width: 2px;
+  border-radius: 11px;
+}
+
+:global(.app-shell.student-app-shell):has(.page) :global(.topbar .topbar-user > button) {
+  min-height: 42px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+:global(.app-shell.student-app-shell):has(.page) :global(.topbar .topbar-avatar) {
+  width: 32px;
+  height: 32px;
+}
+
+@media (max-width: 900px) {
+  .page:global(.workspace-page) { padding: 14px 14px 26px; }
+  .tableCard :global(.ui-table) { min-width: 690px; }
+  .stats { gap: 7px; }
+  .stat { padding: 7px 9px; }
+}
+
+@media (max-width: 600px) {
+  .page:global(.workspace-page) :global(.workspace-page-title) { font-size: 24px; }
+  .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .stat { flex-direction: column; align-items: flex-start; gap: 3px; padding: 7px 8px; }
+  .stat span { font-size: 10px; }
+  .stat strong { font-size: 16px; }
+  .page .filterCard { padding: 8px; }
+  .filterCard :global(fieldset[role="search"] > label) { flex-basis: calc(50% - 5px); }
+  .filterCard :global(fieldset[role="search"] > label:first-child) { flex-basis: 100%; }
+  .page .tableCard { padding: 8px; }
+  :global(.app-shell.student-app-shell):has(.page) :global(.topbar) { margin: 6px 8px 0; padding: 4px 8px; gap: 6px; }
+}
