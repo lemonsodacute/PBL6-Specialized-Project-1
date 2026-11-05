@@ -3,7 +3,7 @@ import { useId, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useDialogFocus } from './useDialogFocus';
-export function Modal({ open, title, children, onClose, className = '', size = 'medium' }: { open: boolean; title: string; children: ReactNode; onClose: () => void; className?: string; size?: 'small' | 'medium' | 'large' | 'extra-large' }) {
+export function Modal({ open, title, children, onClose, className = '', size = 'medium', descriptionId }: { open: boolean; title: string; children: ReactNode; onClose: () => void; className?: string; size?: 'small' | 'medium' | 'large' | 'extra-large'; descriptionId?: string }) {
   const titleId = useId();
   const dialog = useRef<HTMLDivElement>(null);
   const overlay = useRef<HTMLDivElement>(null);
@@ -26,5 +26,5 @@ export function Modal({ open, title, children, onClose, className = '', size = '
     };
   }, [open]);
   if (!open) return null;
-  return createPortal(<div ref={overlay} className="ui-overlay"><div ref={dialog} tabIndex={-1} className={`ui-modal ui-modal-${size} ${className}`} role="dialog" aria-modal="true" aria-labelledby={titleId}><div className="modal-heading"><h2 id={titleId}>{title}</h2><button type="button" className="icon-button" onClick={onClose} aria-label="Đóng"><X size={20} aria-hidden="true" /></button></div><div className="modal-body">{children}</div></div></div>, document.body);
+  return createPortal(<div ref={overlay} className="ui-overlay"><div ref={dialog} tabIndex={-1} className={`ui-modal ui-modal-${size} ${className}`} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId}><div className="modal-heading"><h2 id={titleId}>{title}</h2><button type="button" className="icon-button" onClick={onClose} aria-label="Đóng"><X size={20} aria-hidden="true" /></button></div><div className="modal-body">{children}</div></div></div>, document.body);
 }

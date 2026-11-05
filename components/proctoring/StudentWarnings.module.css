@@ -1,0 +1,14 @@
+.stack { margin: 0 24px; }
+.stack:empty { display: none; }
+.panel { padding: 16px 20px; margin: 16px 0; border: 1px solid var(--color-warning); border-radius: 12px; background: var(--warning-soft); color: var(--warning); }
+.title { display: flex; align-items: center; gap: 8px; }
+.list { padding: 0; margin: 8px 0 0; list-style: none; }
+.list li { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 10px 0; }
+.list li + li { border-top: 1px solid color-mix(in srgb, var(--warning) 25%, transparent); }
+.list p { margin: 4px 0; line-height: 1.5; }
+.list small { font-size: 12px; }
+.list button { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; border: 1px solid currentColor; border-radius: 8px; background: transparent; color: inherit; cursor: pointer; }
+.list button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.note { margin: 8px 0 0; font-size: 13px; line-height: 1.5; }
+.connection { color: var(--text-secondary); font-size: 14px; margin: 12px 0; }
+@media (max-width: 600px) { .stack { margin: 0 12px; } .panel { padding: 12px; } }

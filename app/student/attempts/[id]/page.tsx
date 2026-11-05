@@ -14,9 +14,13 @@ import type { AttemptStatus, JsonValue, Question, SeverityLevel, ViolationType }
 import { StudentCallResponder } from '@/components/proctoring/StudentCallResponder';
 import { useExamMedia } from '@/components/proctoring/useExamMedia';
 import { useProctorInput } from '@/components/proctoring/useProctorInput';
+import { forgetExamDeviceSetup, hasExamDeviceSetup } from '@/components/proctoring/examMediaTransfer';
+import { GazeCalibrationPanel } from '@/components/proctoring/GazeCalibrationPanel';
+import type { GazeCalibrationSample } from '@/components/proctoring/useProctorInput';
 import { ExamDeviceSetup } from '@/components/proctoring/ExamDeviceSetup';
 import { FloatingCamera } from '@/components/proctoring/FloatingCamera';
 import { examEssay, examOptions, examSelection } from '@/lib/exam-answer-options';
+import { StudentWarnings, useStudentWarnings } from '@/components/proctoring/StudentWarnings';
 
 const formatTime = (seconds: number) => `${String(Math.floor(Math.max(seconds, 0) / 60)).padStart(2, '0')}:${String(Math.max(seconds, 0) % 60).padStart(2, '0')}`;
 const severity: Record<ViolationType, SeverityLevel> = { tab_switch: 'medium', window_blur: 'medium', copy: 'high', paste: 'high', fullscreen_exit: 'high', right_click: 'low', devtools_open: 'high', network_offline: 'medium', network_online: 'low', multi_monitor: 'critical', other: 'low' };
@@ -76,32 +80,50 @@ function RealStudentAttemptPage() {
   const [error, setError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [gateOpen, setGateOpen] = useState(false);
+  const [entryState, setEntryState] = useState<{ attemptId: string; phase: 'pending' | 'required' | 'complete' }>({ attemptId: id, phase: 'pending' });
+  const gateOpen = entryState.attemptId === id && entryState.phase === 'required';
+  const entryComplete = entryState.attemptId === id && entryState.phase === 'complete';
+  const studentWarnings = useStudentWarnings(id, attempt?.status === 'in_progress' && !finished && entryComplete);
+  const { recordBrowser, delivery: warningDelivery } = studentWarnings;
   const [entryBusy, setEntryBusy] = useState(false);
   const [entryError, setEntryError] = useState('');
   const entryWorking = useRef(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [fullscreenBlocked, setFullscreenBlocked] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [gazeCalibrationEnabled, setGazeCalibrationEnabled] = useState(false);
+  const [gazeCalibrationSample, setGazeCalibrationSample] = useState<GazeCalibrationSample | null>(null);
+  const calibrationSampleRenderAt = useRef(0);
   const mounted = useRef(true);
   const submitInFlight = useRef(false);
   const submittedRef = useRef(false);
   const fullscreenStarted = useRef(false);
   const pendingSaves = useRef(new Set<Promise<void>>());
   const resources = useRef(new Set<() => void>());
+  const initializedAttempt = useRef<string | null>(null);
+  const fullscreenCleanup = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requireVideo = Boolean(exam?.require_camera), requireAudio = Boolean(exam?.require_mic);
   const media = useExamMedia(requireVideo, requireAudio, id);
   const entryMediaConfirmed = media.entryConfirmed;
   const stopEntryMedia = media.stopStream;
-  const stopRecording = useAttemptRecorder(attempt?.id, attempt?.status === 'in_progress' && !finished && !gateOpen && media.ready, media.stream);
+  const confirmDeviceEntry = media.confirmEntry, hasRequiredTracks = media.hasRequiredTracks, restoreMedia = media.restore, captureFrame = media.captureFrame;
+  const stopRecording = useAttemptRecorder(attempt?.id, attempt?.status === 'in_progress' && !finished && entryComplete && media.ready, media.stream);
   const monitorVideoRef = useRef<HTMLVideoElement | null>(null);
   const attachMonitor = useCallback((element: HTMLVideoElement | null) => { monitorVideoRef.current = element; media.attachVideo(element); }, [media.attachVideo]);
-  useProctorInput(attempt?.id, attempt?.status === 'in_progress' && !finished && !gateOpen && media.ready && requireVideo, monitorVideoRef);
+  const receiveCalibrationSample = useCallback((sample: GazeCalibrationSample) => {
+    const now = Date.now();
+    if (now - calibrationSampleRenderAt.current < 200) return;
+    calibrationSampleRenderAt.current = now;
+    setGazeCalibrationSample(sample);
+  }, []);
+  const setCalibrationMode = useCallback((enabled: boolean) => setGazeCalibrationEnabled(enabled), []);
+  useProctorInput(attempt?.id, attempt?.status === 'in_progress' && !finished && entryComplete && media.ready && requireVideo, monitorVideoRef, setCalibrationMode, receiveCalibrationSample);
 
   const finishAttempt = useCallback((status: AttemptStatus = 'submitted') => {
     if (!mounted.current || submittedRef.current) return;
     submittedRef.current = true;
-    setFinished(true); setSubmitting(true); setGateOpen(false); setSettingsOpen(false); setConfirmOpen(false); setFullscreenBlocked(false);
+    setFinished(true); setSubmitting(true); setSettingsOpen(false); setConfirmOpen(false); setFullscreenBlocked(false);
+    forgetExamDeviceSetup(id);
     setAttempt(current => current ? { ...current, status } : current);
     resources.current.forEach(cleanup => cleanup()); resources.current.clear();
     stopRecording(); media.stopStream();
@@ -110,11 +132,17 @@ function RealStudentAttemptPage() {
   }, [id, media.stopStream, router, stopRecording]);
 
   useEffect(() => {
+    if (fullscreenCleanup.current !== null) clearTimeout(fullscreenCleanup.current);
     mounted.current = true;
-    return () => { mounted.current = false; resources.current.forEach(cleanup => cleanup()); resources.current.clear(); stopRecording(); media.stopStream(); exitFullscreen(); };
-  }, [media.stopStream, stopRecording]);
+    return () => {
+      mounted.current = false; resources.current.forEach(cleanup => cleanup()); resources.current.clear();
+      // Media/recorder hooks own cleanup. StrictMode replay must not stop their live handoff.
+      fullscreenCleanup.current = setTimeout(exitFullscreen, 0);
+    };
+  }, []);
 
   useEffect(() => {
+    if (initializedAttempt.current === id) return;
     let active = true;
     setLoading(true);
     void api.attempts.get(id).then(async response => {
@@ -130,22 +158,55 @@ function RealStudentAttemptPage() {
         return { ...question, default_points: Number(question.default_points ?? 0), options_json: options && typeof options === 'object' && 'options' in options ? (options as { options: unknown[] }).options : options } as Question;
       });
       setAttempt({ ...raw, questions }); setExam({ ...settings, require_mic: Boolean(settings.require_mic) });
-      setSecondsLeft(raw.remaining_seconds);
+      initializedAttempt.current = id;
+      setSecondsLeft(Math.max(0, Math.min(raw.remaining_seconds, Math.ceil((new Date(raw.server_deadline_at).getTime() - Date.now()) / 1000))));
       setAnswers(Object.fromEntries((raw.answers ?? []).map(answer => [answer.question_id, answer.answer_content])));
-      const transferred = entryMediaConfirmed.current;
-      setGateOpen(Boolean(settings.require_camera || settings.require_mic) && !transferred);
+      const transferred = entryMediaConfirmed.current && hasRequiredTracks(settings.require_camera, Boolean(settings.require_mic));
+      const completed = hasExamDeviceSetup(id, { camera: settings.require_camera, microphone: Boolean(settings.require_mic) });
+      if (transferred) confirmDeviceEntry(settings.require_camera, Boolean(settings.require_mic));
+      setEntryState({ attemptId: id, phase: !(settings.require_camera || settings.require_mic) || transferred ? 'complete' : completed ? 'pending' : 'required' });
       if (transferred && settings.require_fullscreen) {
         fullscreenStarted.current = true;
         setFullscreenBlocked(true); // Request fullscreen from the existing user-action prompt.
       }
     }).catch(cause => { if (active) { stopEntryMedia(); setError(friendlyError(cause, 'Không tải được bài làm.')); } }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [id, router, finishAttempt, entryMediaConfirmed, stopEntryMedia]);
+  }, [id, router, finishAttempt, entryMediaConfirmed, stopEntryMedia, confirmDeviceEntry, hasRequiredTracks]);
 
   useEffect(() => {
-    if (!attempt || attempt.status !== 'in_progress' || finished || gateOpen || !media.ready || (!requireVideo && !requireAudio)) return;
+    if (!attempt || !exam || entryState.attemptId !== id || entryState.phase !== 'pending') return;
+    let active = true;
+    void (async () => {
+      try {
+        if (!await restoreMedia()) { if (active) setEntryState({ attemptId: id, phase: 'required' }); return; }
+        if (!active || submittedRef.current) return;
+        if (exam.require_camera) {
+          const frame = await captureFrame(true);
+          if (!active || submittedRef.current) return;
+          const proof = await api.identity.verifyEntry(attempt.exam_id, frame, true);
+          if (!proof.verified || proof.status !== 'verified' || !proof.id) throw new Error(entryMismatchMessage);
+          if (!active || submittedRef.current) return;
+          const resumed = unwrap<{ id: string }>(await api.attempts.start(attempt.exam_id, proof.id, attempt.id));
+          if (resumed.id !== attempt.id) throw new Error('Lượt thi đã thay đổi. Vui lòng tải lại trang.');
+        }
+        if (!active || submittedRef.current) return;
+        if (!confirmDeviceEntry()) throw new Error('Thiết bị chưa sẵn sàng. Vui lòng kiểm tra lại.');
+        setEntryState({ attemptId: id, phase: 'complete' });
+        if (exam.require_fullscreen) { fullscreenStarted.current = true; setFullscreenBlocked(true); }
+      } catch (cause) {
+        if (active && !submittedRef.current) {
+          setEntryError(identityError(cause));
+          setEntryState({ attemptId: id, phase: 'required' });
+        }
+      }
+    })();
+    return () => { active = false; };
+  }, [id, attempt?.id, exam?.require_camera, exam?.require_mic, exam?.require_fullscreen, entryState.attemptId, entryState.phase, restoreMedia, captureFrame, confirmDeviceEntry]);
+
+  useEffect(() => {
+    if (!attempt || attempt.status !== 'in_progress' || finished || !entryComplete || !media.ready || (!requireVideo && !requireAudio)) return;
     void api.attempts.startProctoring(attempt.id).catch(() => undefined);
-  }, [attempt?.id, attempt?.status, finished, gateOpen, media.ready, requireVideo, requireAudio]);
+  }, [attempt?.id, attempt?.status, finished, entryComplete, media.ready, requireVideo, requireAudio]);
 
   const submitAttempt = useCallback(async () => {
     if (!attempt || attempt.status !== 'in_progress' || submitInFlight.current || submittedRef.current) return;
@@ -202,11 +263,16 @@ function RealStudentAttemptPage() {
   }, [id, attempt?.status, finished, finishAttempt]);
 
   const sendViolation = useCallback((type: ViolationType) => {
-    if (!attempt || attempt.status !== 'in_progress' || submittedRef.current) return;
+    if (!attempt || attempt.status !== 'in_progress' || submittedRef.current || !entryComplete) return;
+    const warningId = recordBrowser(type);
     void api.attempts.violations(attempt.id, { type, severity: severity[type], metadata_json: { source: 'browser' } }).then(response => {
-      if (mounted.current && unwrap<{ locked: boolean }>(response).locked) finishAttempt('terminated');
-    }).catch(() => undefined);
-  }, [attempt?.id, attempt?.status, finishAttempt]);
+      if (!mounted.current || submittedRef.current) return;
+      const result = unwrap<{ locked: boolean; attempt_status?: AttemptStatus }>(response);
+      warningDelivery(warningId, 'sent');
+      if (result.locked) finishAttempt('terminated');
+      else if (terminal(result.attempt_status)) finishAttempt(result.attempt_status);
+    }).catch(() => { if (mounted.current && !submittedRef.current) warningDelivery(warningId, 'failed'); });
+  }, [attempt?.id, attempt?.status, entryComplete, finishAttempt, recordBrowser, warningDelivery]);
 
   useEffect(() => {
     if (!attempt || attempt.status !== 'in_progress' || finished) return;
@@ -226,17 +292,17 @@ function RealStudentAttemptPage() {
       if (submittedRef.current) return;
       const doc = document as Document & { webkitFullscreenElement?: Element };
       const full = !!(document.fullscreenElement || doc.webkitFullscreenElement); setIsFullscreen(full);
-      if (!full && exam?.require_fullscreen && fullscreenStarted.current && !gateOpen) { sendViolation('fullscreen_exit'); setFullscreenBlocked(true); }
+      if (!full && exam?.require_fullscreen && fullscreenStarted.current && entryComplete) { sendViolation('fullscreen_exit'); setFullscreenBlocked(true); }
     };
     const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
     events.forEach(event => document.addEventListener(event, onFullscreen));
     const cleanup = () => events.forEach(event => document.removeEventListener(event, onFullscreen));
     resources.current.add(cleanup);
     return () => { cleanup(); resources.current.delete(cleanup); };
-  }, [exam?.require_fullscreen, attempt?.id, attempt?.status, finished, gateOpen, sendViolation]);
+  }, [exam?.require_fullscreen, attempt?.id, attempt?.status, finished, entryComplete, sendViolation]);
 
   function saveAnswer(questionId: string, value: JsonValue) {
-    if (!attempt || attempt.status !== 'in_progress' || submittedRef.current || submitInFlight.current || fullscreenBlocked || gateOpen) return;
+    if (!attempt || attempt.status !== 'in_progress' || submittedRef.current || submitInFlight.current || fullscreenBlocked || !entryComplete) return;
     setAnswers(current => ({ ...current, [questionId]: value })); setSaving(true);
     const job = (async () => {
       try {
@@ -272,7 +338,8 @@ function RealStudentAttemptPage() {
         if (resumed.id !== attempt.id) throw new Error('Lượt thi đã thay đổi. Vui lòng tải lại trang.');
       }
       if (submittedRef.current) return;
-      setGateOpen(false);
+      if (!confirmDeviceEntry()) throw new Error('Thiết bị chưa sẵn sàng. Vui lòng kiểm tra lại.');
+      setEntryState({ attemptId: id, phase: 'complete' });
       if (exam?.require_fullscreen) {
         fullscreenStarted.current = true;
         const element = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => Promise<void> };
@@ -297,11 +364,15 @@ function RealStudentAttemptPage() {
   if (loading) return <div className="workspace-page"><LoadingSkeleton rows={5} /></div>;
   if (error && !attempt) return <div className="workspace-page"><Card><p role="alert">{error}</p></Card></div>;
   if (!attempt || !exam) return null;
+  if (entryState.attemptId !== id || entryState.phase === 'pending') return <div className="workspace-page">
+    <video ref={attachMonitor} autoPlay muted playsInline className="proctor-stream-hidden" aria-hidden="true" />
+    <Card role="status"><p>Đang khôi phục thiết bị cho lượt thi...</p><LoadingSkeleton rows={3} /></Card>
+  </div>;
   const currentQuestion = attempt.questions[currentIndex];
   const locked = attempt.status !== 'in_progress' || submitting;
   const answeredCount = Object.values(answers).filter(isAnswered).length;
   return <div className="attempt-page">
-    {!gateOpen && media.ready && <StudentCallResponder attemptId={attempt.id} />}
+    {entryComplete && media.ready && <StudentCallResponder attemptId={attempt.id} />}
     <video ref={attachMonitor} autoPlay muted playsInline className="proctor-stream-hidden" aria-hidden="true" />
     <header className="attempt-header" data-camera-avoid><div><h1>{exam.title}</h1></div>
       <div className="attempt-header-actions"><div className="attempt-timer"><span><small>Thời gian còn lại</small><strong>{formatTime(secondsLeft)}</strong></span></div>
@@ -310,14 +381,16 @@ function RealStudentAttemptPage() {
         <Button variant="success" disabled={locked} onClick={() => setConfirmOpen(true)}>{submitting ? 'Đang nộp...' : 'Nộp bài'}</Button>
       </div>
     </header>
+    {entryComplete && <StudentWarnings state={studentWarnings} />}
     {media.lostMessage && <div className="device-loss-banner" role="alert">{media.lostMessage}<Button variant="outline" onClick={() => setSettingsOpen(true)}>Kiểm tra thiết bị</Button></div>}
     {error && <div className="device-loss-banner" role="alert">{error}{submitError && <Button variant="warning" disabled={submitting} onClick={() => void submitAttempt()}>Thử lại</Button>}</div>}
     <div className="attempt-layout"><aside className="question-sidebar"><p>{answeredCount}/{attempt.questions.length} câu đã làm</p><div className="question-index-list">{attempt.questions.map((item, index) => <button key={item.id} disabled={locked} className={index === currentIndex ? 'active' : ''} onClick={() => setCurrentIndex(index)}><span>{index + 1}</span>{isAnswered(answers[item.id]) && <i><Check className="inline-icon" aria-hidden="true" /></i>}</button>)}</div></aside>
       <main className="question-main"><div className="question-main-top"><Badge>{typeLabel(currentQuestion?.type)}</Badge><span>Câu {currentIndex + 1} / {attempt.questions.length}</span>{saving && <span className="save-status">Đang lưu...</span>}{!saving && savedAt && <span className="save-status saved">Đã lưu lúc {savedAt}</span>}</div>{currentQuestion && <QuestionAnswer attemptId={attempt.id} question={currentQuestion} value={answers[currentQuestion.id]} disabled={locked || fullscreenBlocked || gateOpen} onChange={value => saveAnswer(currentQuestion.id, value)} />}</main>
     </div>
     <div className="attempt-footer" data-camera-avoid><Button variant="outline" disabled={locked || currentIndex === 0} onClick={() => setCurrentIndex(value => value - 1)}><ArrowLeft className="inline-icon" aria-hidden="true" /> Câu trước</Button><span>Thời gian còn lại {formatTime(secondsLeft)}</span><Button variant="outline" disabled={locked || currentIndex >= attempt.questions.length - 1} onClick={() => setCurrentIndex(value => value + 1)}>Câu tiếp theo <ArrowRight className="inline-icon" aria-hidden="true" /></Button></div>
-    {!gateOpen && (requireVideo || requireAudio) && <FloatingCamera attemptId={attempt.id} media={media} requireVideo={requireVideo} requireAudio={requireAudio} />}
-    <ExamDeviceSetup open={gateOpen} media={media} requireVideo={requireVideo} requireAudio={requireAudio} verifying={entryBusy} entryError={entryError} onEnter={() => void enterRoom()} onClose={() => { if (!requireVideo && !requireAudio) setGateOpen(false); }} />
+    {entryComplete && (requireVideo || requireAudio) && <FloatingCamera attemptId={attempt.id} media={media} requireVideo={requireVideo} requireAudio={requireAudio} />}
+    {gazeCalibrationEnabled && entryComplete && !finished && <GazeCalibrationPanel sample={gazeCalibrationSample} />}
+    <ExamDeviceSetup open={gateOpen} media={media} requireVideo={requireVideo} requireAudio={requireAudio} verifying={entryBusy} entryError={entryError} onEnter={() => void enterRoom()} onClose={() => { if (!requireVideo && !requireAudio) setEntryState({ attemptId: id, phase: 'complete' }); }} />
     <ExamDeviceSetup open={settingsOpen && !gateOpen} settings media={media} requireVideo={requireVideo} requireAudio={requireAudio} onEnter={() => { if (media.ready) setSettingsOpen(false); }} onClose={() => setSettingsOpen(false)} />
     <Modal open={confirmOpen} size="small" title="Nộp bài kiểm tra?" onClose={() => { if (!submitting) setConfirmOpen(false); }}><p className="modal-copy">Bạn đã làm <strong>{answeredCount}/{attempt.questions.length}</strong> câu.</p><div className="modal-actions"><Button variant="outline" disabled={submitting} onClick={() => setConfirmOpen(false)}>Tiếp tục làm</Button><Button variant="success" disabled={submitting} onClick={() => { setConfirmOpen(false); void submitAttempt(); }}>Xác nhận nộp bài</Button></div></Modal>
     {fullscreenBlocked && <div className="fullscreen-overlay"><div className="fullscreen-panel"><h2>Bạn đã thoát chế độ toàn màn hình</h2><p>Hãy vào lại chế độ toàn màn hình để tiếp tục.</p><Button onClick={toggleFullscreen}>Vào lại toàn màn hình</Button></div></div>}
