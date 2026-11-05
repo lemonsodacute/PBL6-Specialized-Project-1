@@ -14,7 +14,7 @@ async function respond(route: Route, json: unknown, status = 200) {
   return route.fulfill({ status: route.request().method() === 'OPTIONS' ? 204 : status, headers, ...(route.request().method() === 'OPTIONS' ? {} : { json }) });
 }
 
-async function setup(page: Page, devices = true) {
+async function setup(page: Page, devices = true, requireFullscreen = false) {
   await uiSession(page);
   await page.routeWebSocket('**/api/v1/ws/call/**', () => {});
   const questions = [0, 1].map(index => ({ id: `question-${index}`, content: `Câu hỏi ${index + 1}`, type: 'mcq_single', options_json: { options: ['A', 'B'] }, default_points: 1, topic: 'HTML' }));
@@ -22,7 +22,7 @@ async function setup(page: Page, devices = true) {
   const attempt = () => ({ id: attemptId, exam_id: examId, status: state.status, remaining_seconds: 3600, started_at: new Date().toISOString(), server_deadline_at: state.deadline, questions, answers: state.answers });
   await page.route('**/api/v1/identity/exams/exam-ux/verify-entry', route => respond(route, { data: { id: 'entry-ux', verified: true, status: 'verified', threshold: .363 } }));
   await page.route('**/api/v1/attempts', route => respond(route, { data: attempt() }));
-  await page.route('**/api/v1/exams/exam-ux', route => respond(route, { data: { id: examId, title: 'Bài thi kiểm tra trải nghiệm', duration_minutes: 60, require_camera: devices, require_mic: devices, require_fullscreen: false } }));
+  await page.route('**/api/v1/exams/exam-ux', route => respond(route, { data: { id: examId, title: 'Bài thi kiểm tra trải nghiệm', duration_minutes: 60, require_camera: devices, require_mic: devices, require_fullscreen: requireFullscreen } }));
   await page.route('**/api/v1/attempts/attempt-ux**', async route => {
     const path = new URL(route.request().url()).pathname, method = route.request().method();
     if (method === 'OPTIONS') return respond(route, {});
@@ -291,4 +291,46 @@ for (const width of [360, 390, 430, 820, 1024]) test(`polish: camera leaves navi
   await clear();
   await page.screenshot({ path: info.outputPath(`camera-polish-${width}.png`) });
   expect(await page.evaluate(() => window.examMediaAudit.tracks.filter(track => track.readyState === 'live').length)).toBe(2);
+});
+
+test('first fullscreen prompt is a requirement, while exit after entry is a violation', async ({ page }) => {
+  const state=await setup(page, false, true);
+  await page.addInitScript(() => {
+    let full = false;
+    Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => full ? document.documentElement : null });
+    Object.defineProperty(HTMLElement.prototype, 'requestFullscreen', {
+      configurable: true,
+      value: async function () { full = true; document.dispatchEvent(new Event('fullscreenchange')); }
+    });
+    Object.defineProperty(document, 'exitFullscreen', {
+      configurable: true,
+      value: async () => { full = false; document.dispatchEvent(new Event('fullscreenchange')); }
+    });
+  });
+  await page.goto(attemptPath);
+  const prompt=page.getByRole('dialog', { name: 'Bài thi yêu cầu chế độ toàn màn hình' });
+  await expect(prompt).toBeVisible();
+  await expect(prompt).toContainText('Để bắt đầu làm bài');
+  expect(state.calls.filter(call=>call.path.endsWith('/violations'))).toHaveLength(0);
+  await prompt.getByRole('button',{name:'Vào chế độ toàn màn hình',exact:true}).click();
+  await expect(prompt).toHaveCount(0);
+  await expect.poll(()=>page.evaluate(()=>Boolean(document.fullscreenElement))).toBe(true);
+  expect(state.calls.filter(call=>call.path.endsWith('/violations'))).toHaveLength(0);
+  await page.evaluate(()=>document.exitFullscreen());
+  const exitPrompt=page.getByRole('dialog',{name:'Bạn đã thoát chế độ toàn màn hình'});
+  await expect(exitPrompt).toBeVisible();
+  await expect(exitPrompt.getByRole('button',{name:'Vào lại chế độ toàn màn hình'})).toBeVisible();
+  await expect.poll(()=>state.calls.filter(call=>call.path.endsWith('/violations')).length).toBe(1);
+  await exitPrompt.getByRole('button',{name:'Vào lại chế độ toàn màn hình'}).click();
+  await expect(exitPrompt).toHaveCount(0);
+  await expect.poll(()=>page.evaluate(()=>Boolean(document.fullscreenElement))).toBe(true);
+  expect(state.calls.filter(call=>call.path.endsWith('/violations'))).toHaveLength(1);
+});
+
+test('device entry shows initial fullscreen requirement, not an exit warning', async ({ page }) => {
+  await setup(page, true, true);
+  await enter(page);
+  const prompt=page.getByRole('dialog',{name:'Bài thi yêu cầu chế độ toàn màn hình'});
+  await expect(prompt).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Bạn đã thoát chế độ toàn màn hình'})).toHaveCount(0);
 });
