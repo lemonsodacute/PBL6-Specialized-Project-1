@@ -176,8 +176,8 @@ def list_exams(
         if user.role != UserRole.student:
             raise _forbidden('Only students can request actionable exams')
         now = datetime.now(timezone.utc)
-        # Reconcile expiry before filtering/counting; an auto-submitted attempt
-        # must disappear in this response, even if it fell outside the old page.
+        # Reconcile expiry before filtering/counting. An auto-submitted attempt
+        # remains actionable only if the exam still has another allowed attempt.
         expired = db.scalars(select(ExamAttempt).where(
             ExamAttempt.student_id == user.id,
             ExamAttempt.exam_id.in_(query.with_only_columns(Exam.id)),
@@ -191,13 +191,12 @@ def list_exams(
             db.commit()
         own = select(ExamAttempt.id).where(ExamAttempt.exam_id == Exam.id, ExamAttempt.student_id == user.id).correlate(Exam)
         working = own.where(ExamAttempt.status == AttemptStatus.in_progress).exists()
-        completed = own.where(ExamAttempt.status.in_((AttemptStatus.submitted, AttemptStatus.auto_submitted, AttemptStatus.terminated))).exists()
         attempt_count = select(func.count()).select_from(ExamAttempt).where(
             ExamAttempt.exam_id == Exam.id, ExamAttempt.student_id == user.id,
         ).correlate(Exam).scalar_subquery()
         query = query.where(or_(working, and_(
             Exam.status.in_((ExamStatus.published, ExamStatus.ongoing)), Exam.end_time > now,
-            ~completed, attempt_count < Exam.max_attempts,
+            attempt_count < Exam.max_attempts,
         )))
     query=ordered(query,sort,{'newest':Exam.created_at.desc(),'oldest':Exam.created_at.asc(),'name':func.lower(Exam.title).asc(),'start_time':Exam.start_time.asc()},Exam.id)
     # Return all actionable exams so history/page boundaries never hide work.
