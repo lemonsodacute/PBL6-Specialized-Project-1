@@ -90,6 +90,7 @@ function RealStudentAttemptPage() {
   const entryWorking = useRef(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [fullscreenBlocked, setFullscreenBlocked] = useState(false);
+  const [fullscreenError, setFullscreenError] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [gazeCalibrationEnabled, setGazeCalibrationEnabled] = useState(false);
   const [gazeCalibrationSample, setGazeCalibrationSample] = useState<GazeCalibrationSample | null>(null);
@@ -97,7 +98,8 @@ function RealStudentAttemptPage() {
   const mounted = useRef(true);
   const submitInFlight = useRef(false);
   const submittedRef = useRef(false);
-  const fullscreenStarted = useRef(false);
+  // Only a successful browser fullscreen entry counts. Prompting for entry is not an exit.
+  const fullscreenHasEntered = useRef(false);
   const pendingSaves = useRef(new Set<Promise<void>>());
   const resources = useRef(new Set<() => void>());
   const initializedAttempt = useRef<string | null>(null);
@@ -122,7 +124,7 @@ function RealStudentAttemptPage() {
   const finishAttempt = useCallback((status: AttemptStatus = 'submitted') => {
     if (!mounted.current || submittedRef.current) return;
     submittedRef.current = true;
-    setFinished(true); setSubmitting(true); setSettingsOpen(false); setConfirmOpen(false); setFullscreenBlocked(false);
+    setFinished(true); setSubmitting(true); setSettingsOpen(false); setConfirmOpen(false); setFullscreenBlocked(false); setFullscreenError('');
     forgetExamDeviceSetup(id);
     setAttempt(current => current ? { ...current, status } : current);
     resources.current.forEach(cleanup => cleanup()); resources.current.clear();
@@ -165,9 +167,11 @@ function RealStudentAttemptPage() {
       const completed = hasExamDeviceSetup(id, { camera: settings.require_camera, microphone: Boolean(settings.require_mic) });
       if (transferred) confirmDeviceEntry(settings.require_camera, Boolean(settings.require_mic));
       setEntryState({ attemptId: id, phase: !(settings.require_camera || settings.require_mic) || transferred ? 'complete' : completed ? 'pending' : 'required' });
-      if (transferred && settings.require_fullscreen) {
-        fullscreenStarted.current = true;
-        setFullscreenBlocked(true); // Request fullscreen from the existing user-action prompt.
+      if (settings.require_fullscreen) {
+        const doc = document as Document & { webkitFullscreenElement?: Element };
+        const isFull = Boolean(doc.fullscreenElement || doc.webkitFullscreenElement);
+        if (isFull) fullscreenHasEntered.current = true;
+        setFullscreenBlocked(!isFull);
       }
     }).catch(cause => { if (active) { stopEntryMedia(); setError(friendlyError(cause, 'Không tải được bài làm.')); } }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -192,7 +196,12 @@ function RealStudentAttemptPage() {
         if (!active || submittedRef.current) return;
         if (!confirmDeviceEntry()) throw new Error('Thiết bị chưa sẵn sàng. Vui lòng kiểm tra lại.');
         setEntryState({ attemptId: id, phase: 'complete' });
-        if (exam.require_fullscreen) { fullscreenStarted.current = true; setFullscreenBlocked(true); }
+        if (exam.require_fullscreen) {
+          const doc = document as Document & { webkitFullscreenElement?: Element };
+          const isFull = Boolean(doc.fullscreenElement || doc.webkitFullscreenElement);
+          if (isFull) fullscreenHasEntered.current = true;
+          setFullscreenBlocked(!isFull);
+        }
       } catch (cause) {
         if (active && !submittedRef.current) {
           setEntryError(identityError(cause));
@@ -286,13 +295,30 @@ function RealStudentAttemptPage() {
     return () => { cleanup(); resources.current.delete(cleanup); };
   }, [attempt?.id, attempt?.status, finished, sendViolation]);
 
+  // For exams without a device gate too, prompt for fullscreen on first entry.
+  useEffect(() => {
+    if (!exam?.require_fullscreen || !entryComplete || attempt?.status !== 'in_progress' || finished) return;
+    const doc = document as Document & { webkitFullscreenElement?: Element };
+    const isFull = Boolean(doc.fullscreenElement || doc.webkitFullscreenElement);
+    if (isFull) fullscreenHasEntered.current = true;
+    setFullscreenBlocked(!isFull);
+  }, [attempt?.id, attempt?.status, exam?.require_fullscreen, entryComplete, finished]);
+
   useEffect(() => {
     if (!attempt || attempt.status !== 'in_progress' || finished) return;
     const onFullscreen = () => {
       if (submittedRef.current) return;
       const doc = document as Document & { webkitFullscreenElement?: Element };
       const full = !!(document.fullscreenElement || doc.webkitFullscreenElement); setIsFullscreen(full);
-      if (!full && exam?.require_fullscreen && fullscreenStarted.current && entryComplete) { sendViolation('fullscreen_exit'); setFullscreenBlocked(true); }
+      if (full) {
+        fullscreenHasEntered.current = true;
+        setFullscreenBlocked(false);
+        setFullscreenError('');
+      } else if (exam?.require_fullscreen && fullscreenHasEntered.current && entryComplete) {
+        // Only a real exit *after* successful entry creates a browser violation.
+        sendViolation('fullscreen_exit');
+        setFullscreenBlocked(true);
+      }
     };
     const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
     events.forEach(event => document.addEventListener(event, onFullscreen));
@@ -341,9 +367,12 @@ function RealStudentAttemptPage() {
       if (!confirmDeviceEntry()) throw new Error('Thiết bị chưa sẵn sàng. Vui lòng kiểm tra lại.');
       setEntryState({ attemptId: id, phase: 'complete' });
       if (exam?.require_fullscreen) {
-        fullscreenStarted.current = true;
-        const element = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => Promise<void> };
-        try { const request = element.requestFullscreen ?? element.webkitRequestFullscreen; if (request) void Promise.resolve(request.call(element)).catch(() => { if (!submittedRef.current) setFullscreenBlocked(true); }); else setFullscreenBlocked(true); } catch { setFullscreenBlocked(true); }
+        // Entering the room can involve async identity checks; requesting fullscreen
+        // here may lose browser user activation. Ask the student to click explicitly.
+        const doc = document as Document & { webkitFullscreenElement?: Element };
+        const isFull = Boolean(doc.fullscreenElement || doc.webkitFullscreenElement);
+        if (isFull) fullscreenHasEntered.current = true;
+        setFullscreenBlocked(!isFull);
       }
     } catch (cause) {
       setEntryError(identityError(cause));
@@ -354,10 +383,35 @@ function RealStudentAttemptPage() {
   };
   const toggleFullscreen = () => {
     if (submittedRef.current) return;
-    if (document.fullscreenElement) exitFullscreen();
-    else {
-      const element = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => Promise<void> };
-      try { const request = element.requestFullscreen ?? element.webkitRequestFullscreen; if (request) void Promise.resolve(request.call(element)).then(() => setFullscreenBlocked(false)).catch(() => setError('Vui lòng cho phép chế độ toàn màn hình để tiếp tục.')); } catch { setError('Chưa thể bật toàn màn hình. Vui lòng thử lại.'); }
+    const doc = document as Document & { webkitFullscreenElement?: Element };
+    if (doc.fullscreenElement || doc.webkitFullscreenElement) {
+      exitFullscreen();
+      return;
+    }
+    setFullscreenError('');
+    const element = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => Promise<void> };
+    const request = element.requestFullscreen ?? element.webkitRequestFullscreen;
+    if (!request) {
+      setFullscreenError('Trình duyệt không hỗ trợ chế độ toàn màn hình. Vui lòng dùng trình duyệt được hỗ trợ.');
+      return;
+    }
+    try {
+      // Call the browser API synchronously from the student's click.
+      void Promise.resolve(request.call(element)).then(() => {
+        if (submittedRef.current) return;
+        const current = document as Document & { webkitFullscreenElement?: Element };
+        if (!current.fullscreenElement && !current.webkitFullscreenElement) {
+          setFullscreenError('Chưa thể bật toàn màn hình. Vui lòng thử lại.');
+          return;
+        }
+        fullscreenHasEntered.current = true;
+        setFullscreenBlocked(false);
+        setFullscreenError('');
+      }).catch(() => {
+        if (!submittedRef.current) setFullscreenError('Vui lòng cho phép chế độ toàn màn hình để tiếp tục.');
+      });
+    } catch {
+      setFullscreenError('Chưa thể bật toàn màn hình. Vui lòng thử lại.');
     }
   };
   if (finished || terminal(attempt?.status)) return <div className="workspace-page"><Card role="status"><p>Bài thi đã kết thúc. Đang mở kết quả...</p></Card></div>;
@@ -393,7 +447,12 @@ function RealStudentAttemptPage() {
     <ExamDeviceSetup open={gateOpen} media={media} requireVideo={requireVideo} requireAudio={requireAudio} verifying={entryBusy} entryError={entryError} onEnter={() => void enterRoom()} onClose={() => { if (!requireVideo && !requireAudio) setEntryState({ attemptId: id, phase: 'complete' }); }} />
     <ExamDeviceSetup open={settingsOpen && !gateOpen} settings media={media} requireVideo={requireVideo} requireAudio={requireAudio} onEnter={() => { if (media.ready) setSettingsOpen(false); }} onClose={() => setSettingsOpen(false)} />
     <Modal open={confirmOpen} size="small" title="Nộp bài kiểm tra?" onClose={() => { if (!submitting) setConfirmOpen(false); }}><p className="modal-copy">Bạn đã làm <strong>{answeredCount}/{attempt.questions.length}</strong> câu.</p><div className="modal-actions"><Button variant="outline" disabled={submitting} onClick={() => setConfirmOpen(false)}>Tiếp tục làm</Button><Button variant="success" disabled={submitting} onClick={() => { setConfirmOpen(false); void submitAttempt(); }}>Xác nhận nộp bài</Button></div></Modal>
-    {fullscreenBlocked && <div className="fullscreen-overlay"><div className="fullscreen-panel"><h2>Bạn đã thoát chế độ toàn màn hình</h2><p>Hãy vào lại chế độ toàn màn hình để tiếp tục.</p><Button onClick={toggleFullscreen}>Vào lại toàn màn hình</Button></div></div>}
+    {fullscreenBlocked && <div className="fullscreen-overlay" role="dialog" aria-modal="true" aria-labelledby="fullscreen-requirement-title"><div className="fullscreen-panel">
+      <h2 id="fullscreen-requirement-title">{fullscreenHasEntered.current ? 'Bạn đã thoát chế độ toàn màn hình' : 'Bài thi yêu cầu chế độ toàn màn hình'}</h2>
+      <p>{fullscreenHasEntered.current ? 'Bạn đã rời chế độ toàn màn hình. Hãy vào lại để tiếp tục làm bài.' : 'Để bắt đầu làm bài, bạn cần bật chế độ toàn màn hình theo yêu cầu của kỳ thi.'}</p>
+      <Button onClick={toggleFullscreen}>{fullscreenHasEntered.current ? 'Vào lại chế độ toàn màn hình' : 'Vào chế độ toàn màn hình'}</Button>
+      {fullscreenError && <p role="alert">{fullscreenError}</p>}
+    </div></div>}
   </div>;
 }
 
