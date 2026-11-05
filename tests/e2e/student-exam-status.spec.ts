@@ -40,7 +40,7 @@ test('completed attempts retain results while eligible retry is a separate actio
   expect(getStudentExamState({...base,max_attempts:2,attempt},'student',Date.parse('2026-10-14T00:00:00Z')).canRetry).toBe(false);
 });
 
-test('actionable groups include completed exams only when another attempt is allowed, sorting deadlines',()=>{
+test('exam groups retain completed exams even after attempts are exhausted',()=>{
   const exams:ExamLike[]=[
     {...base,id:'open-later'},
     {...base,id:'working-later',attempt:{id:'w1',status:'in_progress',server_deadline_at:'2026-10-12T14:00:00Z'}},
@@ -57,6 +57,7 @@ test('actionable groups include completed exams only when another attempt is all
   expect(groups.current.map(row=>row.exam.id)).toEqual(['working-sooner','working-later']);
   expect(groups.open.map(row=>row.exam.id)).toEqual(['open-sooner','open-later','retry']);
   expect(groups.upcoming.map(row=>row.exam.id)).toEqual(['upcoming-sooner','upcoming-later']);
+  expect(groups.completed.map(row=>row.exam.id).sort()).toEqual(['AUTO_SUBMITTED','COMPLETED','FINALIZED','GRADED','SUBMITTED','TERMINATED'].sort());
   expect(exams[0].id).toBe('open-later');
 });
 
@@ -100,13 +101,15 @@ async function setup(page:Page){
 }
 const card=(page:Page,title:string)=>page.locator('.student-exam-card').filter({has:page.getByRole('heading',{name:title,exact:true})});
 async function acceptance(page:Page,classView=false){
-  await expect(card(page,'Đề A chưa làm').getByRole('button',{name:'Bắt đầu làm bài',exact:true})).toBeEnabled({timeout:45_000});
+  await expect(card(page,'Đề A chưa làm').getByRole('link',{name:'Bắt đầu làm bài',exact:true})).toBeEnabled({timeout:45_000});
   await expect(card(page,'Đề A chưa làm').getByText('Đã nộp',{exact:true})).toHaveCount(0);
-  await expect(card(page,'Đề B đang làm').getByRole('button',{name:'Tiếp tục làm bài',exact:true})).toBeEnabled();
-  if(classView)await expect(card(page,'Đề C đã nộp').getByRole('button',{name:'Xem kết quả',exact:true})).toBeEnabled();
-  else{
-    await expect(card(page,'Đề C đã nộp')).toHaveCount(0);
-    await expect(page.locator('.student-exam-section h2')).toHaveText(['Đang làm','Đang diễn ra','Sắp diễn ra']);
+  await expect(card(page,'Đề B đang làm').getByRole('link',{name:'Tiếp tục làm bài',exact:true})).toBeEnabled();
+  await expect(card(page,'Đề C đã nộp').getByRole('link',{name:'Xem kết quả',exact:true})).toBeVisible();
+  if(!classView){
+    await expect(card(page,'Đề C đã nộp')).toContainText('Đã dùng 1/1 lượt');
+    await expect(card(page,'Đề C đã nộp')).toContainText('Bạn đã sử dụng hết số lần làm bài');
+    await expect(card(page,'Đề C đã nộp').getByRole('button',{name:'Làm lại bài thi'})).toHaveCount(0);
+    await expect(page.locator('.student-exam-section h2')).toHaveText(['Đang làm','Đang diễn ra','Sắp diễn ra','Đã làm']);
     await expect(card(page,'Đề D sắp diễn ra').getByRole('button')).toBeDisabled();
   }
 }
@@ -115,18 +118,18 @@ for(const route of ['/student/exams','/student/classes/class-1'])test(`${route} 
   const state=await setup(page);await page.goto(route);await acceptance(page,classView);
   state.rows[1].attempt!.status='submitted';state.rows[1].attempts[0].status='submitted';
   await page.evaluate(studentId=>window.dispatchEvent(new CustomEvent('student-exam-updated',{detail:{studentId,examId:'B',attemptId:'attempt-B'}})),fixtureUser.id);
-  if(classView)await expect(card(page,'Đề B đang làm').getByRole('button',{name:'Xem kết quả',exact:true})).toBeVisible();
-  else await expect(card(page,'Đề B đang làm')).toHaveCount(0);
-  await expect(card(page,'Đề A chưa làm').getByRole('button',{name:'Bắt đầu làm bài',exact:true})).toBeEnabled();
-  if(classView)await expect(card(page,'Đề C đã nộp').getByRole('button',{name:'Xem kết quả',exact:true})).toBeEnabled();
+  if(classView)await expect(card(page,'Đề B đang làm').getByRole('link',{name:'Xem kết quả',exact:true})).toBeVisible();
+  else await expect(card(page,'Đề B đang làm').getByRole('link',{name:'Xem kết quả'})).toBeVisible();
+  await expect(card(page,'Đề A chưa làm').getByRole('link',{name:'Bắt đầu làm bài',exact:true})).toBeEnabled();
+  if(classView)await expect(card(page,'Đề C đã nộp').getByRole('link',{name:'Xem kết quả',exact:true})).toBeEnabled();
   await page.reload();
-  if(classView)await expect(card(page,'Đề B đang làm').getByRole('button',{name:'Xem kết quả',exact:true})).toBeVisible();
-  else{await expect(card(page,'Đề A chưa làm')).toBeVisible();await expect(card(page,'Đề B đang làm')).toHaveCount(0);}
+  if(classView)await expect(card(page,'Đề B đang làm').getByRole('link',{name:'Xem kết quả',exact:true})).toBeVisible();
+  else{await expect(card(page,'Đề A chưa làm')).toBeVisible();await expect(card(page,'Đề B đang làm').getByRole('link',{name:'Xem kết quả'})).toBeVisible();}
 });
 test('each action navigates using its exact exam or attempt ID',async({page})=>{
   await setup(page);
   for(const [title,label,path] of [['Đề A chưa làm','Bắt đầu làm bài','/student/exams/A/verify'],['Đề B đang làm','Tiếp tục làm bài','/student/attempts/attempt-B'],['Đề C đã nộp','Xem kết quả','/student/attempts/attempt-C/result']]){
-    await page.goto(title==='Đề C đã nộp'?'/student/classes/class-1':'/student/exams');await acceptance(page,title==='Đề C đã nộp');await card(page,title).getByRole('button',{name:label,exact:true}).click();await expect(page).toHaveURL(new RegExp(path+'$'),{timeout:45_000});
+    await page.goto('/student/exams');await acceptance(page);await card(page,title).getByRole('link',{name:label,exact:true}).click();await expect(page).toHaveURL(new RegExp(path+'$'),{timeout:45_000});
   }
 });
 test('foreign payload and single-attempt fallback do not leak submitted state across exams',async({page})=>{
@@ -139,8 +142,8 @@ test('focus refresh and delayed older responses cannot undo a submitted state',a
   await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await expect.poll(()=>state.requests).toBeGreaterThan(before);
   state.gate=null;state.rows[1].attempt!.status='submitted';state.rows[1].attempts[0].status='submitted';
   await page.evaluate(studentId=>window.dispatchEvent(new CustomEvent('student-exam-updated',{detail:{studentId,examId:'B'}})),fixtureUser.id);
-  await expect(card(page,'Đề B đang làm')).toHaveCount(0);release();
-  await expect(card(page,'Đề B đang làm').getByRole('button',{name:'Tiếp tục làm bài',exact:true})).toHaveCount(0);await expect(card(page,'Đề A chưa làm').getByRole('button',{name:'Bắt đầu làm bài',exact:true})).toBeEnabled();
+  await expect(card(page,'Đề B đang làm').getByRole('link',{name:'Xem kết quả'})).toBeVisible();release();
+  await expect(card(page,'Đề B đang làm').getByRole('link',{name:'Tiếp tục làm bài',exact:true})).toHaveCount(0);await expect(card(page,'Đề A chưa làm').getByRole('link',{name:'Bắt đầu làm bài',exact:true})).toBeEnabled();
 });
 
 test('stale pagination and sort parameters cannot hide actionable sections',async({page})=>{
@@ -149,6 +152,7 @@ test('stale pagination and sort parameters cannot hide actionable sections',asyn
   page.on('request',request=>{if(new URL(request.url()).pathname==='/api/v1/exams')calls.push(new URL(request.url()).searchParams);});
   await page.goto('/student/exams?page=9&limit=100&sort=oldest');await acceptance(page);
   expect(calls.at(-1)?.get('actionable_only')).toBe('true');
+  expect(calls.at(-1)?.get('include_completed')).toBe('true');
   expect(calls.at(-1)?.has('page')).toBe(false);
   await expect(page.getByRole('navigation',{name:'Phân trang',exact:true})).toHaveCount(0);
 });
@@ -177,7 +181,7 @@ test('pending grading never presents a partial score as final',async({page})=>{
 
 test('successful submission stops the attempt and updates exams/results without F5',async({page})=>{
   await setup(page);await page.goto('/student/exams');await acceptance(page);
-  await card(page,'Đề B đang làm').getByRole('button',{name:'Tiếp tục làm bài'}).click();
+  await card(page,'Đề B đang làm').getByRole('link',{name:'Tiếp tục làm bài'}).click();
   await page.getByRole('button',{name:'Nộp bài',exact:true}).click();
   await page.getByRole('button',{name:'Xác nhận nộp bài',exact:true}).click();
   await expect(page).toHaveURL(/\/student\/attempts\/attempt-B\/result$/);
@@ -185,9 +189,9 @@ test('successful submission stops the attempt and updates exams/results without 
   await expect(page.getByRole('row').filter({hasText:'Đề B đang làm'})).toBeVisible();
   await page.getByRole('link',{name:'Làm kiểm tra',exact:true}).click();
   await expect(card(page,'Đề A chưa làm')).toBeVisible();
-  await expect(card(page,'Đề B đang làm')).toHaveCount(0);
-  await expect(card(page,'Đề C đã nộp')).toHaveCount(0);
-  await expect(page.locator('.student-exam-section h2')).toHaveText(['Đang diễn ra','Sắp diễn ra']);
+  await expect(card(page,'Đề B đang làm').getByRole('link',{name:'Xem kết quả'})).toBeVisible();
+  await expect(card(page,'Đề C đã nộp').getByRole('link',{name:'Xem kết quả'})).toBeVisible();
+  await expect(page.locator('.student-exam-section h2')).toHaveText(['Đang diễn ra','Sắp diễn ra','Đã làm']);
   expect(await page.evaluate(()=>performance.getEntriesByType('navigation').map(item=>(item as PerformanceNavigationTiming).type))).toEqual(['navigate']);
 });
 
@@ -199,10 +203,13 @@ test('submitted multi-attempt exam remains actionable on student exam cards and 
   await page.goto('/student/exams');
   const retry=card(page,'Bài được làm nhiều lần');
   await expect(retry).toBeVisible();
-  await expect(retry.getByText('Đã làm 1/3 lần')).toBeVisible();
+  await expect(retry).toContainText('Đã dùng 1/3 lượt');
   await expect(retry.getByRole('button',{name:'Làm lại bài thi',exact:true})).toBeEnabled();
-  await expect(retry.getByRole('button',{name:'Xem kết quả',exact:true})).toBeEnabled();
+  await expect(retry.getByRole('link',{name:'Xem kết quả',exact:true})).toBeEnabled();
   await retry.getByRole('button',{name:'Làm lại bài thi',exact:true}).click();
+  const dialog=page.getByRole('dialog',{name:'Bạn có muốn làm lại bài thi?'});
+  await expect(dialog).toContainText('2 lượt làm bài');
+  await dialog.getByRole('button',{name:'Tiếp tục làm lại'}).click();
   await expect(page).toHaveURL(/\/student\/exams\/RETRY\/verify$/);
   await page.goto('/student/classes/class-1');
   await expect(card(page,'Bài được làm nhiều lần').getByRole('button',{name:'Làm lại bài thi',exact:true})).toBeEnabled();
