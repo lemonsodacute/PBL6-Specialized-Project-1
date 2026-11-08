@@ -604,6 +604,37 @@ test('timer auto-submits through the same cleanup and navigation path', async ({
   await page.goto(attemptPath); await expect(page).toHaveURL(new RegExp(`${resultPath}$`), { timeout: 9000 }); expect(state.submits).toBe(1);
 });
 
+test('active attempt uses the full viewport and restores dashboard navigation on results', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const state = await setup(page, false);
+  await page.goto(attemptPath);
+  const shell = page.locator('.student-app-shell');
+  await expect(page.locator('.attempt-page .attempt-header')).toBeVisible();
+  await expect(shell).toHaveClass(/exam-focus-shell/);
+  await expect(page.locator('#workspace-sidebar')).toHaveCount(0);
+  await expect(page.locator('.topbar')).toHaveCount(0);
+  await expect(page.locator('.student-footer')).toHaveCount(0);
+  await expect(page.locator('.attempt-footer')).toHaveCSS('left', '0px');
+  const main = await page.locator('.attempt-layout').boundingBox();
+  expect(main).not.toBeNull();
+  expect(main!.x).toBeLessThan(100);
+  await expect(page.getByRole('button', { name: 'Nộp bài', exact: true })).toBeVisible();
+
+  // A reload may recreate the exam UI, but must not restore the application chrome.
+  await page.reload();
+  await expect(page.locator('.attempt-page .attempt-header')).toBeVisible();
+  await expect(page.locator('#workspace-sidebar')).toHaveCount(0);
+  await expect(page.locator('.topbar')).toHaveCount(0);
+
+  await page.locator('.answer-option').first().click();
+  await expect.poll(() => state.answers.length).toBe(1);
+  await submit(page);
+  await expect(page).toHaveURL(new RegExp(`${resultPath}$`));
+  await expect(shell).not.toHaveClass(/exam-focus-shell/);
+  await expect(page.locator('#workspace-sidebar')).toBeVisible();
+  await expect(page.locator('.topbar')).toBeVisible();
+});
+
 for (const width of [320, 375, 768, 1024, 1440]) {
   test(`floating widget fits ${width}px and avoids exam controls`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: width <= 375 ? 650 : 900 }); await setup(page); await enter(page);
@@ -637,17 +668,18 @@ test('desktop dragging, collapse, question navigation and stored position preser
   await expect(widget.locator('video')).toBeVisible();
   await handle.focus(); await page.keyboard.press('ArrowRight');
   const saved = await page.evaluate(() => JSON.parse(sessionStorage.getItem('ai-procto-camera:attempt-ux')!)); expect(saved.x).toBeGreaterThan(moved.x);
-  await page.getByRole('link', { name: 'Trang chủ', exact: true }).click(); await stopped(page);
+  // The active exam is intentionally distraction-free: navigate via the URL to test cleanup.
+  await page.goto('/student'); await stopped(page);
   await page.goto(attemptPath);
   await expect(widget).toBeVisible();
   await expect(page.getByRole('dialog', { name: 'Cài đặt thiết bị trước khi thi', exact: true })).toHaveCount(0);
   await expect.poll(async () => (await widget.boundingBox())!.x).toBe(saved.x);
 });
 
-for (const width of [360, 390, 430, 820, 1024]) test(`polish: camera leaves navigation and submit clear at ${width}px`, async ({ page }, info) => {
+for (const width of [360, 390, 430, 820, 1024]) test(`polish: camera leaves exam controls clear at ${width}px`, async ({ page }, info) => {
   await page.setViewportSize({ width, height: 640 }); await setup(page); await enter(page);
-  await expect(page.locator('.sidebar a[href="/student/exams"]')).toHaveAttribute('aria-current', 'page');
-  await expect(page.locator('.sidebar .student-nav-group')).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('#workspace-sidebar')).toHaveCount(0);
+  await expect(page.locator('.topbar')).toHaveCount(0);
   const widget = page.getByRole('region', { name: 'Thiết bị giám sát', exact: true });
   const clear = async () => {
     await expect(widget).toBeVisible();
@@ -685,6 +717,8 @@ test('first fullscreen prompt is a requirement, while exit after entry is a viol
   await page.goto(attemptPath);
   const prompt=page.getByRole('dialog', { name: 'Bài thi yêu cầu chế độ toàn màn hình' });
   await expect(prompt).toBeVisible();
+  await expect(page.locator('#workspace-sidebar')).toHaveCount(0);
+  await expect(page.locator('.topbar')).toHaveCount(0);
   await expect(prompt).toContainText('Để bắt đầu làm bài');
   expect(state.calls.filter(call=>call.path.endsWith('/violations'))).toHaveLength(0);
   await prompt.getByRole('button',{name:'Vào chế độ toàn màn hình',exact:true}).click();

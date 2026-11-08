@@ -30,3 +30,57 @@
   .attempt-page .attempt-footer .ui-button { flex: 1; min-width: 0; white-space: normal; }
   .exam-device-modal .modal-actions { flex-wrap: wrap; }
 }
+
+/* Dedicated student exam surface. Native fullscreen captures the document root;
+   remove the dashboard chrome in AppShell instead of just requesting fullscreen. */
+.app-shell.exam-focus-shell > .workspace {
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+.app-shell.exam-focus-shell .shell-content {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  padding: 0;
+}
+.app-shell.exam-focus-shell .attempt-page {
+  min-height: 100dvh;
+}
+.app-shell.exam-focus-shell .attempt-header {
+  width: calc(100% - 32px);
+  max-width: 1600px;
+  margin: 16px auto 0;
+  border-radius: 20px;
+}
+.app-shell.exam-focus-shell .attempt-layout {
+  width: min(1440px, calc(100% - 48px));
+  grid-template-columns: minmax(205px, 248px) minmax(0, 1fr);
+}
+.app-shell.exam-focus-shell .question-main {
+  min-width: 0;
+}
+.app-shell.exam-focus-shell .answer-panel {
+  max-width: 920px;
+}
+.app-shell.exam-focus-shell .attempt-footer {
+  left: 0;
+}
+@media (max-width: 900px) {
+  .app-shell.exam-focus-shell .attempt-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app-shell.exam-focus-shell .question-sidebar {
+    position: static;
+  }
+}
+@media (max-width: 767px) {
+  .app-shell.exam-focus-shell .attempt-header {
+    width: calc(100% - 16px);
+    margin-top: 8px;
+  }
+  .app-shell.exam-focus-shell .attempt-layout {
+    width: calc(100% - 24px);
+  }
+}
