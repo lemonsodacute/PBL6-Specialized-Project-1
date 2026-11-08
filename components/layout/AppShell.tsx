@@ -74,6 +74,9 @@ export function WorkspaceShell({ children, user, navigation, contentClassName = 
   const [preferenceReady, setPreferenceReady] = useState(false);
   const [desktop, setDesktop] = useState(false);
   const compact = desktop && collapsed;
+  // A live attempt is an exam-only workspace, not a regular navigable dashboard.
+  // Match only the attempt route; results, history and oral routes keep normal navigation.
+  const examFocus = student && /^\/student\/attempts\/[^/]+\/?$/.test(pathname);
   const testsActive = ['/student/exams', '/student/history', '/student/attempts'].some(href => pathname.startsWith(href));
   const sidebar = useRef<HTMLElement>(null);
   useDialogFocus(open, sidebar, () => setOpen(false));
@@ -110,10 +113,10 @@ export function WorkspaceShell({ children, user, navigation, contentClassName = 
     return <SidebarHint key={href} label={label} enabled={compact && hint}><Link href={href} prefetch={true} className={current ? 'current' : ''} aria-current={current ? 'page' : undefined}><NavigationIcon href={href} /><span className="nav-label">{label}</span>{href === '/admin/messages' && chatUnread > 0 && <span className="support-nav-badge" aria-label={`${chatUnread} tin nhắn chưa đọc`}>{chatUnread > 99 ? '99+' : chatUnread}</span>}<NavigationPending /></Link></SidebarHint>;
   };
 
-  return <div className={`app-shell ${sidebarStyles.shell} ${pageTitleStyles.pageTitles} ${teacher ? teacherStyles.shell : admin ? teacherStyles.headerShell : ''} ${student ? `student-app-shell ${canvasStyles.canvas}` : ''} ${student && pathname === '/student' ? `neo-dashboard-shell ${neoStyles.neoShell}` : ''}`} data-role={user.role} data-experience={experience} data-sidebar-collapsed={compact}>
+  return <div className={`app-shell ${sidebarStyles.shell} ${pageTitleStyles.pageTitles} ${teacher ? teacherStyles.shell : admin ? teacherStyles.headerShell : ''} ${student ? `student-app-shell ${canvasStyles.canvas}` : ''} ${student && pathname === '/student' ? `neo-dashboard-shell ${neoStyles.neoShell}` : ''} ${examFocus ? 'exam-focus-shell' : ''}`} data-role={user.role} data-experience={experience} data-sidebar-collapsed={compact}>
     <a href="#main-content" className="skip-link">Đến nội dung chính</a>
-    {open && <button type="button" className="sidebar-backdrop" aria-label="Đóng menu bên ngoài" tabIndex={-1} onClick={() => setOpen(false)} />}
-    <aside ref={sidebar} id="workspace-sidebar" className={`sidebar ${teacher ? teacherStyles.sidebar : ''} ${student ? 'student-sidebar' : ''} ${open ? 'open' : ''}`}
+    {open && !examFocus && <button type="button" className="sidebar-backdrop" aria-label="Đóng menu bên ngoài" tabIndex={-1} onClick={() => setOpen(false)} />}
+    {!examFocus && <aside ref={sidebar} id="workspace-sidebar" className={`sidebar ${teacher ? teacherStyles.sidebar : ''} ${student ? 'student-sidebar' : ''} ${open ? 'open' : ''}`}
       role={open ? 'dialog' : undefined} aria-modal={open || undefined} aria-label="Menu điều hướng" tabIndex={-1}>
       <button type="button" className="icon-button shell-close-button" aria-label="Đóng menu" onClick={() => setOpen(false)}><X size={20} aria-hidden="true" /></button>
       <Link href={student ? '/student' : '/dashboard'} className="brand" aria-label="ProctoOwl — Trang chủ">ProctoOwl</Link>
@@ -139,9 +142,9 @@ export function WorkspaceShell({ children, user, navigation, contentClassName = 
           : navLink(item.href, item.label, user.role === 'admin' ? isAdminNavItemActive(item, pathname) : undefined))}
       </nav>
       <div className="sidebar-bottom">{navLink(settingsRoute(user.role), 'Cài đặt')}{navLink(helpRoute(user.role), 'Trợ giúp')}</div>
-    </aside>
+    </aside>}
     <div className="workspace">
-      <header className={`topbar ${topbarStyles.bar} ${contextHeader ? teacherStyles.bar : ''} ${student ? 'student-topbar' : ''}`}>
+      {!examFocus && <header className={`topbar ${topbarStyles.bar} ${contextHeader ? teacherStyles.bar : ''} ${student ? 'student-topbar' : ''}`}>
         <button type="button" className="icon-button shell-menu-button" disabled={!preferenceReady} aria-label="Mở menu" aria-expanded={open} aria-controls="workspace-sidebar" onClick={() => setOpen(true)}>
           <Menu size={20} aria-hidden="true" />
         </button>
@@ -151,11 +154,11 @@ export function WorkspaceShell({ children, user, navigation, contentClassName = 
           <span className={teacherStyles.currentPage} aria-current="page" title={currentSection}>{currentSection}</span>
         </nav>:<div className="topbar-title">{area}</div>}
         <div className="header-actions">{showNotifications && <NotificationBell />}<AccountMenu user={user} onLogout={() => { logout(); router.push('/login'); }} /></div>
-      </header>
+      </header>}
       <main id="main-content" tabIndex={-1} className={`shell-content ${contentClassName}`}>{children}</main>
-      {student && <footer className="student-footer">Hệ thống thi trực tuyến ProctoOwl</footer>}
+      {student && !examFocus && <footer className="student-footer">Hệ thống thi trực tuyến ProctoOwl</footer>}
     </div>
-    {showChat && pathname !== '/admin/messages' && <Suspense fallback={null}><AIChatbox /></Suspense>}
+    {!examFocus && showChat && pathname !== '/admin/messages' && <Suspense fallback={null}><AIChatbox /></Suspense>}
   </div>;
 }
 
