@@ -160,13 +160,17 @@ def ingest(db: Session, event: NormalizedProctorEvent, *, mode='model', actor_id
                     related_proctor_event_id=row.id, proctor_event_simulated=simulated, severity=row.severity.value, is_read=False, created_at=now))
     else:
         row.first_seen, row.last_seen = min(utc(row.first_seen), first), max(utc(row.last_seen), last)
-        row.duration_ms = int((row.last_seen-row.first_seen).total_seconds()*1000)
         incoming_incident = str(event.metadata.incident_id) if mode == 'model' and event.metadata.incident_id else None
         prior_incident = (row.metadata_json or {}).get('incident_id')
-        # A HIGH-confidence upgrade of the same episode must not inflate the
-        # number of *distinct* incidents. New reappearances increment it.
-        if not incoming_incident or incoming_incident != prior_incident:
+        # Confidence upgrades keep the same incident ID; a genuine reappearance
+        # has a new ID. Do not count camera frames or priority upgrades as reoffenses.
+        new_incident = not incoming_incident or incoming_incident != prior_incident
+        observed_ms = int((last-first).total_seconds()*1000)
+        if new_incident:
             row.occurrence_count += 1
+            row.duration_ms += observed_ms
+        else:
+            row.duration_ms = max(row.duration_ms, observed_ms)
         if incoming_incident:
             row.metadata_json = {**(row.metadata_json or {}), 'incident_id':incoming_incident}
         if event.confidence is not None:
