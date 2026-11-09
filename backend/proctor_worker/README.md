@@ -48,24 +48,33 @@ The November live-input fix replaces undefined settings references in both capab
 
 ## Review policy
 
-| Model observation | Backend review signal | Initial policy |
-| --- | --- | --- |
-| cell phone | object_phone | At least 450 ms across observations, medium |
-| book | object_book | Same duration, medium |
-| smartwatch | object_prohibited | Same duration, low |
-| two or more people | person_in_background | Same duration, medium. Confidence comes from the second strongest person. |
-| missing face | face_not_detected | At least 2 seconds of continuous absence, low |
-| head turn, look up/down, eye direction | Disabled for alerts | Measurements and reference states available for calibration |
-| headphone | Disabled | Weak supplied evaluation |
-| laptop, TV | Disabled | No exam-specific prohibition configured |
+The isolated YOLO/MediaPipe Worker reports **raw class/confidence and gaze measurements**, **not HIGH/MEDIUM/LOW**.
+The trusted Backend assigns severity through `app/proctoring/local_policy.py` and verifies it again when storing each event. The Worker demo's red "NGUY HIỂM CAO" is a standalone HUD decision, not a field in the worker HTTP protocol.
 
-The maximum gap is 900 ms for objects and 600 ms for face absence. Each policy has a 15-second cooldown followed by the existing server deduplication. Object evidence contains normalized boxes only. The protected event endpoint enforces teacher scope. An alert does not change scores or determine misconduct.
+| Actual Worker observation | Backend event | Review severity (provisional demonstration policy) |
+| --- | --- | --- |
+| `cell phone` | `object_phone` | MEDIUM at 25–59% confidence; HIGH from 60%, observed ≥450 ms |
+| `book` | `object_book` | MEDIUM at 25–59%; HIGH from 60%, observed ≥450 ms |
+| `smartwatch` | `object_prohibited` | MEDIUM at 25–69%; HIGH from 70%, observed ≥450 ms |
+| `headphone` | `object_headphone` | MEDIUM at 25–79%; HIGH from 80%, observed ≥900 ms; **class has weak validation performance** |
+| two or more detected `person` boxes | `person_in_background` | MEDIUM when second confidence is 25–69%; HIGH from 70%, observed ≥600 ms |
+| `KHONG_THAY_MAT` | `face_not_detected` | LOW after ≥2 seconds continuous absence |
+| `LIEC_SANG_TRAI`, `LIEC_SANG_PHAI` | `gaze_away` | HIGH after ≥2 seconds continuous off-screen gaze |
+| `QUAY_SANG_TRAI`, `QUAY_SANG_PHAI`, `CUI_XUONG_BAN`, `NGUA_LEN_TREN` | `head_turned` | HIGH after ≥2 seconds continuous head deviation |
+| `BINH_THUONG` | No event | No alert |
+| `laptop`, `tv` | Not configured | No automatic prohibition without an exam-specific rule |
+
+The max observation gap is 900ms for objects and 600ms for gaze; the default event cooldown is 15 seconds, followed by the database's existing deduplication. A later stronger observation can raise an already aggregated MEDIUM event to HIGH, updating its teacher-visible priority; it never lowers an earlier priority.
+
+**Safety and validity:** These confidence tiers are explicit *demonstration/review* settings, NOT empirically optimized thresholds. Gaze yaw/pitch/iris thresholds follow the research prototype but have not passed validation on a labeled set of real student webcam sequences. Brief glances, face occlusion, glasses, lighting, multiple people in posters or screens, and headphones can cause false positives; each alert is evidence for teacher review, not a cheating conclusion. No event automatically reduces grades, invalidates identity, or terminates an attempt. Calibrate class-specific thresholds with held-out data before using HIGH for disciplinary decisions.
+
+To enable both local profiles, run the isolated Worker and Backend with `PROCTOR_MODEL_ENABLED=true`. Leave `PROCTOR_MODELS` unset so the default profiles are used; any explicit JSON override must be revised separately. Restart the Backend after changing the default policy; historical `DetectionEvent.severity` values are not rewritten automatically.
 
 ## Pose and calibration
 
 The supplied six-point solvePnP estimate included a neutral half-turn between its y-up face template and the OpenCV y-down camera. Applying its thresholds directly to that absolute Euler pitch produced -165.49 degrees on the public portrait. The adapted tracker uses MediaPipe's full-face canonical-to-camera transform. It converts both bases with diag(1, -1, -1), removes scale and extracts Z-Y-X Euler angles. Neutral is identity. Yaw spans -90 to +90 degrees, positive toward the subject's right on an unmirrored feed. Pitch and roll span -180 to +180 degrees, with positive pitch up and positive roll clockwise in the image. Pose singularities near 90-degree yaw and individual neutral offsets still need labeled recordings. [MediaPipe face geometry](https://github.com/google-ai-edge/mediapipe/wiki/MediaPipe-Face-Mesh)
 
-Raw gaze ratio uses the supplied two-eye iris-distance method. Reference thresholds remain yaw ±18 degrees, pitch -14/+18 degrees and gaze ratio 0.37/0.63. The backend smooths all four measurements per attempt with a 200 ms time constant. Missing faces or excessive gaps reset smoothing. The live profile allows only face absence from the gaze module.
+Raw gaze ratio uses the supplied two-eye iris-distance method. Reference thresholds remain yaw ±18 degrees, pitch -14/+18 degrees and gaze ratio 0.37/0.63. The backend smooths all four measurements per attempt with a 200 ms time constant. Missing faces or excessive gaps reset smoothing. The live profile recognizes gaze/head direction after the two-second review threshold; accuracy remains uncalibrated and all decisions require human review.
 
 ### Live Student-camera calibration preparation
 
