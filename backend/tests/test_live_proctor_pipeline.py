@@ -166,7 +166,7 @@ class LiveProctorPipelineTests(TestCase):
         warnings = self.client.get(self.base + '/warnings', headers=self.headers).json()['data']
         self.assertEqual({item['id'] for item in warnings}, {str(row.id) for row in rows})
         self.assertEqual({item['event_type'] for item in warnings}, {'object_phone', 'face_not_detected'})
-        self.assertTrue(all(set(item) == {'id', 'event_type', 'occurred_at', 'occurrence_count'} for item in warnings))
+        self.assertTrue(all(set(item) == {'id', 'event_type', 'occurred_at', 'occurrence_count', 'type_occurrence_count'} for item in warnings))
 
     def test_low_confidence_phone_stays_medium_and_later_high_updates_same_record(self):
         self.install_worker()
@@ -232,11 +232,13 @@ class LiveProctorPipelineTests(TestCase):
         record = next(item for item in warnings.json()['data'] if item['event_type'] == 'object_phone')
         self.assertEqual(record['id'], str(first_id))
         self.assertEqual(record['occurrence_count'], 2)
+        self.assertEqual(record['type_occurrence_count'], 2)
         feed = self.client.get(f'/api/v1/proctoring/exams/{self.fixture.exam.id}/events',
             headers=self.fixture.headers(self.fixture.teacher))
         self.assertEqual(feed.status_code, 200, feed.text)
         teacher_record = next(item for item in feed.json()['data'] if item['event_type'] == 'object_phone')
         self.assertEqual(teacher_record['occurrence_count'], 2)
+        self.assertEqual(teacher_record['type_occurrence_count'], 2)
 
     def test_new_phone_incident_after_teacher_dismissal_is_not_suppressed(self):
         self.install_worker(phone=True, face=True)
@@ -262,6 +264,8 @@ class LiveProctorPipelineTests(TestCase):
         warnings = self.client.get(self.base + '/warnings', headers=self.headers).json()['data']
         self.assertEqual([item['id'] for item in warnings if item['event_type'] == 'object_phone'],
                          [str(next(row.id for row in recorded if row.status == 'NEW'))])
+        self.assertEqual(next(item['type_occurrence_count'] for item in warnings
+                              if item['event_type'] == 'object_phone'), 2)
         self.assertEqual(self.db.get(DetectionEvent, first_id).status, 'DISMISSED')
 
     def test_student_warnings_are_owner_only_and_exclude_dismissed_simulated_and_browser_events(self):
