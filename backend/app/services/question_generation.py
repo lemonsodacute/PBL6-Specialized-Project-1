@@ -12,7 +12,7 @@ from app.core.config import get_settings
 from app.services.ai_provider import OpenAICompatibleClient, AIProviderError, provider_configured, provider_capabilities, ai_trace
 from app.services.ai_privacy import sanitize_ai_data
 from app.schemas.question_documents import DraftQuestion
-from app.services.question_document_drafts import normalized_content
+from app.services.question_document_drafts import normalized_content, strip_presentation_metadata
 from app.services.question_document_extract import DocumentError
 from app.services.question_quality import DIFFICULTY_GUIDANCE, QualityDrafts, review_drafts, summarize
 
@@ -58,6 +58,10 @@ do not ask "theo tài liệu ... là gì" and label recall as hard. Avoid trivia
 Hard must require two linked analytical operations, not merely finding two facts or listing true statements.
 Do not reuse a source's recall question with a longer scenario. A network address/protocol-name recall
 question remains easy. If a source cannot support the requested cognitive task, omit that source.
+When an existing exam export includes standalone 'Marks: N', 'Chọn một phương án trả lời',
+'Chọn nhiều phương án trả lời' or 'Choose at least one answer', these are source
+presentation metadata, NOT question wording. Do not put them in content. Follow
+the requested question_type instead of copying the source's answer-selection hints.
 For mcq_single prefer FOUR distinct plausible subject-domain options and exactly ONE correct answer as exact
 option text. Avoid ambiguity or several simultaneously correct options. For mcq_multi provide
 at least two correct options, at least one plausible incorrect option, and exact correct answer texts.
@@ -242,9 +246,13 @@ def validate_generated(generated, *, sources, requirements, config, excluded):
         if set(question.image_ids) - set(source_images):
             raise DocumentError('UNGROUNDED_GENERATION', 'Hình ảnh của câu hỏi chưa khớp với tài liệu nguồn.')
         retained_ids = list(dict.fromkeys(source.get('required_image_ids', source.get('image_ids', [])) + question.image_ids))
+        # A provider may still copy 'Marks: 1' or a standalone choice instruction.
+        # Normalize on the server, not only by prompting or hiding text in the UI.
+        content, extracted_points, _ = strip_presentation_metadata(question.content)
         try:
-            draft = DraftQuestion(id=uuid4(), content=question.content, type=config['question_type'], difficulty=config['difficulty'],
-                topic=config.get('topic'), options=question.options, answers=question.answers, explanation=question.explanation,
+            draft = DraftQuestion(id=uuid4(), content=content, type=config['question_type'], difficulty=config['difficulty'],
+                topic=config.get('topic'), default_points=extracted_points if extracted_points is not None else 1,
+                options=question.options, answers=question.answers, explanation=question.explanation,
                 source_page=source['page'], source_section=source['label'], source_chunk_id=source['id'], source_excerpt=question.source_excerpt,
                 images=[source_images[image_id] for image_id in retained_ids if image_id in source_images])
         except ValidationError:

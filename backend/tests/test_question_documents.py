@@ -1,5 +1,6 @@
 """Real parser/API integration, private ownership, atomic import and provider contracts."""
 from collections import Counter
+from decimal import Decimal
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
 import json
@@ -107,6 +108,73 @@ class DocumentApiTests(TestCase):
         self.assertEqual(state['sections'], []); self.assertEqual(state['chunks'], []); self.assertEqual(state['questions'], [])
         changed = json.loads(json.dumps(payload)); changed['questions'][0]['content'] = 'Changed after import'
         self.assertEqual(self.client.post(url, json=changed, headers=self.headers()).status_code, 409)
+
+    def test_docx_exam_export_marks_and_choice_directions_are_structured_metadata(self):
+        # Mirrors the real ProctoOwl user's Word export. These are NOT question content.
+        text = (
+            'Question15\nMarks: 1\n'
+            'Lớp A riêng (x=10; u=8) được phép mượn tối đa bao nhiêu bit cho để phân chia mạng con (subnetting)?\n'
+            'Chọn một phương án trả lời.\n'
+            'a. 8\nb. 22\nc. 14\nd. 16\nĐáp án đúng: B\n'
+            'Question25\nMarks: 2,5\n'
+            'Các đặc điểm của Windows Server là gì?\n'
+            'Choose at least one answer.\n'
+            'a. Khả năng chịu lỗi\nb. Quá tải\nc. Độ tin cậy cao\n'
+            'Đáp án đúng: A, C\n'
+            'Câu 26: Cấu hình VLAN nào phù hợp? (Chọn tất cả các đáp án đúng)\n'
+            'Chọn nhiều phương án trả lời.\n'
+            'a. trunk\nb. access\nc. VLAN\nĐáp án đúng: A, B\n'
+        )
+        upload = self.upload(content=docx_bytes(text))
+        self.assertEqual(upload.status_code, 200, upload.text)
+        prepared = self.prepare(upload.json()['data']['id'])
+        self.assertEqual(prepared.status_code, 200, prepared.text)
+        questions = prepared.json()['data']['questions']
+        self.assertEqual(len(questions), 3)
+        first, second, third = questions
+        self.assertEqual(first['content'], 'Lớp A riêng (x=10; u=8) được phép mượn tối đa bao nhiêu bit cho để phân chia mạng con (subnetting)?')
+        self.assertEqual(first['default_points'], '1')
+        self.assertEqual(first['type'], 'mcq_single')
+        self.assertEqual(first['answers'], ['22'])
+        self.assertEqual(second['content'], 'Các đặc điểm của Windows Server là gì?')
+        self.assertEqual(Decimal(second['default_points']), Decimal('2.5'))
+        self.assertEqual(second['type'], 'mcq_multi')
+        self.assertEqual(second['answers'], ['Khả năng chịu lỗi', 'Độ tin cậy cao'])
+        self.assertEqual(third['type'], 'mcq_multi')
+        self.assertEqual(third['content'], 'Cấu hình VLAN nào phù hợp? (Chọn tất cả các đáp án đúng)')
+        self.assertEqual(third['default_points'], '1')
+        self.assertIn('Marks: 2,5', second['source_excerpt'])
+        for question in questions:
+            self.assertNotIn('Marks:', question['content'])
+            self.assertNotIn('Chọn một phương án trả lời.', question['content'])
+            self.assertNotIn('Chọn nhiều phương án trả lời.', question['content'])
+            self.assertNotIn('Choose at least one answer.', question['content'])
+        saved = self.client.post(f"{self.base}/documents/{upload.json()['data']['id']}/import",
+                                 json={'questions': questions}, headers=self.headers())
+        self.assertEqual(saved.status_code, 200, saved.text)
+        saved_question = self.db.scalar(select(Question).where(
+            Question.question_bank_id == self.bank.id,
+            Question.content == 'Các đặc điểm của Windows Server là gì?'))
+        self.assertIsNotNone(saved_question)
+        self.assertEqual(Decimal(saved_question.default_points), Decimal('2.5'))
+        self.assertEqual(saved_question.type.value, 'mcq_multi')
+
+    def test_generated_question_metadata_is_sanitized_before_review_and_import(self):
+        source = {'id': 'source-one', 'text': 'Lớp A riêng được phép mượn bao nhiêu bit?', 'page': 1,
+                  'label': 'Trang 1', 'images': []}
+        generated = GeneratedBatch(questions=[{
+            'content': 'Marks: 2\nLớp A riêng được phép mượn bao nhiêu bit?\nChọn một phương án trả lời.',
+            'options': ['8', '22', '14', '16'], 'answers': ['22'],
+            'explanation': 'Theo tài liệu nguồn.',
+            'source_chunk_id': 'source-one', 'source_excerpt': 'Lớp A riêng được phép mượn bao nhiêu bit?',
+            'image_ids': [],
+        }])
+        drafts = validate_generated(generated, sources=[source], requirements={'source-one': 1},
+                                    config={'question_type': 'mcq_single', 'difficulty': 'easy', 'topic': None}, excluded=[])
+        self.assertEqual(len(drafts), 1)
+        self.assertEqual(drafts[0]['content'], 'Lớp A riêng được phép mượn bao nhiêu bit?')
+        self.assertEqual(Decimal(drafts[0]['default_points']), Decimal('2'))
+        self.assertEqual(drafts[0]['type'], 'mcq_single')
 
     def test_real_pdf_text_layer_scan_and_encryption(self):
         response = self.upload(pdf_bytes('Question 1: What does HTML describe?\nA. Structure\nB. Styling\nAnswer: A'), 'pdf')

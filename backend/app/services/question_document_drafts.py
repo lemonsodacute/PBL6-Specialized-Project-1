@@ -2,6 +2,7 @@
 from collections import Counter
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 import json
 import base64
 import shutil
@@ -218,6 +219,50 @@ def public_session(session, *, include_text=False):
     return result
 
 
+# Metadata in exported exams is not part of the question's visible text.
+# Match complete lines only; never strip phrases from substantive question prose.
+QUESTION_POINTS_LINE = re.compile(
+    r'^\s*(?:marks?|points?|điểm(?:\s+số)?)\s*[:：]\s*(\d{1,4}(?:[.,]\d{1,2})?)\s*(?:điểm|pts?|points?)?\s*\.?\s*$', re.I,
+)
+SINGLE_CHOICE_LINE = re.compile(
+    r'^\s*(?:chọn\s+(?:một|1)\s+(?:phương\s+án|đáp\s+án)(?:\s+trả\s+lời)?'
+    r'|(?:choose|select)\s+(?:one|a\s+single|only\s+one)\s+(?:answer|option))\s*[.!:]?\s*$', re.I,
+)
+MULTI_CHOICE_LINE = re.compile(
+    r'^\s*(?:chọn\s+(?:nhiều\s+(?:phương\s+án|đáp\s+án)(?:\s+trả\s+lời)?'
+    r'|tất\s+cả\s+(?:(?:các|những)\s+)?(?:đáp\s+án|phương\s+án)(?:\s+đúng)?)'
+    r'|(?:choose|select)\s+(?:at\s+least\s+one\s+answer'
+    r'|all\s+(?:(?:correct|that\s+apply)\s+)?(?:answers?|options?)|all\s+that\s+apply))\s*[.!:]?\s*$', re.I,
+)
+
+
+def presentation_line(line: str):
+    """Return (metadata_kind, value) for a complete metadata line, else None."""
+    line = line.strip()
+    matched = QUESTION_POINTS_LINE.fullmatch(line)
+    if matched:
+        return ('points', Decimal(matched[1].replace(',', '.')))
+    if SINGLE_CHOICE_LINE.fullmatch(line):
+        return ('type', 'mcq_single')
+    if MULTI_CHOICE_LINE.fullmatch(line):
+        return ('type', 'mcq_multi')
+    return None
+
+
+def strip_presentation_metadata(text: str):
+    """Clean question content while retaining original source excerpts for audit."""
+    kept, points, choice_type = [], None, None
+    for line in text.splitlines():
+        marker = presentation_line(line)
+        if marker is None:
+            kept.append(line)
+        elif marker[0] == 'points':
+            points = marker[1]
+        else:
+            choice_type = marker[1]
+    return '\n'.join(kept).strip(), points, choice_type
+
+
 def existing_question_blocks(sections):
     start = QUESTION_START
     option = re.compile(r'^\s*([A-L])[.):]\s*(.*)$', re.I)
@@ -232,11 +277,16 @@ def existing_question_blocks(sections):
                     blocks.append(current)
                 current = {'content': [heading[2]], 'options': {}, 'answer': '', 'explanation': [],
                            'source': section, 'last': 'content', 'image_ids': [], 'excerpt': [line],
+                           'points': None, 'choice_type': None,
                            'explicit_heading': bool(re.match(r'^\s*(?:Câu|Question)', line, re.I))}
                 continue
             if current is None or not line.strip():
                 continue
             current['excerpt'].append(line)
+            presentation = presentation_line(line)
+            if presentation:
+                current['points' if presentation[0] == 'points' else 'choice_type'] = presentation[1]
+                continue
             matched = option.match(line)
             matched_answer = answer.match(line)
             matched_explanation = explanation.match(line)
@@ -281,8 +331,10 @@ def parse_existing_questions(sections, *, topic=None, images=None):
                 answers = [options[label.upper()] for label in dict.fromkeys(labels)]
         if not options and block['answer']:
             answers = [block['answer']]
-        draft = DraftQuestion(id=uuid4(), content=content, type='mcq_multi' if options and len(answers) > 1 else 'mcq_single' if options else 'essay',
-            topic=topic, options=list(options.values()), answers=answers, explanation='\n'.join(block['explanation']),
+        question_type = ('mcq_multi' if len(answers) > 1 or block['choice_type'] == 'mcq_multi' else 'mcq_single') if options else 'essay'
+        draft = DraftQuestion(id=uuid4(), content=content, type=question_type,
+            topic=topic, default_points=block['points'] if block['points'] is not None else Decimal('1'),
+            options=list(options.values()), answers=answers, explanation='\n'.join(block['explanation']),
             source_page=block['source']['page'], source_section=block['source']['label'],
             source_excerpt='\n'.join(block['excerpt'])[:6000],
             images=[by_id[image_id] for image_id in dict.fromkeys(block['image_ids']) if image_id in by_id])
