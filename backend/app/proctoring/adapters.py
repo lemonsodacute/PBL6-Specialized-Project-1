@@ -12,6 +12,7 @@ import httpx
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 from app.core.config import settings
 from app.proctoring.contracts import EvidenceSummary, ModelConfig, NormalizedProctorEvent, SafeMetadata
+from app.models.entities import SeverityLevel
 from app.proctoring.diagnostics import diagnostic
 
 
@@ -85,6 +86,7 @@ class TemporalState:
     first: datetime
     last: datetime
     emitted: datetime | None = None
+    emitted_severity: SeverityLevel | None = None
     frames: int = 1
 
 
@@ -112,11 +114,18 @@ class TemporalPolicy:
             else:
                 state.last=stamp; state.frames+=1
             if (stamp-state.first).total_seconds()*1000<policy.minimum_duration_ms: continue
-            if state.emitted and (stamp-state.emitted).total_seconds()*1000<policy.cooldown_ms: continue
+            proposed_severity = policy.severity_for(prediction.confidence)
+            if state.emitted and (stamp-state.emitted).total_seconds()*1000<policy.cooldown_ms:
+                ranks = {level: rank for rank, level in enumerate(SeverityLevel)}
+                if state.emitted_severity is not None and ranks[proposed_severity] <= ranks[state.emitted_severity]:
+                    continue
+                # Allow a stronger confidence tier to be surfaced immediately
+                # without repeating an already-sent equal/lower-priority alert.
             state.emitted=stamp
+            state.emitted_severity=proposed_severity
             output.append(NormalizedProctorEvent(external_id=uuid4(),provider=provider,exam_id=context.exam_id,
                 attempt_id=context.attempt_id,student_id=context.student_id,source=config.source,event_type=kind,
-                severity=policy.severity,confidence=prediction.confidence,occurred_at=stamp,first_seen=state.first,last_seen=stamp,
+                severity=proposed_severity,confidence=prediction.confidence,occurred_at=stamp,first_seen=state.first,last_seen=stamp,
                 metadata=prediction.metadata.model_copy(update={'frame_count':state.frames}),evidence=prediction.evidence))
         for kind in set(self.states)-present: self.states.pop(kind,None)
         return output
