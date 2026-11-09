@@ -131,6 +131,40 @@ async function stopped(page: Page) {
 
 // Synthetic live MediaStreamTracks and mocked HTTP responses test the production exam hook.
 // These regressions do not establish physical-webcam/model accuracy.
+test('repeated AI incident reopens warning with count, but acknowledgements survive reload', async ({ page }) => {
+  test.setTimeout(90000);
+  await setup(page, false);
+  let count = 1;
+  const warning = { id: 'same-database-event', event_type: 'object_phone',
+    occurred_at: new Date().toISOString() };
+  await page.route('**/api/v1/proctoring/sessions/attempt-ux/warnings', route =>
+    respond(route, { data: [{ ...warning, occurrence_count: count }] }));
+  await page.goto(attemptPath);
+  const dialog = page.getByRole('dialog', { name: 'Cảnh báo giám sát' });
+  await expect(dialog).toContainText('Phát hiện điện thoại');
+  await expect(dialog).toContainText('Số lần ghi nhận: 1');
+  await dialog.getByRole('button', { name: 'Đã hiểu, tiếp tục làm bài' }).click();
+  await expect(dialog).toHaveCount(0);
+  // Continuous frames are deduplicated by the server: the same count is silent.
+  await page.waitForTimeout(2200);
+  await expect(dialog).toHaveCount(0);
+
+  // Phone removed, then brought back -> backend increments this record's count.
+  count = 2;
+  await expect(dialog).toContainText('Phát hiện điện thoại');
+  await expect(dialog).toContainText('Số lần ghi nhận: 2');
+  await dialog.getByRole('button', { name: 'Đã hiểu, tiếp tục làm bài' }).click();
+  await expect(dialog).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Câu hỏi 1' })).toBeVisible();
+  await expect(dialog).toHaveCount(0);
+
+  count = 3;
+  await expect(dialog).toContainText('Số lần ghi nhận: 3');
+  await dialog.getByRole('button', { name: 'Đã hiểu, tiếp tục làm bài' }).click();
+  await expect(dialog).toHaveCount(0);
+});
+
 test('Student warnings: browser violations appear immediately and report delivery failures honestly', async ({ page }) => {
   test.setTimeout(90000);
   const state = await setup(page, false);
