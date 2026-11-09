@@ -116,7 +116,7 @@ class TemporalPolicy:
             state.emitted=stamp
             output.append(NormalizedProctorEvent(external_id=uuid4(),provider=provider,exam_id=context.exam_id,
                 attempt_id=context.attempt_id,student_id=context.student_id,source=config.source,event_type=kind,
-                severity=policy.severity,confidence=prediction.confidence,occurred_at=stamp,first_seen=state.first,last_seen=stamp,
+                severity=policy.severity_for(prediction.confidence),confidence=prediction.confidence,occurred_at=stamp,first_seen=state.first,last_seen=stamp,
                 metadata=prediction.metadata.model_copy(update={'frame_count':state.frames}),evidence=prediction.evidence))
         for kind in set(self.states)-present: self.states.pop(kind,None)
         return output
