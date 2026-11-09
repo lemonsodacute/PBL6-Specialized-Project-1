@@ -149,6 +149,15 @@ class DocumentApiTests(TestCase):
             self.assertNotIn('Chọn một phương án trả lời.', question['content'])
             self.assertNotIn('Chọn nhiều phương án trả lời.', question['content'])
             self.assertNotIn('Choose at least one answer.', question['content'])
+        saved = self.client.post(f"{self.base}/documents/{upload.json()['data']['id']}/import",
+                                 json={'questions': questions}, headers=self.headers())
+        self.assertEqual(saved.status_code, 200, saved.text)
+        saved_question = self.db.scalar(select(Question).where(
+            Question.question_bank_id == self.bank.id,
+            Question.content == 'Các đặc điểm của Windows Server là gì?'))
+        self.assertIsNotNone(saved_question)
+        self.assertEqual(Decimal(saved_question.default_points), Decimal('2.5'))
+        self.assertEqual(saved_question.type.value, 'mcq_multi')
 
     def test_generated_question_metadata_is_sanitized_before_review_and_import(self):
         source = {'id': 'source-one', 'text': 'Lớp A riêng được phép mượn bao nhiêu bit?', 'page': 1,
