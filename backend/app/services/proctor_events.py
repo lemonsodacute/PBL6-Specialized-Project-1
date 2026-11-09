@@ -133,6 +133,8 @@ def ingest(db: Session, event: NormalizedProctorEvent, *, mode='model', actor_id
     row = db.scalar(select(DetectionEvent).where(DetectionEvent.attempt_id == attempt.id,
         DetectionEvent.provider == event.provider, DetectionEvent.source == event.source,
         DetectionEvent.event_type == event.event_type, DetectionEvent.is_simulated == simulated,
+        # A new incident must never inherit a teacher's previous dismissal/confirmation.
+        DetectionEvent.status == 'NEW',
         DetectionEvent.last_seen >= first - timedelta(milliseconds=policy.cooldown_ms))
         .order_by(DetectionEvent.last_seen.desc()).with_for_update().limit(1))
     created = row is None
@@ -159,7 +161,14 @@ def ingest(db: Session, event: NormalizedProctorEvent, *, mode='model', actor_id
     else:
         row.first_seen, row.last_seen = min(utc(row.first_seen), first), max(utc(row.last_seen), last)
         row.duration_ms = int((row.last_seen-row.first_seen).total_seconds()*1000)
-        row.occurrence_count += 1
+        incoming_incident = str(event.metadata.incident_id) if mode == 'model' and event.metadata.incident_id else None
+        prior_incident = (row.metadata_json or {}).get('incident_id')
+        # A HIGH-confidence upgrade of the same episode must not inflate the
+        # number of *distinct* incidents. New reappearances increment it.
+        if not incoming_incident or incoming_incident != prior_incident:
+            row.occurrence_count += 1
+        if incoming_incident:
+            row.metadata_json = {**(row.metadata_json or {}), 'incident_id':incoming_incident}
         if event.confidence is not None:
             row.confidence_score = Decimal(str(event.confidence))
             row.max_confidence = max(row.max_confidence if row.max_confidence is not None else Decimal('0'), Decimal(str(event.confidence)))
