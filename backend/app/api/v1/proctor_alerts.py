@@ -147,7 +147,7 @@ def list_events(exam_id: UUID, status: Literal['NEW','REVIEWED','DISMISSED','CON
         term='%' + q.replace('\\','\\\\').replace('%','\\%').replace('_','\\_') + '%'
         query=query.where(or_(User.full_name.ilike(term,escape='\\'),User.student_code.ilike(term,escape='\\')))
     total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
-    query = query.order_by(DetectionEvent.occurred_at.desc() if order=='newest' else DetectionEvent.occurred_at.asc(),DetectionEvent.id)
+    query = query.order_by(DetectionEvent.last_seen.desc() if order=='newest' else DetectionEvent.last_seen.asc(),DetectionEvent.id)
     rows = db.execute(query.offset((page-1)*limit).limit(limit)).all()
     types=db.scalars(select(DetectionEvent.event_type).where(*event_scope(exam_id,simulated)).distinct().order_by(DetectionEvent.event_type).limit(128)).all()
     return {'data':[domain.serialize(db,row,attempt=attempt,student=student) for row,student,attempt in rows], 'meta':{'total':total,'page':page,'limit':limit,
