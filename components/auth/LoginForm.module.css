@@ -1,6 +1,8 @@
 /* Sliding Overlay Authentication - scoped to this component only.
    Keep the existing ProctoOwl dotted page background and public theme intact. */
 .page {
+  /* min-height includes padding: avoid creating a page scrollbar at normal desktop heights. */
+  box-sizing: border-box;
   min-height: 100dvh;
   display: flex;
   align-items: center;
@@ -33,7 +35,8 @@
   position: relative;
   isolation: isolate;
   width: 100%;
-  height: min(675px, calc(100dvh - 122px));
+  /* Reserve room for the back link, brand, page gaps and vertical padding. */
+  height: min(675px, calc(100dvh - 175px));
   min-height: 500px;
   overflow: hidden;
   border-radius: 10px;
@@ -51,8 +54,11 @@
   width: 50%;
   min-width: 0;
   height: 100%;
+  /* On short screens remain scrollable, but never show an intrusive inner scrollbar. */
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   padding: 18px 28px;
   background: #fff;
   color: #20343c;
@@ -60,6 +66,7 @@
   transition: transform var(--slide-ms) ease-in-out;
   animation: auth-form-reveal-login var(--slide-ms) ease-in-out both;
 }
+ .formPane::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .registerState .formPane {
   transform: translateX(100%);
   animation-name: auth-form-reveal-register;
