@@ -74,8 +74,8 @@ def policy_for(event, mode):
     policy = config.policies.get(event.event_type)
     if event.source != config.source or event.event_type not in config.label_map.values() or not policy or not policy.calibrated:
         fail(422, 'UNSUPPORTED_EVENT', 'This event is not supported by the configured module.')
-    if event.severity != policy.severity:
-        fail(422, 'INVALID_SEVERITY', 'Severity must match the calibrated module policy.')
+    if event.severity != policy.severity_for(event.confidence):
+        fail(422, 'INVALID_SEVERITY', 'Severity must match the server-owned model policy and confidence.')
     return policy
 
 
@@ -163,7 +163,14 @@ def ingest(db: Session, event: NormalizedProctorEvent, *, mode='model', actor_id
         if event.confidence is not None:
             row.confidence_score = Decimal(str(event.confidence))
             row.max_confidence = max(row.max_confidence if row.max_confidence is not None else Decimal('0'), Decimal(str(event.confidence)))
-        # An aggregation never resets a human decision or creates another notification/toast.
+        # A later high-confidence observation can raise the severity of an existing
+        # aggregated event. Never downgrade it, reset a human decision or duplicate a toast.
+        severity_rank = {level: rank for rank, level in enumerate(SeverityLevel)}
+        if severity_rank[event.severity] > severity_rank[row.severity]:
+            row.severity = event.severity
+            if row.status == 'NEW':
+                db.execute(update(Notification).where(Notification.related_proctor_event_id == row.id)
+                    .values(severity=row.severity.value, is_read=False))
     db.add(ProctorEventReceipt(attempt_id=attempt.id, provider=event.provider, external_id=event.external_id, event_id=row.id, created_at=now))
     if mode == 'model':
         touch_health(db, event.provider, 'ACTIVE')
