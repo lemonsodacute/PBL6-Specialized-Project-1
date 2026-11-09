@@ -21,6 +21,8 @@ class SafeMetadata(BaseModel):
     frame_count: int | None = Field(default=None, ge=1, le=100000)
     browser_type: str | None = Field(default=None, max_length=32)
     browser_violation_id: UUID | None = None
+    # Stable identifier for one continuous detection episode (not each frame). 
+    incident_id: UUID | None = None
 
 
 class EvidenceSummary(BaseModel):
@@ -83,6 +85,8 @@ class EventPolicy(BaseModel):
     minimum_duration_ms: int | None = Field(default=None, ge=0, le=3600000)
     maximum_gap_ms: int | None = Field(default=None, gt=0, le=60000)
     cooldown_ms: int | None = Field(default=None, ge=0, le=3600000)
+    # Require this much confirmed absence before splitting a camera-object incident.
+    absence_reset_ms: int = Field(default=0, ge=0, le=60000)
     confidence_threshold: float | None = Field(default=None, ge=0, le=1)
     severity: SeverityLevel = SeverityLevel.low
     # Optional *server-owned* confidence tier. The worker reports confidence, not severity.
