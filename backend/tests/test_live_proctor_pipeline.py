@@ -171,27 +171,25 @@ class LiveProctorPipelineTests(TestCase):
     def test_low_confidence_phone_stays_medium_and_later_high_updates_same_record(self):
         self.install_worker()
         self.phone_confidence = .31
-        # Shorten only this fixture's cooldown, not the shipping policy.
         self.start()
-        original = settings.PROCTOR_MODELS['local_yolo']['policies']['object_phone']['cooldown_ms']
-        settings.PROCTOR_MODELS['local_yolo']['policies']['object_phone']['cooldown_ms'] = 1000
-        try:
-            for tick in range(0, 701, 100):
-                self.assertEqual(self.frame(tick).status_code, 200)
-            phone = self.db.scalar(select(DetectionEvent).where(DetectionEvent.event_type == 'object_phone'))
-            self.assertIsNotNone(phone)
-            self.assertEqual(phone.severity.value, 'medium')
-            original_id = phone.id
-            self.phone_confidence = .88
-            for tick in range(800, 2001, 100):
-                self.assertEqual(self.frame(tick).status_code, 200)
-            phone = self.db.scalar(select(DetectionEvent).where(DetectionEvent.event_type == 'object_phone'))
-            self.assertEqual(phone.id, original_id)
-            self.assertEqual(phone.severity.value, 'high')
-            self.assertEqual(self.db.scalar(select(Notification).where(
-                Notification.related_proctor_event_id == original_id)).severity, 'high')
-        finally:
-            settings.PROCTOR_MODELS['local_yolo']['policies']['object_phone']['cooldown_ms'] = original
+        for tick in range(0, 701, 100):
+            self.assertEqual(self.frame(tick).status_code, 200)
+        phone = self.db.scalar(select(DetectionEvent).where(DetectionEvent.event_type == 'object_phone'))
+        self.assertIsNotNone(phone)
+        self.assertEqual(phone.severity.value, 'medium')
+        original_id = phone.id
+        self.phone_confidence = .88
+        # HIGH must be surfaced even inside the normal 15-second cooldown,
+        # while a repeated MEDIUM event must not cause another notification.
+        for tick in range(800, 1301, 100):
+            self.assertEqual(self.frame(tick).status_code, 200)
+        phone = self.db.scalar(select(DetectionEvent).where(DetectionEvent.event_type == 'object_phone'))
+        self.assertEqual(phone.id, original_id)
+        self.assertEqual(phone.severity.value, 'high')
+        notification = self.db.scalar(select(Notification).where(
+            Notification.related_proctor_event_id == original_id))
+        self.assertEqual(notification.severity, 'high')
+        self.assertFalse(notification.is_read)
 
     def test_student_warnings_are_owner_only_and_exclude_dismissed_simulated_and_browser_events(self):
         self.install_worker()
