@@ -190,6 +190,15 @@ class LiveProctorPipelineTests(TestCase):
             Notification.related_proctor_event_id == original_id))
         self.assertEqual(notification.severity, 'high')
         self.assertFalse(notification.is_read)
+        event_url = f'/api/v1/proctoring/exams/{self.fixture.exam.id}/events'
+        teacher = self.fixture.headers(self.fixture.teacher)
+        feed = self.client.get(event_url, headers=teacher)
+        self.assertEqual(feed.status_code, 200, feed.text)
+        self.assertEqual(feed.json()['meta']['summary']['high_priority'], 1)
+        self.assertEqual(feed.json()['data'][0]['severity'], 'high')
+        filtered = self.client.get(event_url, params={'priority': True}, headers=teacher)
+        self.assertEqual(filtered.status_code, 200, filtered.text)
+        self.assertEqual([event['id'] for event in filtered.json()['data']], [str(original_id)])
 
     def test_student_warnings_are_owner_only_and_exclude_dismissed_simulated_and_browser_events(self):
         self.install_worker()
