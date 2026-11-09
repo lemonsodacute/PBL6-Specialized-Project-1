@@ -8,7 +8,7 @@ import { apiFetch } from '@/lib/api';
 import { eventLabels } from '@/lib/proctoring';
 import styles from './StudentWarnings.module.css';
 
-type StoredWarning = { id: string; event_type: string; occurred_at: string; occurrence_count: number };
+type StoredWarning = { id: string; event_type: string; occurred_at: string; occurrence_count: number; type_occurrence_count?: number };
 type BrowserWarning = { id: string; event_type: string; delivery: 'pending' | 'sent' | 'failed' };
 const guidance: Record<string, string> = {
   object_phone: 'Vui lòng cất điện thoại khỏi khu vực làm bài.',
@@ -92,7 +92,7 @@ export function useStudentWarnings(attemptId: string, enabled: boolean) {
   }, []);
   const allWarnings: StudentWarning[] = [
     ...browser.map(item => ({ key: item.id, type: item.event_type, detail: item.delivery === 'sent' ? 'Đã ghi nhận để giáo viên xem xét.' : item.delivery === 'failed' ? 'Chưa gửi được cảnh báo tới máy chủ. Vui lòng kiểm tra kết nối mạng.' : 'Đang gửi cảnh báo tới máy chủ…' })),
-    ...stored.map(item => ({ key: `${item.id}:${item.occurrence_count}`, type: item.event_type, count: item.occurrence_count, detail: 'Đã ghi nhận để giáo viên xem xét.' })),
+    ...stored.map(item => ({ key: `${item.id}:${item.occurrence_count}`, type: item.event_type, count: item.type_occurrence_count ?? item.occurrence_count, detail: 'Đã ghi nhận để giáo viên xem xét.' })),
   ];
 
   // Every *new recorded incident* may show again, even when the user already
