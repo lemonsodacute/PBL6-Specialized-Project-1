@@ -13,6 +13,7 @@ type BrowserWarning = { id: string; event_type: string; delivery: 'pending' | 's
 const guidance: Record<string, string> = {
   object_phone: 'Vui lòng cất điện thoại khỏi khu vực làm bài.',
   object_book: 'Vui lòng cất sách nếu bài thi không cho phép sử dụng tài liệu.',
+  object_headphone: 'Vui lòng tháo tai nghe nếu bài thi không cho phép sử dụng.',
   object_prohibited: 'Vui lòng kiểm tra và cất vật dụng không được phép sử dụng.',
   face_not_detected: 'Vui lòng ngồi trước camera, để khuôn mặt rõ và đủ sáng.',
   person_left_frame: 'Vui lòng trở lại vị trí trước camera.',
