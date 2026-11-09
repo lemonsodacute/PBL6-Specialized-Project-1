@@ -80,12 +80,13 @@ class LiveProctorPipelineTests(TestCase):
         self.mode = 'ok'
         self.requests = []
         self.phone, self.face = phone, face
+        self.phone_confidence = .81
         owner = self
 
         class Detector:
             async def detect(self, data):
                 return Objects(status='OK', detections=[Detection(class_id=2, class_name='cell phone',
-                    confidence=.81, bbox=(.1, .2, .8, .9))] if owner.phone else [])
+                    confidence=owner.phone_confidence, bbox=(.1, .2, .8, .9))] if owner.phone else [])
 
         def gaze(_tracker, _data):
             return Gaze(status='OK', face_detected=owner.face, raw_status='QUAY_SANG_TRAI' if owner.face else 'KHONG_THAY_MAT',
@@ -153,10 +154,11 @@ class LiveProctorPipelineTests(TestCase):
                 messages.append(message)
         rows = self.db.scalars(select(DetectionEvent)).all()
         self.assertEqual({row.event_type for row in rows}, {'object_phone', 'face_not_detected'})
+        self.assertEqual({row.event_type: row.severity.value for row in rows}, {'object_phone': 'high', 'face_not_detected': 'low'})
         self.assertEqual(len(rows), 2)  # Sustained observations stay inside cooldown.
         self.assertTrue(all(not row.is_simulated for row in rows))
         self.assertEqual({message['data']['id'] for message in messages if message['type'] == 'proctor_event_created'}, {str(row.id) for row in rows})
-        # Existing notification policy rings for medium phone events; low absence events still reach the feed.
+        # High-confidence phones are HIGH; low absence signals still reach the feed.
         self.assertEqual(len(self.db.scalars(select(Notification)).all()), 2)
         self.assertEqual({r.url.params['module'] for r in self.requests}, {'object_detection', 'gaze'})
         self.assertTrue(all(r.url.host == '127.0.0.1' and r.url.port == 8765 for r in self.requests))
@@ -165,6 +167,31 @@ class LiveProctorPipelineTests(TestCase):
         self.assertEqual({item['id'] for item in warnings}, {str(row.id) for row in rows})
         self.assertEqual({item['event_type'] for item in warnings}, {'object_phone', 'face_not_detected'})
         self.assertTrue(all(set(item) == {'id', 'event_type', 'occurred_at', 'occurrence_count'} for item in warnings))
+
+    def test_low_confidence_phone_stays_medium_and_later_high_updates_same_record(self):
+        self.install_worker()
+        self.phone_confidence = .31
+        # Shorten only this fixture's cooldown, not the shipping policy.
+        self.start()
+        original = settings.PROCTOR_MODELS['local_yolo']['policies']['object_phone']['cooldown_ms']
+        settings.PROCTOR_MODELS['local_yolo']['policies']['object_phone']['cooldown_ms'] = 1000
+        try:
+            for tick in range(0, 701, 100):
+                self.assertEqual(self.frame(tick).status_code, 200)
+            phone = self.db.scalar(select(DetectionEvent).where(DetectionEvent.event_type == 'object_phone'))
+            self.assertIsNotNone(phone)
+            self.assertEqual(phone.severity.value, 'medium')
+            original_id = phone.id
+            self.phone_confidence = .88
+            for tick in range(800, 2001, 100):
+                self.assertEqual(self.frame(tick).status_code, 200)
+            phone = self.db.scalar(select(DetectionEvent).where(DetectionEvent.event_type == 'object_phone'))
+            self.assertEqual(phone.id, original_id)
+            self.assertEqual(phone.severity.value, 'high')
+            self.assertEqual(self.db.scalar(select(Notification).where(
+                Notification.related_proctor_event_id == original_id)).severity, 'high')
+        finally:
+            settings.PROCTOR_MODELS['local_yolo']['policies']['object_phone']['cooldown_ms'] = original
 
     def test_student_warnings_are_owner_only_and_exclude_dismissed_simulated_and_browser_events(self):
         self.install_worker()
@@ -215,7 +242,7 @@ class LiveProctorPipelineTests(TestCase):
         self.mode = 'ok'
         self.assertTrue(self.frame().json()['data']['processed'])
 
-    def test_failure_breaks_face_absence_continuity_and_uncalibrated_directions_stay_off(self):
+    def test_failure_breaks_absence_continuity_and_sustained_direction_becomes_high(self):
         self.install_worker(phone=False)
         self.start()
         for tick in (0, 500, 1000):
@@ -231,7 +258,8 @@ class LiveProctorPipelineTests(TestCase):
         self.face = True
         for tick in range(4500, 8001, 500):
             self.frame(tick)
-        self.assertEqual([row.event_type for row in self.db.scalars(select(DetectionEvent))], ['face_not_detected'])
+        self.assertEqual({row.event_type: row.severity.value for row in self.db.scalars(select(DetectionEvent))},
+                         {'face_not_detected': 'low', 'head_turned': 'high'})
 
     def test_opt_in_diagnostics_contain_only_ephemeral_trace_and_safe_measurements(self):
         import json
