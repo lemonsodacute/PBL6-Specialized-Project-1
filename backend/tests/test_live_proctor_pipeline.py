@@ -186,6 +186,7 @@ class LiveProctorPipelineTests(TestCase):
         phone = self.db.scalar(select(DetectionEvent).where(DetectionEvent.event_type == 'object_phone'))
         self.assertEqual(phone.id, original_id)
         self.assertEqual(phone.severity.value, 'high')
+        self.assertEqual(phone.occurrence_count, 1)  # Same episode, stronger confidence.
         notification = self.db.scalar(select(Notification).where(
             Notification.related_proctor_event_id == original_id))
         self.assertEqual(notification.severity, 'high')
@@ -199,6 +200,69 @@ class LiveProctorPipelineTests(TestCase):
         filtered = self.client.get(event_url, params={'priority': True}, headers=teacher)
         self.assertEqual(filtered.status_code, 200, filtered.text)
         self.assertEqual([event['id'] for event in filtered.json()['data']], [str(original_id)])
+
+    def test_phone_reappears_after_removal_and_updates_teacher_and_student_count(self):
+        self.install_worker(phone=True, face=True)
+        self.start()
+        for tick in range(0, 701, 100):
+            self.assertEqual(self.frame(tick).status_code, 200)
+        phone = self.db.scalar(select(DetectionEvent).where(DetectionEvent.event_type == 'object_phone'))
+        self.assertIsNotNone(phone)
+        first_id = phone.id
+        self.assertEqual(phone.occurrence_count, 1)
+
+        # Keeping the phone in frame does not create a fresh incident per tick.
+        for tick in range(800, 2401, 100):
+            self.assertEqual(self.frame(tick).status_code, 200)
+        self.assertEqual(self.db.get(DetectionEvent, first_id).occurrence_count, 1)
+        self.phone = False
+        for tick in range(2500, 3301, 100):
+            self.assertEqual(self.frame(tick).status_code, 200)
+        self.phone = True
+        for tick in range(3400, 4201, 100):
+            self.assertEqual(self.frame(tick).status_code, 200)
+
+        phone = self.db.get(DetectionEvent, first_id)
+        self.assertEqual(phone.occurrence_count, 2)
+        self.assertEqual(phone.severity.value, 'high')
+        self.assertEqual(len(list(self.db.scalars(select(DetectionEvent).where(
+            DetectionEvent.event_type == 'object_phone')))), 1)
+        warnings = self.client.get(self.base + '/warnings', headers=self.headers)
+        self.assertEqual(warnings.status_code, 200, warnings.text)
+        record = next(item for item in warnings.json()['data'] if item['event_type'] == 'object_phone')
+        self.assertEqual(record['id'], str(first_id))
+        self.assertEqual(record['occurrence_count'], 2)
+        feed = self.client.get(f'/api/v1/proctoring/exams/{self.fixture.exam.id}/events',
+            headers=self.fixture.headers(self.fixture.teacher))
+        self.assertEqual(feed.status_code, 200, feed.text)
+        teacher_record = next(item for item in feed.json()['data'] if item['event_type'] == 'object_phone')
+        self.assertEqual(teacher_record['occurrence_count'], 2)
+
+    def test_new_phone_incident_after_teacher_dismissal_is_not_suppressed(self):
+        self.install_worker(phone=True, face=True)
+        self.start()
+        for tick in range(0, 701, 100):
+            self.frame(tick)
+        phone = self.db.scalar(select(DetectionEvent).where(DetectionEvent.event_type == 'object_phone'))
+        self.assertIsNotNone(phone)
+        first_id = phone.id
+        phone.status = 'DISMISSED'
+        self.db.commit()
+        self.phone = False
+        for tick in range(800, 1601, 100):
+            self.frame(tick)
+        self.phone = True
+        for tick in range(1700, 2501, 100):
+            self.frame(tick)
+        recorded = list(self.db.scalars(select(DetectionEvent).where(
+            DetectionEvent.event_type == 'object_phone')))
+        self.assertEqual(len(recorded), 2)
+        self.assertEqual({row.status for row in recorded}, {'DISMISSED', 'NEW'})
+        self.assertEqual(sum(row.occurrence_count for row in recorded), 2)
+        warnings = self.client.get(self.base + '/warnings', headers=self.headers).json()['data']
+        self.assertEqual([item['id'] for item in warnings if item['event_type'] == 'object_phone'],
+                         [str(next(row.id for row in recorded if row.status == 'NEW'))])
+        self.assertEqual(self.db.get(DetectionEvent, first_id).status, 'DISMISSED')
 
     def test_student_warnings_are_owner_only_and_exclude_dismissed_simulated_and_browser_events(self):
         self.install_worker()
