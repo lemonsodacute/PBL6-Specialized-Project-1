@@ -9,7 +9,8 @@ and does not change exam grades or automatically terminate an attempt.
 
 def _policy(*, duration, gap, severity, confidence=None, elevated_at=None, elevated=None):
     policy = dict(minimum_duration_ms=duration, maximum_gap_ms=gap,
-                  cooldown_ms=15000, severity=severity)
+                  cooldown_ms=15000, severity=severity,
+                  absence_reset_ms=500 if gap == 900 else 0)
     if confidence is not None:
         policy['confidence_threshold'] = confidence
     if elevated_at is not None:

@@ -147,10 +147,22 @@ def list_events(exam_id: UUID, status: Literal['NEW','REVIEWED','DISMISSED','CON
         term='%' + q.replace('\\','\\\\').replace('%','\\%').replace('_','\\_') + '%'
         query=query.where(or_(User.full_name.ilike(term,escape='\\'),User.student_code.ilike(term,escape='\\')))
     total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
-    query = query.order_by(DetectionEvent.occurred_at.desc() if order=='newest' else DetectionEvent.occurred_at.asc(),DetectionEvent.id)
+    query = query.order_by(DetectionEvent.last_seen.desc() if order=='newest' else DetectionEvent.last_seen.asc(),DetectionEvent.id)
     rows = db.execute(query.offset((page-1)*limit).limit(limit)).all()
+    # Totals cover the complete attempt/type history, not just this page or
+    # the 15-second aggregation window. No double-counted browser mirrors.
+    attempt_ids = {row.attempt_id for row, _, _ in rows}
+    type_totals = {}
+    if attempt_ids:
+        type_totals = {(attempt, kind): int(count) for attempt, kind, count in db.execute(
+            select(DetectionEvent.attempt_id, DetectionEvent.event_type, func.sum(DetectionEvent.occurrence_count))
+            .where(DetectionEvent.attempt_id.in_(attempt_ids), DetectionEvent.is_simulated == simulated,
+                   DetectionEvent.provider != 'browser_signals')
+            .group_by(DetectionEvent.attempt_id, DetectionEvent.event_type))}
     types=db.scalars(select(DetectionEvent.event_type).where(*event_scope(exam_id,simulated)).distinct().order_by(DetectionEvent.event_type).limit(128)).all()
-    return {'data':[domain.serialize(db,row,attempt=attempt,student=student) for row,student,attempt in rows], 'meta':{'total':total,'page':page,'limit':limit,
+    return {'data':[{**domain.serialize(db,row,attempt=attempt,student=student),
+        'type_occurrence_count':type_totals.get((row.attempt_id, row.event_type), row.occurrence_count)}
+        for row,student,attempt in rows], 'meta':{'total':total,'page':page,'limit':limit,
         'event_types':types,
         'summary':operational_summary(db,exam,simulated),'exam':{'id':exam.id,'title':exam.title,'status':exam.status,'start_time':exam.start_time,'end_time':exam.end_time}}}
 
@@ -288,9 +300,16 @@ def student_warnings(attempt_id: UUID, db: Session = Depends(get_db), user: User
         DetectionEvent.provider != 'browser_signals',
         DetectionEvent.status != 'DISMISSED',
     ).order_by(DetectionEvent.last_seen.desc(), DetectionEvent.id).limit(20)).all()
+    type_totals = {kind: int(count) for kind, count in db.execute(
+        select(DetectionEvent.event_type, func.sum(DetectionEvent.occurrence_count)).where(
+            DetectionEvent.attempt_id == attempt_id, DetectionEvent.is_simulated.is_(False),
+            DetectionEvent.provider != 'browser_signals')
+        .group_by(DetectionEvent.event_type))}
     return ok([{'id': str(row.id), 'event_type': row.event_type,
                 'occurred_at': row.last_seen or row.occurred_at,
-                'occurrence_count': row.occurrence_count} for row in rows])
+                'occurrence_count': row.occurrence_count,
+                'type_occurrence_count': type_totals.get(row.event_type, row.occurrence_count)}
+               for row in rows])
 
 
 @router.post('/sessions/{attempt_id}/frame')

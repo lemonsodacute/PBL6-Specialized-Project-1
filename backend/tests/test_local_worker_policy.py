@@ -36,6 +36,70 @@ class LocalPolicyTests(TestCase):
         self.assertFalse(sample(1250, True))
         self.assertFalse(sample(2500, True))
 
+    def test_phone_continuous_holding_is_one_incident_but_removal_and_reappearance_is_two(self):
+        config = ModelConfig.model_validate(local_models()['local_yolo'])
+        self.assertEqual(config.policies['object_phone'].absence_reset_ms, 500)
+        context = AdapterContext(uuid4(), uuid4(), uuid4())
+        start = datetime.now(timezone.utc)
+        detector = TemporalPolicy()
+
+        def observe(ms, confidence=None):
+            stamp = start + timedelta(milliseconds=ms)
+            predictions = ([RawPrediction(label='cell phone', confidence=confidence,
+                occurred_at=stamp)] if confidence is not None else [])
+            return detector.normalize(context, 'local_yolo', config, predictions, observed_at=stamp)
+
+        emitted = []
+        # Two samples in the same episode are enough to trigger, while subsequent
+        # identical frames must never inflate occurrence_count every 15 seconds.
+        for stamp in range(0, 16251, 250):
+            emitted.extend(observe(stamp, .84))
+        self.assertEqual(len(emitted), 1)
+        self.assertEqual(emitted[0].event_type, 'object_phone')
+        first_incident_id = emitted[0].metadata.incident_id
+        self.assertIsNotNone(first_incident_id)
+
+        # A single missed inference does not count as the student hiding the phone.
+        self.assertEqual(observe(16500), [])
+        self.assertEqual(observe(16750, .84), [])
+        self.assertEqual(observe(17000, .84), [])
+        self.assertEqual(observe(17250, .84), [])
+
+        # Two+ clean observations confirm the first incident ended.
+        self.assertEqual(observe(17500), [])
+        self.assertEqual(observe(17750), [])
+        self.assertEqual(observe(18000, .84), [])
+        self.assertEqual(observe(18250, .84), [])
+        second = observe(18500, .84)
+        self.assertEqual(len(second), 1)
+        self.assertNotEqual(second[0].metadata.incident_id, first_incident_id)
+        self.assertEqual(second[0].event_type, 'object_phone')
+        self.assertEqual(second[0].severity, SeverityLevel.high)
+        for stamp in range(18750, 19751, 250):
+            self.assertFalse(observe(stamp, .84))
+
+    def test_phone_confidence_upgrade_is_not_a_second_incident(self):
+        config = ModelConfig.model_validate(local_models()['local_yolo'])
+        context = AdapterContext(uuid4(), uuid4(), uuid4())
+        start = datetime.now(timezone.utc)
+        detector = TemporalPolicy()
+
+        def observe(ms, confidence):
+            stamp = start + timedelta(milliseconds=ms)
+            return detector.normalize(context, 'local_yolo', config,
+                [RawPrediction(label='cell phone', confidence=confidence, occurred_at=stamp)],
+                observed_at=stamp)
+
+        self.assertFalse(observe(0, .35))
+        self.assertFalse(observe(250, .35))
+        medium = observe(500, .35)
+        self.assertEqual([event.severity for event in medium], [SeverityLevel.medium])
+        high = observe(750, .88)
+        self.assertEqual([event.severity for event in high], [SeverityLevel.high])
+        self.assertEqual(high[0].metadata.incident_id, medium[0].metadata.incident_id)
+        self.assertFalse(observe(1000, .88))
+
+
     def test_absence_and_direction_duration_are_per_attempt(self):
         config = ModelConfig.model_validate(local_models()['local_gaze'])
         adapter = LocalWorkerAdapter('gaze')

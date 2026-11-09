@@ -66,7 +66,7 @@ export function ProctorEventDetail({ id, examId, revision, onClose, onReviewed, 
         {detail.duration_ms > 0 && <div><dt>Thời lượng quan sát</dt><dd>{(detail.duration_ms / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} giây</dd></div>}
         {detail.confidence !== null && <div><dt>Độ tin cậy của tín hiệu</dt><dd>{Math.round(Number(detail.confidence) * 100)}%</dd></div>}
         {detail.max_confidence !== null && detail.occurrence_count > 1 && <div><dt>Độ tin cậy cao nhất</dt><dd>{Math.round(Number(detail.max_confidence) * 100)}%</dd></div>}
-        <div><dt>Số lần gộp tín hiệu</dt><dd>{detail.occurrence_count}</dd></div>
+        <div><dt>Số lần ghi nhận</dt><dd>{detail.occurrence_count}</dd></div>
         <div><dt>Quan sát gần nhất</dt><dd>{eventDate(detail.last_seen)}</dd></div>
       </dl>
       {['BROWSER', 'TAB_SWITCH'].includes(detail.source) && <p className={styles.disclaimer}>Tín hiệu do trình duyệt sinh viên tự báo cáo; đây không phải kết quả nhận diện AI.</p>}
@@ -122,7 +122,7 @@ export function StudentEventTimeline({ attemptId, examId, simulated, revision, o
         {item.event ? <button type="button" className={styles.timelineLink} onClick={() => onEvent(item.event!.id)}>{eventLabel(item.event)}</button>
           : <strong>{item.kind === 'review' ? `Giám thị: ${statusLabels[item.status as ProctorStatus] ?? 'Đã xem xét'}` : item.label}</strong>}
         {item.event && <span>{statusLabels[item.event.status]}{item.event.is_simulated ? ' · Mô phỏng' : ''}</span>}
-        {item.event && <span>{severityLabels[item.event.severity]}{item.event.duration_ms>0?` · ${(item.event.duration_ms/1000).toLocaleString('vi-VN')} giây`:''}{item.event.confidence!==null?` · ${Math.round(item.event.confidence*100)}%`:''}{item.event.occurrence_count>1?` · ${item.event.occurrence_count} tín hiệu được gộp`:''}</span>}
+        {item.event && <span>{severityLabels[item.event.severity]}{item.event.duration_ms>0?` · ${(item.event.duration_ms/1000).toLocaleString('vi-VN')} giây`:''}{item.event.confidence!==null?` · ${Math.round(item.event.confidence*100)}%`:''}{item.event.occurrence_count>1?` · ${item.event.occurrence_count} lần ghi nhận`:''}</span>}
         {item.actor && <span>{item.actor}</span>}{item.note && <p>{item.note}</p>}
         {item.kind === 'review' && item.event_id && <button type="button" className={styles.timelineLink} onClick={() => onEvent(item.event_id!)}>Xem cảnh báo liên quan</button>}
       </div></li>)}</ol>

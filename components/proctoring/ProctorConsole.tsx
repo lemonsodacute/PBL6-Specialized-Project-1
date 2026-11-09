@@ -140,7 +140,8 @@ function ConsoleBody({ examId, linkedAttemptId }: { examId: string; linkedAttemp
           </div>
           <div className={styles.compactEventBottom}>
             <div className={styles.eventMeta}>
-              <time dateTime={event.occurred_at}>{eventTime(event.occurred_at)}</time><span>{statusLabels[event.status]}</span>
+              <time dateTime={event.last_seen}>{eventTime(event.last_seen)}</time><span>{statusLabels[event.status]}</span>
+              {(event.type_occurrence_count ?? event.occurrence_count) > 1 && <strong>{event.type_occurrence_count ?? event.occurrence_count} lần ghi nhận</strong>}
               {event.duration_ms > 0 && <span>{(event.duration_ms / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} giây</span>}
               {event.confidence !== null && <span>Độ tin cậy {Math.round(Number(event.confidence) * 100)}%</span>}
               {event.is_simulated && <strong>Mô phỏng</strong>}

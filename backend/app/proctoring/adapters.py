@@ -4,7 +4,7 @@ import base64
 import logging
 import time
 from collections import OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Callable, Protocol, Sequence
 from uuid import UUID, uuid4
@@ -88,13 +88,14 @@ class TemporalState:
     emitted: datetime | None = None
     emitted_severity: SeverityLevel | None = None
     frames: int = 1
+    incident_id: UUID = field(default_factory=uuid4)
 
 
 class TemporalPolicy:
     def __init__(self):
         self.states: dict[str,TemporalState] = {}
 
-    def normalize(self, context, provider, config, predictions, *, trace=None):
+    def normalize(self, context, provider, config, predictions, *, trace=None, observed_at=None):
         output, present = [], set()
         for prediction in predictions:
             kind = config.label_map.get(prediction.label)
@@ -102,7 +103,8 @@ class TemporalPolicy:
             if not kind or not policy or not policy.calibrated: continue
             if not prediction.active or (policy.confidence_threshold is not None and
                 (prediction.confidence is None or prediction.confidence<policy.confidence_threshold)):
-                self.states.pop(kind,None); continue
+                # One weak/missing frame is not proof the object was removed.
+                continue
             present.add(kind)
             stamp = prediction.occurred_at
             state = self.states.get(kind)
@@ -115,19 +117,26 @@ class TemporalPolicy:
                 state.last=stamp; state.frames+=1
             if (stamp-state.first).total_seconds()*1000<policy.minimum_duration_ms: continue
             proposed_severity = policy.severity_for(prediction.confidence)
-            if state.emitted and (stamp-state.emitted).total_seconds()*1000<policy.cooldown_ms:
+            if state.emitted_severity is not None:
                 ranks = {level: rank for rank, level in enumerate(SeverityLevel)}
-                if state.emitted_severity is not None and ranks[proposed_severity] <= ranks[state.emitted_severity]:
+                if ranks[proposed_severity] <= ranks[state.emitted_severity]:
+                    # Do not count a static object every cooldown interval.
+                    # A higher confidence tier can still elevate this incident.
                     continue
-                # Allow a stronger confidence tier to be surfaced immediately
-                # without repeating an already-sent equal/lower-priority alert.
             state.emitted=stamp
             state.emitted_severity=proposed_severity
             output.append(NormalizedProctorEvent(external_id=uuid4(),provider=provider,exam_id=context.exam_id,
                 attempt_id=context.attempt_id,student_id=context.student_id,source=config.source,event_type=kind,
                 severity=proposed_severity,confidence=prediction.confidence,occurred_at=stamp,first_seen=state.first,last_seen=stamp,
-                metadata=prediction.metadata.model_copy(update={'frame_count':state.frames}),evidence=prediction.evidence))
-        for kind in set(self.states)-present: self.states.pop(kind,None)
+                metadata=prediction.metadata.model_copy(update={'frame_count':state.frames, 'incident_id':state.incident_id}),evidence=prediction.evidence))
+        for kind in set(self.states)-present:
+            state = self.states[kind]
+            policy = config.policies.get(kind)
+            if (policy and policy.absence_reset_ms and observed_at is not None
+                    and (observed_at-state.last).total_seconds()*1000 < policy.absence_reset_ms):
+                continue
+            # Only a confirmed absence ends the ongoing observation episode.
+            self.states.pop(kind,None)
         return output
 
 
@@ -215,7 +224,7 @@ class AdapterRuntime:
                     predictions=[RawPrediction.model_validate(item) for item in predictions]
                     if any(abs((item.occurred_at-frame.occurred_at).total_seconds())>30 for item in predictions):
                         raise ValueError('Prediction timestamp does not match input')
-                    normalized=policy.normalize(context,provider,config,predictions,trace=frame.trace_id)
+                    normalized=policy.normalize(context,provider,config,predictions,trace=frame.trace_id,observed_at=frame.occurred_at)
                     output.extend(normalized)
                     diagnostic('temporal_policy', trace=frame.trace_id, provider=provider, predictions=len(predictions),
                         active_states=len(policy.states), emitted=[event.event_type for event in normalized])
