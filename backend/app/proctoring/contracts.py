@@ -85,6 +85,27 @@ class EventPolicy(BaseModel):
     cooldown_ms: int | None = Field(default=None, ge=0, le=3600000)
     confidence_threshold: float | None = Field(default=None, ge=0, le=1)
     severity: SeverityLevel = SeverityLevel.low
+    # Optional *server-owned* confidence tier. The worker reports confidence, not severity.
+    elevated_confidence_threshold: float | None = Field(default=None, ge=0, le=1)
+    elevated_severity: SeverityLevel | None = None
+
+    @model_validator(mode='after')
+    def valid_severity_tier(self):
+        if (self.elevated_confidence_threshold is None) != (self.elevated_severity is None):
+            raise ValueError('Both elevated confidence threshold and severity must be configured.')
+        if (self.elevated_confidence_threshold is not None and self.confidence_threshold is not None
+                and self.elevated_confidence_threshold < self.confidence_threshold):
+            raise ValueError('Elevated threshold cannot be lower than the base confidence threshold.')
+        ranks = {level: index for index, level in enumerate(SeverityLevel)}
+        if self.elevated_severity is not None and ranks[self.elevated_severity] <= ranks[self.severity]:
+            raise ValueError('Elevated severity must be above the base severity.')
+        return self
+
+    def severity_for(self, confidence: float | None) -> SeverityLevel:
+        if (confidence is not None and self.elevated_confidence_threshold is not None
+                and confidence >= self.elevated_confidence_threshold):
+            return self.elevated_severity
+        return self.severity
 
     @property
     def calibrated(self):
@@ -121,6 +142,6 @@ EVENT_LABELS = {
     'gaze_away': 'Nhìn ra ngoài', 'head_turned': 'Quay đầu', 'person_left_frame': 'Rời khung hình',
     'object_book': 'Phát hiện sách', 'person_in_background': 'Có thêm người trong khung hình',
     'object_prohibited': 'Vật dụng cần xem xét',
-    'object_phone': 'Phát hiện điện thoại', 'audio_voice_detected': 'Âm thanh cần xem xét',
+    'object_phone': 'Phát hiện điện thoại', 'object_headphone': 'Phát hiện tai nghe', 'audio_voice_detected': 'Âm thanh cần xem xét',
     'tab_switched': 'Chuyển thẻ trình duyệt', 'browser_signal': 'Tín hiệu từ trình duyệt',
 }
