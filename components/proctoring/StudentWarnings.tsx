@@ -31,20 +31,18 @@ const guidance: Record<string, string> = {
 };
 const labels: Record<string, string> = { ...eventLabels, tab_switch: 'Chuyển thẻ trình duyệt', right_click: 'Nhấp chuột phải' };
 
-type StudentWarning = { key: string; type: string; detail: string };
-type AcknowledgedWarnings = { attemptId: string; keys: string[]; suppressUntil: Record<string, number> };
-const REPEAT_COOLDOWN_MS = 120_000;
+type StudentWarning = { key: string; type: string; detail: string; count?: number };
+type AcknowledgedWarnings = { attemptId: string; keys: string[] };
 const storageKey = (attemptId: string) => `proctoowl:warning-ack:${attemptId}`;
 
 function loadAcknowledgements(attemptId: string): AcknowledgedWarnings {
-  const empty = { attemptId, keys: [], suppressUntil: {} };
+  const empty = { attemptId, keys: [] };
   try {
     const saved = JSON.parse(sessionStorage.getItem(storageKey(attemptId)) ?? 'null') as Partial<AcknowledgedWarnings> | null;
     if (!saved || saved.attemptId !== attemptId) return empty;
     return {
       attemptId,
       keys: Array.isArray(saved.keys) ? saved.keys.filter((key): key is string => typeof key === 'string').slice(-2000) : [],
-      suppressUntil: saved.suppressUntil && typeof saved.suppressUntil === 'object' ? saved.suppressUntil : {},
     };
   } catch {
     return empty;
@@ -94,38 +92,23 @@ export function useStudentWarnings(attemptId: string, enabled: boolean) {
   }, []);
   const allWarnings: StudentWarning[] = [
     ...browser.map(item => ({ key: item.id, type: item.event_type, detail: item.delivery === 'sent' ? 'Đã ghi nhận để giáo viên xem xét.' : item.delivery === 'failed' ? 'Chưa gửi được cảnh báo tới máy chủ. Vui lòng kiểm tra kết nối mạng.' : 'Đang gửi cảnh báo tới máy chủ…' })),
-    ...stored.map(item => ({ key: `${item.id}:${item.occurrence_count}`, type: item.event_type, detail: 'Đã ghi nhận để giáo viên xem xét.' })),
+    ...stored.map(item => ({ key: `${item.id}:${item.occurrence_count}`, type: item.event_type, count: item.occurrence_count, detail: 'Đã ghi nhận để giáo viên xem xét.' })),
   ];
 
-  // Coalesced occurrences during a short cooldown are acknowledged silently.
-  // This prevents an old server record from reopening after the cooldown expires.
-  useEffect(() => {
-    if (!enabled || acknowledged?.attemptId !== attemptId) return;
-    const now = Date.now();
-    const seen = new Set(acknowledged.keys);
-    const suppressed = allWarnings.filter(item => (acknowledged.suppressUntil[item.type] ?? 0) > now && !seen.has(item.key));
-    if (!suppressed.length) return;
-    setAcknowledged(current => {
-      if (!current || current.attemptId !== attemptId) return current;
-      const added = suppressed.map(item => item.key).filter(key => !current.keys.includes(key));
-      return added.length ? { ...current, keys: [...current.keys, ...added].slice(-2000) } : current;
-    });
-  }, [attemptId, enabled, acknowledged, stored, browser]);
-
+  // Every *new recorded incident* may show again, even when the user already
+  // acknowledged the previous occurrence of the same type. The backend dedupes
+  // continuous camera frames, so this does not create a popup per AI frame.
+  // Stable (event ID, occurrence count) acknowledgement survives F5.
   const pending = enabled && acknowledged?.attemptId === attemptId
-    ? allWarnings.filter(item => !acknowledged.keys.includes(item.key) && (acknowledged.suppressUntil[item.type] ?? 0) <= Date.now())
+    ? allWarnings.filter(item => !acknowledged.keys.includes(item.key))
     : [];
-  // Show one compact confirmation dialog, with each distinct warning type at most once.
   const warnings = [...new Map(pending.map(item => [item.type, item] as const)).values()];
 
   const acknowledge = useCallback(() => {
     if (!pending.length) return;
-    const until = Date.now() + REPEAT_COOLDOWN_MS;
     setAcknowledged(current => {
       if (!current || current.attemptId !== attemptId) return current;
-      const suppressUntil = { ...current.suppressUntil };
-      for (const item of pending) suppressUntil[item.type] = until;
-      return { ...current, suppressUntil, keys: [...new Set([...current.keys, ...pending.map(item => item.key)])].slice(-2000) };
+      return { ...current, keys: [...new Set([...current.keys, ...pending.map(item => item.key)])].slice(-2000) };
     });
   }, [attemptId, pending]);
 
@@ -168,7 +151,7 @@ export function StudentWarnings({ state, visible = true }: { state: ReturnType<t
             {state.warnings.slice(0, 3).map(item => <div key={item.type} className={styles.item}>
               <strong>{labels[item.type] ?? 'Hoạt động cần chú ý'}</strong>
               <p>{guidance[item.type] ?? 'Vui lòng kiểm tra và tuân thủ quy định của bài thi.'}</p>
-              <small>{item.detail}</small>
+              <small>{item.count ? `Số lần ghi nhận: ${item.count} · ` : ''}{item.detail}</small>
             </div>)}
             {state.warnings.length > 3 && <p className={styles.more}>Còn {state.warnings.length - 3} loại cảnh báo khác đã được ghi nhận.</p>}
           </div>
