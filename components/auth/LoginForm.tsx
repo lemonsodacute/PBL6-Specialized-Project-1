@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Input, PasswordInput, PasswordStrength, HelperText, ErrorMessage, borderProps } from '@/components/ui';
+import { Button, Input, PasswordInput, PasswordStrength, HelperText, ErrorMessage, borderProps } from '@/components/ui';
 import { useAuth } from '@/components/auth/AuthContext';
 import type { User } from '@/types';
 import { api, ApiError } from '@/lib/api';
@@ -35,11 +35,16 @@ export default function LoginForm({ initialMode }: { initialMode?: string }) {
   const [pending, setPending] = useState(false); const submitting = useRef(false);
   const form = useRef<HTMLFormElement>(null);
   const [focusTarget, setFocusTarget] = useState<FieldName | 'form' | null>(null);
+  // Transition state only: validation, API calls, session and role-based redirects are unchanged.
+  const [sliding, setSliding] = useState(false);
+  const slideLocked = useRef(false);
+  const slideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (slideTimer.current) window.clearTimeout(slideTimer.current); }, []);
   useEffect(() => {
-    if (!focusTarget || pending) return;
+    if (!focusTarget || pending || sliding) return;
     form.current?.querySelector<HTMLElement>(focusTarget === 'form' ? '[data-form-error]' : `#auth-${focusTarget}`)?.focus();
     setFocusTarget(null);
-  }, [focusTarget, pending]);
+  }, [focusTarget, pending, sliding]);
   const newPassword = mode === 'register' || mode === 'reset';
   const update = (field: FieldName, value: string) => {
     setValues(current => ({ ...current, [field]: value }));
@@ -47,7 +52,17 @@ export default function LoginForm({ initialMode }: { initialMode?: string }) {
     setError('');
   };
   const changeMode = (next: Mode) => {
-    if (submitting.current) return;
+    if (submitting.current || slideLocked.current || mode === next) return;
+    const betweenForms = (mode === 'login' || mode === 'register') && (next === 'login' || next === 'register');
+    if (betweenForms && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      slideLocked.current = true;
+      setSliding(true);
+      slideTimer.current = window.setTimeout(() => {
+        slideLocked.current = false;
+        setSliding(false);
+        slideTimer.current = null;
+      }, 600);
+    }
     setMode(next); setError(''); setNotice(''); setErrors({});
     setValues(current => ({ ...current, password: '', confirmPassword: '', token: '' }));
     setFocusTarget(next === 'register' ? 'fullName' : next === 'reset' ? 'token' : 'email');
@@ -110,17 +125,20 @@ export default function LoginForm({ initialMode }: { initialMode?: string }) {
     } finally { submitting.current = false; setPending(false); }
   };
   const fieldProps = (field: FieldName) => ({
-    id: `auth-${field}`, name: field, value: values[field], disabled: pending,
+    id: `auth-${field}`, name: field, value: values[field], disabled: pending || sliding,
     'aria-invalid': !!errors[field], 'aria-describedby': [errors[field] ? `auth-${field}-error` : '', field === 'password' && newPassword ? 'password-help' : ''].filter(Boolean).join(' ') || undefined,
     onChange: (event: React.ChangeEvent<HTMLInputElement>) => update(field, event.target.value),
   });
   const fieldError = (field: FieldName) => errors[field] && <ErrorMessage id={`auth-${field}-error`}>{errors[field]}</ErrorMessage>;
 
   return <main className={`${styles.page} ${homeStyles.theme} ${canvasStyles.canvas} ${publicTypography}`}>
-    <div className={`${styles.content} ${mode === 'register' ? styles.register : ''}`}>
+    <div className={styles.content}>
     <Link href={PUBLIC_HOME_HREF} className={styles.backLink}><ArrowLeft size={18} aria-hidden="true" />Quay lại trang chủ</Link>
     <div className={styles.brand}><PublicBrand /></div>
-    <Card borderRole="users" className={`login-card ${mode === 'register' ? 'register-card' : ''}`}>
+    <section className={`${styles.authShell} ${mode === 'register' ? styles.registerState : ''}`}
+      data-auth-layout={mode === 'register' ? 'register' : 'login'}
+      aria-label="Đăng nhập và đăng ký">
+      <div className={styles.formPane}>
       <div className="login-heading"><p className="eyebrow">Hệ thống thi trực tuyến</p><h1>{titles[mode]}</h1><p>{subtitles[mode]}</p></div>
       <form ref={form} onSubmit={handleSubmit} className="login-form" noValidate aria-busy={pending}>
         {mode === 'register' && <div className="auth-field"><label htmlFor="auth-fullName">Họ và tên</label><Input {...fieldProps('fullName')} required autoComplete="name" />{fieldError('fullName')}</div>}
@@ -134,14 +152,31 @@ export default function LoginForm({ initialMode }: { initialMode?: string }) {
         {newPassword && <div className="auth-field"><label htmlFor="auth-confirmPassword">Xác nhận mật khẩu</label><PasswordInput {...fieldProps('confirmPassword')} required autoComplete="new-password" toggleLabel="mật khẩu xác nhận" />{fieldError('confirmPassword')}</div>}
         {error && <p role="alert" tabIndex={-1} data-form-error className="auth-message error" {...borderProps('danger')}>{error}</p>}
         {notice && <p role="status" className="auth-message success" {...borderProps('success')}>{notice}</p>}
-        <Button type="submit" size="lg" loading={pending} className={`login-submit ${homeStyles.button} ${homeStyles.primaryButton}`}>{pending ? mode === 'register' ? 'Đang đăng ký…' : mode === 'login' ? 'Đang đăng nhập…' : 'Đang xử lý…' : mode === 'forgot' ? 'Yêu cầu đặt lại mật khẩu' : titles[mode]}</Button>
+        <Button type="submit" size="lg" loading={pending} disabled={pending || sliding} className={`login-submit ${homeStyles.button} ${homeStyles.primaryButton}`}>{pending ? mode === 'register' ? 'Đang đăng ký…' : mode === 'login' ? 'Đang đăng nhập…' : 'Đang xử lý…' : mode === 'forgot' ? 'Yêu cầu đặt lại mật khẩu' : titles[mode]}</Button>
       </form>
       <div className="login-links">
-        {mode === 'login' ? <><button type="button" disabled={pending} onClick={() => changeMode('forgot')}>Quên mật khẩu?</button><button type="button" disabled={pending} onClick={() => changeMode('register')}>Tạo tài khoản</button></>
-          : <button type="button" disabled={pending} onClick={() => changeMode('login')}>Quay lại đăng nhập</button>}
-        {mode === 'forgot' && <button type="button" disabled={pending} onClick={() => changeMode('reset')}>Tôi đã có mã đặt lại</button>}
+        {mode === 'login' ? <><button type="button" disabled={pending || sliding} onClick={() => changeMode('forgot')}>Quên mật khẩu?</button><button type="button" disabled={pending || sliding} onClick={() => changeMode('register')}>Tạo tài khoản</button></>
+          : <button type="button" disabled={pending || sliding} onClick={() => changeMode('login')}>Quay lại đăng nhập</button>}
+        {mode === 'forgot' && <button type="button" disabled={pending || sliding} onClick={() => changeMode('reset')}>Tôi đã có mã đặt lại</button>}
       </div>
-    </Card>
+      </div>
+      <div className={styles.overlayTrack} aria-label="Chuyển đổi giữa đăng nhập và đăng ký">
+        <div className={styles.overlayPanel}>
+          <div className={`${styles.overlaySide} ${styles.overlayLeft}`} aria-hidden={mode !== 'register'}>
+            <h2>Welcome Back!</h2>
+            <p>Đã có tài khoản ProctoOwl? Đăng nhập để tiếp tục học tập và giảng dạy.</p>
+            <button type="button" className={styles.overlayButton} disabled={pending || sliding || mode !== 'register'}
+              tabIndex={mode === 'register' ? 0 : -1} onClick={() => changeMode('login')}>Đăng nhập</button>
+          </div>
+          <div className={`${styles.overlaySide} ${styles.overlayRight}`} aria-hidden={mode === 'register'}>
+            <h2>Hello, Friend!</h2>
+            <p>Chào mừng đến với ProctoOwl. Tạo tài khoản sinh viên để bắt đầu.</p>
+            <button type="button" className={styles.overlayButton} disabled={pending || sliding || mode === 'register'}
+              tabIndex={mode === 'register' ? -1 : 0} onClick={() => changeMode('register')}>Đăng ký</button>
+          </div>
+        </div>
+      </div>
+    </section>
     </div>
   </main>;
 }
