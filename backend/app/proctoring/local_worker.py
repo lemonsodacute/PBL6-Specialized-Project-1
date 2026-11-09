@@ -74,7 +74,7 @@ class LocalWorkerAdapter:
         for box in observation.detections:
             groups[box.class_name].append(box)
         candidates = []
-        for label in ('cell phone', 'book', 'smartwatch', 'person'):
+        for label in ('cell phone', 'book', 'smartwatch', 'headphone', 'person'):
             boxes = sorted(groups[label], key=lambda box: box.confidence, reverse=True)
             needed = 2 if label == 'person' else 1
             if len(boxes) < needed:
