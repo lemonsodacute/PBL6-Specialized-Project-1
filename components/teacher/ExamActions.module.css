@@ -5,3 +5,7 @@
 .confirmActions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
 .confirmError { color: var(--danger, var(--error)); margin-top: 16px; }
 @media (max-width: 767px) { .column { width: 64px; min-width: 64px; max-width: 64px; } }
+
+.actions .preview { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:38px; padding:0 10px; white-space:nowrap; font-size:13px; }
+.preview svg { flex-shrink:0; }
+@media (max-width: 767px) { .actions { flex-wrap:wrap; } .actions .preview { min-height:36px; } }

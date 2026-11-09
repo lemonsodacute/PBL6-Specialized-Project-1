@@ -34,19 +34,20 @@ async function setup(page: Page) {
     await route.fulfill({ headers, json: { data: { deleted: request.method() === 'DELETE' } } });
   });
   await page.goto('/dashboard/exams');
-  await expect(page.getByRole('row').filter({ hasText: 'Đề nháp' })).toBeVisible({timeout:45_000});
+  await expect(page.getByRole('article').filter({ hasText: 'Đề nháp' })).toBeVisible({timeout:45_000});
   return state;
 }
 
-test('desktop row has one primary and menu with true state restrictions', async ({ page }) => {
+test('desktop exam card has preview, primary and menu with state restrictions', async ({ page }) => {
   await setup(page);
-  const draft = page.getByRole('row').filter({ hasText: 'Đề nháp' });
+  const draft = page.getByRole('article').filter({ hasText: 'Đề nháp' });
   await expect(draft.getByRole('button', { name: 'Xem / Sửa', exact: true })).toBeVisible();
   await expect(draft.getByRole('button')).toHaveCount(2);
-  const submitted = page.getByRole('row').filter({ hasText: 'Đề đã có bài nộp' });
+  await expect(draft.getByRole('link', { name: 'Xem toàn bộ đề thi Đề nháp' })).toHaveAttribute('href', `/dashboard/exams/${draftId}/preview`);
+  const submitted = page.getByRole('article').filter({ hasText: 'Đề đã có bài nộp' });
   await expect(submitted.getByRole('link', { name: 'Xem kết quả' })).toHaveAttribute('href', `/dashboard/exams/${resultsId}/attempts`);
   await draft.getByRole('button', { name: 'Thao tác đề Đề nháp' }).click();
-  await expect(page.getByRole('menuitem')).toHaveText(['Xem / Sửa', 'Xuất bản', 'Xóa đề']);
+  await expect(page.getByRole('menuitem')).toHaveText(['Xem toàn bộ đề thi', 'Xem / Sửa', 'Xuất bản', 'Xóa đề']);
   await page.keyboard.press('Escape');
   await submitted.getByRole('button', { name: 'Thao tác đề Đề đã có bài nộp' }).click();
   await expect(page.getByRole('menuitem', { name: 'Đóng đề', exact: true })).toBeDisabled();
@@ -64,7 +65,7 @@ test('publish uses existing PATCH and close/delete require modal confirmation', 
   const state = await setup(page);
   await page.getByRole('button', { name: 'Thao tác đề Đề nháp' }).click();
   await page.getByRole('menuitem', { name: 'Xuất bản', exact: true }).click();
-  await expect(page.getByRole('row').filter({ hasText: 'Đề nháp' })).toContainText('Đã xuất bản');
+  await expect(page.getByRole('article').filter({ hasText: 'Đề nháp' })).toContainText('Đã xuất bản');
   expect(state.mutations).toEqual([{ method: 'PATCH', id: draftId, body: { status: 'published' } }]);
   await page.getByRole('button', { name: 'Thao tác đề Đề xuất bản' }).click();
   await page.getByRole('menuitem', { name: 'Đóng đề', exact: true }).click();
@@ -76,7 +77,7 @@ test('publish uses existing PATCH and close/delete require modal confirmation', 
   await page.getByRole('button', { name: 'Thao tác đề Đề xuất bản' }).click();
   await page.getByRole('menuitem', { name: 'Đóng đề', exact: true }).click();
   await close.getByRole('button', { name: 'Đóng đề', exact: true }).click();
-  await expect(page.getByRole('row').filter({ hasText: 'Đề xuất bản' })).toContainText('Đã đóng');
+  await expect(page.getByRole('article').filter({ hasText: 'Đề xuất bản' })).toContainText('Đã đóng');
   expect(state.mutations[1]).toEqual({ method: 'PATCH', id: publishedId, body: { status: 'closed' } });
   await page.getByRole('button', { name: 'Thao tác đề Đề đóng' }).click();
   await page.getByRole('menuitem', { name: 'Xóa đề', exact: true }).click();
@@ -84,7 +85,7 @@ test('publish uses existing PATCH and close/delete require modal confirmation', 
   await expect(remove).toContainText('Hành động này không thể hoàn tác.');
   expect(state.mutations).toHaveLength(2);
   await remove.getByRole('button', { name: 'Xóa', exact: true }).click();
-  await expect(page.getByRole('row').filter({ hasText: 'Đề đóng' })).toHaveCount(0);
+  await expect(page.getByRole('article').filter({ hasText: 'Đề đóng' })).toHaveCount(0);
   expect(state.mutations[2]).toEqual({ method: 'DELETE', id: closedId, body: null });
 });
 
@@ -92,7 +93,8 @@ test('menu supports arrow keys, escape, outside click and focus return', async (
   await setup(page);
   const trigger = page.getByRole('button', { name: 'Thao tác đề Đề nháp' });
   await trigger.focus(); await page.keyboard.press('ArrowDown');
-  await expect(page.getByRole('menuitem', { name: 'Xem / Sửa', exact: true })).toBeFocused();
+  await expect(page.getByRole('menuitem', { name: 'Xem toàn bộ đề thi', exact: true })).toBeFocused();
+  await page.keyboard.press('ArrowDown'); await expect(page.getByRole('menuitem', { name: 'Xem / Sửa', exact: true })).toBeFocused();
   await page.keyboard.press('ArrowDown'); await expect(page.getByRole('menuitem', { name: 'Xuất bản', exact: true })).toBeFocused();
   await page.keyboard.press('End'); await expect(page.getByRole('menuitem', { name: 'Xóa đề', exact: true })).toBeFocused();
   await page.keyboard.press('Escape'); await expect(page.getByRole('menu')).toHaveCount(0); await expect(trigger).toBeFocused();
@@ -106,7 +108,7 @@ test('running camera exam without submitted work uses monitoring primary from ac
     start_time: new Date(Date.now() - 60_000).toISOString(), end_time: new Date(Date.now() + 3_600_000).toISOString(),
   });
   await page.getByRole('button', { name: 'Tải lại danh sách' }).click();
-  const row = page.getByRole('row').filter({ hasText: 'Đề xuất bản' });
+  const row = page.getByRole('article').filter({ hasText: 'Đề xuất bản' });
   await expect(row.getByRole('link', { name: 'Giám sát', exact: true })).toHaveAttribute('href', `/dashboard/monitor/${publishedId}`);
   await expect(row.getByRole('button', { name: 'Xem / Sửa', exact: true })).toHaveCount(0);
 });
@@ -121,7 +123,7 @@ test('stale attempt race is rejected by backend and errors keep confirmation ope
   await page.keyboard.press('Escape'); await expect(dialog).toBeVisible(); release();
   await expect(dialog.getByRole('alert')).toContainText('Đề đã có bài làm.');
   await expect(page.getByText('PRIVATE_DATABASE_ERROR')).toHaveCount(0);
-  await expect(page.getByRole('row').filter({ hasText: 'Đề nháp' })).toBeVisible();
+  await expect(page.getByRole('article').filter({ hasText: 'Đề nháp' })).toBeVisible();
   expect(state.mutations).toHaveLength(1);
 });
 
@@ -137,20 +139,15 @@ test('unknown attempt state never enables destructive actions and retry recovers
   await expect(page.getByRole('menuitem', { name: 'Xóa đề' })).toBeEnabled();
 });
 
-for (const width of [375, 768, 1440]) test(`menu stays in viewport and escapes table clipping at ${width}px`, async ({ page }) => {
+for (const width of [375, 768, 1440]) test(`menu stays in viewport and escapes card clipping at ${width}px`, async ({ page }) => {
   await page.setViewportSize({ width, height: 720 }); await setup(page);
-  const row = page.getByRole('row').filter({ hasText: 'Đề đã có bài nộp' });
+  const row = page.getByRole('article').filter({ hasText: 'Đề đã có bài nộp' });
   const trigger = row.getByRole('button', { name: 'Thao tác đề Đề đã có bài nộp' });
   await trigger.scrollIntoViewIfNeeded();
-  if (width < 768) await expect(row.getByRole('link', { name: 'Xem kết quả' })).toBeHidden();
-  else {
-    await expect(row.getByRole('link', { name: 'Xem kết quả' })).toBeVisible();
-    const overflow = await row.locator('.ui-button').evaluateAll(nodes => nodes.filter(node => node.scrollWidth > node.clientWidth + 1).map(node => node.textContent));
-    expect(overflow).toEqual([]);
-    const primary = (await row.getByRole('link', { name: 'Xem kết quả' }).boundingBox())!;
-    const action = (await trigger.boundingBox())!;
-    expect(primary.x + primary.width).toBeLessThanOrEqual(action.x - 7);
-  }
+  await expect(row.getByRole('link', { name: 'Xem kết quả' })).toBeVisible();
+  await expect(row.getByRole('link', { name: 'Xem toàn bộ đề thi Đề đã có bài nộp' })).toBeVisible();
+  const overflow = await row.locator('.ui-button').evaluateAll(nodes => nodes.filter(node => node.scrollWidth > node.clientWidth + 1).map(node => node.textContent));
+  expect(overflow).toEqual([]);
   await trigger.click(); const menu = page.getByRole('menu'); await expect(menu).toBeVisible();
   const bounds = await menu.boundingBox(); expect(bounds!.x).toBeGreaterThanOrEqual(0); expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
   expect(bounds!.y).toBeGreaterThanOrEqual(0); expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(720);
