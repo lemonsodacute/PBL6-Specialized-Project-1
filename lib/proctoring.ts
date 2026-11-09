@@ -7,7 +7,7 @@ export type ProctorEvent = {
   id: string; exam_id: string; attempt_id: string; student_id: string; student: ProctorStudent;
   source: string; provider: string; event_type: string; severity: ProctorSeverity;
   confidence: number | null; max_confidence: number | null; occurred_at: string; received_at: string;
-  first_seen: string; last_seen: string; duration_ms: number; occurrence_count: number;
+  first_seen: string; last_seen: string; duration_ms: number; occurrence_count: number; type_occurrence_count?: number;
   message: string; metadata: Record<string, unknown> | null;
   evidence: { kind: 'metadata'; timestamp?: string; bounding_boxes?: number[][] } | null;
   has_snapshot?: boolean;
