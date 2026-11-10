@@ -165,6 +165,26 @@ test('repeated AI incident reopens warning with count, but acknowledgements surv
   await expect(dialog).toHaveCount(0);
 });
 
+test('calibrated eye/head review events display the existing Student warning dialog', async ({ page }) => {
+  test.setTimeout(90000);
+  await setup(page, false);
+  let warning = { id: 'synthetic-gaze-alert', event_type: 'gaze_away',
+    occurred_at: new Date().toISOString(), occurrence_count: 1 };
+  await page.route('**/api/v1/proctoring/sessions/attempt-ux/warnings', route =>
+    respond(route, { data: [warning] }));
+  await page.goto(attemptPath);
+  const dialog = page.getByRole('dialog', { name: 'Cảnh báo giám sát' });
+  await expect(dialog).toContainText('Nhìn ra ngoài');
+  await expect(dialog).toContainText('Vui lòng tập trung vào màn hình làm bài.');
+  await dialog.getByRole('button', { name: 'Đã hiểu, tiếp tục làm bài' }).click();
+  await expect(dialog).toHaveCount(0);
+  warning = { ...warning, id: 'synthetic-head-alert', event_type: 'head_turned' };
+  await expect(dialog).toContainText('Quay đầu');
+  await expect(dialog).toContainText('Vui lòng quay lại nhìn màn hình làm bài.');
+  await dialog.getByRole('button', { name: 'Đã hiểu, tiếp tục làm bài' }).click();
+  await expect(dialog).toHaveCount(0);
+});
+
 test('Student warnings: browser violations appear immediately and report delivery failures honestly', async ({ page }) => {
   test.setTimeout(90000);
   const state = await setup(page, false);
