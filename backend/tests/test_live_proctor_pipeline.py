@@ -74,12 +74,13 @@ class LiveProctorPipelineTests(TestCase):
         finally:
             self.stamp = original
 
-    def install_worker(self, *, phone=True, face=False):
+    def install_worker(self, *, phone=True, face=False, eye_features=False):
         """Real /infer route and auth, with test-only model results and ASGI transport."""
         self.start_time = self.stamp
         self.mode = 'ok'
         self.requests = []
         self.phone, self.face = phone, face
+        self.eye_features, self.eye_h, self.eye_v = eye_features, 0.0, 0.0
         self.phone_confidence = .81
         owner = self
 
@@ -89,8 +90,12 @@ class LiveProctorPipelineTests(TestCase):
                     confidence=owner.phone_confidence, bbox=(.1, .2, .8, .9))] if owner.phone else [])
 
         def gaze(_tracker, _data):
-            return Gaze(status='OK', face_detected=owner.face, raw_status='QUAY_SANG_TRAI' if owner.face else 'KHONG_THAY_MAT',
-                **({'yaw': -30, 'pitch': 0, 'roll': 0, 'gaze_ratio': .5} if owner.face else {}))
+            measurements = {'yaw': 0 if owner.eye_features else -30, 'pitch': 0, 'roll': 0, 'gaze_ratio': .5}
+            if owner.eye_features:
+                measurements.update(eye_h=owner.eye_h, eye_v=owner.eye_v, blink=False)
+            return Gaze(status='OK', face_detected=owner.face,
+                raw_status='BINH_THUONG' if owner.eye_features else 'QUAY_SANG_TRAI' if owner.face else 'KHONG_THAY_MAT',
+                **(measurements if owner.face else {}))
 
         credential = 'test-only-worker-credential-' + uuid4().hex
         self.enterContext(patch.object(worker.app.state, 'key', credential, create=True))
@@ -167,6 +172,36 @@ class LiveProctorPipelineTests(TestCase):
         self.assertEqual({item['id'] for item in warnings}, {str(row.id) for row in rows})
         self.assertEqual({item['event_type'] for item in warnings}, {'object_phone', 'face_not_detected'})
         self.assertTrue(all(set(item) == {'id', 'event_type', 'occurred_at', 'occurrence_count', 'type_occurrence_count'} for item in warnings))
+
+    def test_calibrated_eye_left_and_up_trigger_student_and_teacher_alerts(self):
+        # Worker HTTP auth, per-attempt baseline, temporal policy, DB and
+        # warnings are real. Only gaze measurements are mocked, not a webcam.
+        self.install_worker(phone=False, face=True, eye_features=True)
+        self.start()
+        for tick in range(0, 3100, 100):
+            self.assertEqual(self.frame(tick).status_code, 200)
+        self.assertFalse(self.db.scalars(select(DetectionEvent)).all())
+        self.eye_h = -.8
+        for tick in range(3100, 6200, 100):
+            self.assertEqual(self.frame(tick).status_code, 200)
+        event = self.db.scalar(select(DetectionEvent).where(DetectionEvent.event_type == 'gaze_away'))
+        self.assertIsNotNone(event)
+        self.assertEqual(event.severity.value, 'high')
+        self.assertEqual(event.occurrence_count, 1)
+        self.eye_h = 0.0
+        for tick in range(6200, 7100, 100):
+            self.frame(tick)
+        self.eye_v = .8
+        for tick in range(7100, 10300, 100):
+            self.assertEqual(self.frame(tick).status_code, 200)
+        self.assertEqual(self.db.get(DetectionEvent, event.id).occurrence_count, 2)
+        warnings = self.client.get(self.base + '/warnings', headers=self.headers).json()['data']
+        self.assertEqual(len(warnings), 1)
+        self.assertEqual((warnings[0]['event_type'], warnings[0]['type_occurrence_count']), ('gaze_away', 2))
+        feed = self.client.get(f'/api/v1/proctoring/exams/{self.fixture.exam.id}/events',
+                               headers=self.fixture.headers(self.fixture.teacher)).json()['data']
+        self.assertEqual((feed[0]['event_type'], feed[0]['type_occurrence_count']), ('gaze_away', 2))
+        self.assertFalse(any(row.event_type.startswith('object_') for row in self.db.scalars(select(DetectionEvent))))
 
     def test_low_confidence_phone_stays_medium_and_later_high_updates_same_record(self):
         self.install_worker()
