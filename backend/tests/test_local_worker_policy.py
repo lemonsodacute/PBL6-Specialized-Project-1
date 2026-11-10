@@ -206,3 +206,112 @@ class GazeCalibrationLogTests(IsolatedAsyncioTestCase):
         with patch.object(settings,'ENVIRONMENT','production'), patch.object(settings,'PROCTOR_GAZE_CALIBRATION',True):
             with self.assertNoLogs('app.proctoring.gaze_calibration',level='INFO'):
                 await adapter.process_frame(frame)
+
+
+class CalibratedGazeDirectionTests(TestCase):
+    """Synthetic blendshape/pose measurements, not webcam accuracy claims."""
+
+    @staticmethod
+    def gaze(*, yaw=5.0, pitch=-3.0, roll=1.0, eye_h=.1, eye_v=-.05, blink=False):
+        return Gaze(status='OK', face_detected=True, yaw=yaw, pitch=pitch, roll=roll,
+                    gaze_ratio=.5, eye_h=eye_h, eye_v=eye_v, blink=blink,
+                    raw_status='BINH_THUONG')
+
+    def test_all_four_eye_directions_and_head_movements_reach_review_policy(self):
+        config = ModelConfig.model_validate(local_models()['local_gaze'])
+        scenarios = (
+            ({'eye_h': -.50}, 'LIEC_SANG_TRAI', 'gaze_away'),
+            ({'eye_h': .70}, 'LIEC_SANG_PHAI', 'gaze_away'),
+            ({'eye_v': .48}, 'LIEC_LEN_TREN', 'gaze_away'),
+            ({'eye_v': -.55}, 'LIEC_XUONG_DUOI', 'gaze_away'),
+            ({'yaw': -23.0}, 'QUAY_SANG_TRAI', 'head_turned'),
+            ({'yaw': 33.0}, 'QUAY_SANG_PHAI', 'head_turned'),
+            ({'pitch': 17.0}, 'NGUA_LEN_TREN', 'head_turned'),
+            ({'pitch': -23.0}, 'CUI_XUONG_BAN', 'head_turned'),
+            ({'roll': 35.0}, 'NGHIENG_DAU', 'head_turned'),
+        )
+        for values, label, kind in scenarios:
+            with self.subTest(label=label):
+                adapter = LocalWorkerAdapter('gaze')
+                policy = TemporalPolicy()
+                context = AdapterContext(uuid4(), uuid4(), uuid4())
+                started = datetime.now(timezone.utc)
+
+                def sample(index, reading):
+                    stamp = started + timedelta(milliseconds=index * 100)
+                    predictions = adapter.gaze_predictions(reading, stamp)
+                    events = policy.normalize(context, 'local_gaze', config, predictions,
+                                              observed_at=stamp)
+                    return predictions, events
+
+                # Three seconds of straight-ahead measurements belong solely to
+                # this attempt; calibration itself must not create violations.
+                for tick in range(31):
+                    predictions, events = sample(tick, self.gaze())
+                    self.assertEqual(predictions[0].label, 'BINH_THUONG')
+                    self.assertFalse(events)
+                self.assertIsNotNone(adapter.gaze_baseline)
+                detections = []
+                labels = []
+                for tick in range(31, 76):
+                    predictions, events = sample(tick, self.gaze(**values))
+                    labels.append(predictions[0].label)
+                    detections.extend(events)
+                self.assertIn(label, labels)
+                self.assertEqual([(event.event_type, event.severity) for event in detections],
+                                 [(kind, SeverityLevel.high)])
+                self.assertIsNotNone(detections[0].metadata.incident_id)
+
+    def test_blinks_do_not_trigger_gaze_away(self):
+        adapter = LocalWorkerAdapter('gaze')
+        config = ModelConfig.model_validate(local_models()['local_gaze'])
+        policy = TemporalPolicy()
+        context = AdapterContext(uuid4(), uuid4(), uuid4())
+        start = datetime.now(timezone.utc)
+        for tick in range(31):
+            stamp = start + timedelta(milliseconds=tick*100)
+            policy.normalize(context, 'local_gaze', config,
+                             adapter.gaze_predictions(self.gaze(), stamp), observed_at=stamp)
+        for tick in range(31, 71):
+            stamp = start + timedelta(milliseconds=tick*100)
+            readings = adapter.gaze_predictions(self.gaze(eye_h=.99, eye_v=.90, blink=True), stamp)
+            self.assertEqual(readings[0].label, 'BINH_THUONG')
+            self.assertFalse(policy.normalize(context, 'local_gaze', config, readings, observed_at=stamp))
+
+    def test_gaze_repeated_after_returning_to_center_counts_new_incident(self):
+        adapter = LocalWorkerAdapter('gaze')
+        config = ModelConfig.model_validate(local_models()['local_gaze'])
+        policy = TemporalPolicy()
+        context = AdapterContext(uuid4(), uuid4(), uuid4())
+        start = datetime.now(timezone.utc)
+        incidents = []
+
+        def run(start_tick, end_tick, reading):
+            for tick in range(start_tick, end_tick):
+                stamp = start + timedelta(milliseconds=tick*100)
+                predicted = adapter.gaze_predictions(reading, stamp)
+                incidents.extend(policy.normalize(context, 'local_gaze', config, predicted,
+                                                  observed_at=stamp))
+
+        run(0, 31, self.gaze())
+        run(31, 76, self.gaze(eye_h=.70))
+        run(76, 91, self.gaze())
+        run(91, 136, self.gaze(eye_h=.70))
+        self.assertEqual([i.event_type for i in incidents], ['gaze_away', 'gaze_away'])
+        self.assertNotEqual(incidents[0].metadata.incident_id, incidents[1].metadata.incident_id)
+
+    def test_missing_face_keeps_absence_alert_and_never_invents_eye_direction(self):
+        adapter = LocalWorkerAdapter('gaze')
+        config = ModelConfig.model_validate(local_models()['local_gaze'])
+        policy = TemporalPolicy()
+        context = AdapterContext(uuid4(), uuid4(), uuid4())
+        start = datetime.now(timezone.utc)
+        missing = Gaze(status='OK', face_detected=False, raw_status='KHONG_THAY_MAT')
+        events = []
+        for tick in range(24):
+            stamp = start + timedelta(milliseconds=tick*100)
+            predictions = adapter.gaze_predictions(missing, stamp)
+            events.extend(policy.normalize(context, 'local_gaze', config, predictions, observed_at=stamp))
+        self.assertEqual([(e.event_type, e.severity) for e in events],
+                         [('face_not_detected', SeverityLevel.low)])
+        self.assertIsNone(adapter.gaze_baseline)

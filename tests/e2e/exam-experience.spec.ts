@@ -165,6 +165,36 @@ test('repeated AI incident reopens warning with count, but acknowledgements surv
   await expect(dialog).toHaveCount(0);
 });
 
+test('phone detection and exact gaze/head directions coexist in the Student warning dialog', async ({ page }) => {
+  test.setTimeout(90000);
+  await setup(page, false);
+  const now = new Date().toISOString();
+  const phone = { id: 'synthetic-phone-alert', event_type: 'object_phone', occurred_at: now, occurrence_count: 1 };
+  let direction = { id: 'synthetic-gaze-left', event_type: 'gaze_away', occurred_at: now,
+    occurrence_count: 1, direction_label: 'Liếc mắt sang trái' };
+  await page.route('**/api/v1/proctoring/sessions/attempt-ux/warnings', route =>
+    respond(route, { data: [phone, direction] }));
+  await page.goto(attemptPath);
+  const dialog = page.getByRole('dialog', { name: 'Cảnh báo giám sát' });
+  // A gaze warning must never hide a simultaneously detected phone.
+  await expect(dialog).toContainText('Phát hiện điện thoại');
+  await expect(dialog).toContainText('Liếc mắt sang trái');
+  await expect(dialog).toContainText('Vui lòng cất điện thoại khỏi khu vực làm bài.');
+  await dialog.getByRole('button', { name: 'Đã hiểu, tiếp tục làm bài' }).click();
+  await expect(dialog).toHaveCount(0);
+  for (const [id, event_type, direction_label] of [
+    ['gaze-right', 'gaze_away', 'Liếc mắt sang phải'],
+    ['gaze-up', 'gaze_away', 'Nhìn lên trên'],
+    ['gaze-down', 'gaze_away', 'Nhìn xuống dưới'],
+    ['head-right', 'head_turned', 'Quay đầu sang phải'],
+  ]) {
+    direction = { ...direction, id: `synthetic-${id}`, event_type, direction_label };
+    await expect(dialog).toContainText(direction_label);
+    await dialog.getByRole('button', { name: 'Đã hiểu, tiếp tục làm bài' }).click();
+    await expect(dialog).toHaveCount(0);
+  }
+});
+
 test('Student warnings: browser violations appear immediately and report delivery failures honestly', async ({ page }) => {
   test.setTimeout(90000);
   const state = await setup(page, false);

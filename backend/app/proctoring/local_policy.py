@@ -50,12 +50,17 @@ def local_models():
                 'smartwatch': 'object_prohibited', 'headphone': 'object_headphone',
                 'multiple_people': 'person_in_background',
             }, policies=object_policies),
+        # Blendshape inference adds CPU work. 200ms gaze sampling avoids
+        # oversubscribing the same local worker; YOLO keeps its own 250ms
+        # cadence and every phone/book confidence + duration threshold unchanged.
         'local_gaze': dict(enabled=True, source='FACE', label='Theo dõi hiện diện và hướng nhìn',
-            frame_interval_ms=100,
+            frame_interval_ms=200,
             label_map={
                 'KHONG_THAY_MAT': 'face_not_detected',
                 'LIEC_SANG_TRAI': 'gaze_away', 'LIEC_SANG_PHAI': 'gaze_away',
+                'LIEC_LEN_TREN': 'gaze_away', 'LIEC_XUONG_DUOI': 'gaze_away',
                 'QUAY_SANG_TRAI': 'head_turned', 'QUAY_SANG_PHAI': 'head_turned',
+                'NGHIENG_DAU': 'head_turned',
                 'CUI_XUONG_BAN': 'head_turned', 'NGUA_LEN_TREN': 'head_turned',
             }, policies=gaze_policies),
     }
