@@ -6,7 +6,7 @@ from statistics import median
 import httpx
 from app.core.config import settings
 from app.proctoring.adapters import RawPrediction
-from app.proctoring.contracts import EvidenceSummary
+from app.proctoring.contracts import EvidenceSummary, SafeMetadata
 from app.proctoring.diagnostics import diagnostic
 from proctor_worker.protocol import KEY_FILE, URL, Result, reference_state
 
@@ -136,7 +136,8 @@ class LocalWorkerAdapter:
                     current[axis] = old+weight*(new-old)
         self.previous, self.angles = stamp, current
         label = reference_state(current[0], current[1], current[3])
-        return [RawPrediction(label=label, occurred_at=stamp)]
+        return [RawPrediction(label=label, occurred_at=stamp,
+                              metadata=SafeMetadata(label=label))]
 
     def calibrated_gaze_predictions(self, observation, stamp):
         """Classify sustained *relative* eye/head movement for this attempt.
@@ -214,4 +215,5 @@ class LocalWorkerAdapter:
             label = 'LIEC_SANG_PHAI' if sx > 0 else 'LIEC_SANG_TRAI'
         else:
             label = 'LIEC_LEN_TREN' if sy > 0 else 'LIEC_XUONG_DUOI'
-        return [RawPrediction(label=label, occurred_at=stamp)]
+        return [RawPrediction(label=label, occurred_at=stamp,
+                              metadata=SafeMetadata(label=label))]
