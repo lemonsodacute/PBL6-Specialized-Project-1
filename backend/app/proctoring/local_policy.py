@@ -55,7 +55,9 @@ def local_models():
             label_map={
                 'KHONG_THAY_MAT': 'face_not_detected',
                 'LIEC_SANG_TRAI': 'gaze_away', 'LIEC_SANG_PHAI': 'gaze_away',
+                'LIEC_LEN_TREN': 'gaze_away', 'LIEC_XUONG_DUOI': 'gaze_away',
                 'QUAY_SANG_TRAI': 'head_turned', 'QUAY_SANG_PHAI': 'head_turned',
+                'NGHIENG_DAU': 'head_turned',
                 'CUI_XUONG_BAN': 'head_turned', 'NGUA_LEN_TREN': 'head_turned',
             }, policies=gaze_policies),
     }
