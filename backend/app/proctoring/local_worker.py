@@ -145,6 +145,11 @@ class LocalWorkerAdapter:
         suppression, smoothing and hysteresis live here, so different students
         cannot share a baseline or temporal tracking state.
         """
+        # A stalled camera/CPU must not carry a previous away state forward.
+        if self.previous is not None and not 0 < (stamp - self.previous).total_seconds() <= .6:
+            self.gaze_smooth.clear()
+            self.gaze_away = False
+        self.previous = stamp
         values = {
             'yaw': observation.yaw, 'pitch': observation.pitch,
             'roll': observation.roll, 'eye_h': observation.eye_h,
