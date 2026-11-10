@@ -129,7 +129,7 @@ class LiveProctorPipelineTests(TestCase):
     def test_capabilities_enable_both_profiles_without_direction_calibration(self):
         response = self.capabilities()
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()['data'], {'enabled': True, 'frame_interval_ms': 100, 'gaze_calibration_enabled': False})
+        self.assertEqual(response.json()['data'], {'enabled': True, 'frame_interval_ms': 200, 'gaze_calibration_enabled': False})
         for flag in ('PROCTOR_MODEL_ENABLED',):
             with patch.object(settings, flag, False):
                 data = self.capabilities().json()['data']
@@ -202,6 +202,43 @@ class LiveProctorPipelineTests(TestCase):
                                headers=self.fixture.headers(self.fixture.teacher)).json()['data']
         self.assertEqual((feed[0]['event_type'], feed[0]['type_occurrence_count']), ('gaze_away', 2))
         self.assertFalse(any(row.event_type.startswith('object_') for row in self.db.scalars(select(DetectionEvent))))
+
+    def test_phone_and_calibrated_eye_direction_are_independent_and_both_reach_student(self):
+        # Regression: a student holding a phone while looking away must trigger
+        # BOTH old YOLO object_phone and new gaze_away, never just gaze.
+        self.install_worker(phone=True, face=True, eye_features=True)
+        self.start()
+        for tick in range(0, 3100, 100):
+            self.assertEqual(self.frame(tick).status_code, 200)
+        # The phone continues to be detected during eye neutral calibration.
+        phone = self.db.scalar(select(DetectionEvent).where(DetectionEvent.event_type == 'object_phone'))
+        self.assertIsNotNone(phone)
+        self.assertEqual(phone.severity.value, 'high')
+        self.assertEqual(phone.occurrence_count, 1)
+        self.eye_h = -.8
+        for tick in range(3100, 6500, 100):
+            self.assertEqual(self.frame(tick).status_code, 200)
+        rows = list(self.db.scalars(select(DetectionEvent)))
+        self.assertEqual({row.event_type for row in rows}, {'object_phone', 'gaze_away'})
+        self.assertEqual({row.event_type: row.severity.value for row in rows},
+                         {'object_phone': 'high', 'gaze_away': 'high'})
+        gaze = next(row for row in rows if row.event_type == 'gaze_away')
+        self.assertEqual(gaze.message, 'Liếc mắt sang trái')
+        self.assertEqual(gaze.metadata_json.get('label'), 'LIEC_SANG_TRAI')
+        # Object detection should not be renamed or counted again merely
+        # because a simultaneous gaze violation occurred.
+        self.assertEqual(self.db.get(DetectionEvent, phone.id).occurrence_count, 1)
+        warnings = self.client.get(self.base + '/warnings', headers=self.headers)
+        self.assertEqual(warnings.status_code, 200)
+        data = {row['event_type']: row for row in warnings.json()['data']}
+        self.assertEqual(set(data), {'object_phone', 'gaze_away'})
+        self.assertNotIn('direction_label', data['object_phone'])
+        self.assertEqual(data['gaze_away']['direction_label'], 'Liếc mắt sang trái')
+        feed = self.client.get(f'/api/v1/proctoring/exams/{self.fixture.exam.id}/events',
+                               headers=self.fixture.headers(self.fixture.teacher))
+        self.assertEqual(feed.status_code, 200)
+        self.assertEqual({row['event_type'] for row in feed.json()['data']},
+                         {'object_phone', 'gaze_away'})
 
     def test_low_confidence_phone_stays_medium_and_later_high_updates_same_record(self):
         self.install_worker()
