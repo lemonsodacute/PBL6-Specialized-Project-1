@@ -25,6 +25,22 @@ async function reportsAPI(page: Page, data = reportSample()) {
   return state;
 }
 
+test('analytics prefers the complete server submission timeline over the current results page', () => {
+  const data = reportSample();
+  data.submission_trend = [
+    { date: '2026-11-15', value: 17 },
+    { date: '2026-11-16', value: 23 },
+    { date: '2026-11-17', value: 4 },
+  ];
+  expect(submissionTrend(data)).toEqual([
+    { date: '2026-11-15', label: '15/11', value: 17 },
+    { date: '2026-11-16', label: '16/11', value: 23 },
+    { date: '2026-11-17', label: '17/11', value: 4 },
+  ]);
+  expect(submissionTrend(data).reduce((sum, point) => sum + point.value, 0)).toBe(44);
+  expect(data.results).toHaveLength(8);
+});
+
 test('analytics groups only observed submissions in Vietnam time and never expands a page into totals', () => {
   const data = reportSample();
   data.results[0].submitted_at = '2026-10-15T18:00:00Z';
