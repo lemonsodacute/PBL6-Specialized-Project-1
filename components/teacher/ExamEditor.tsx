@@ -17,6 +17,7 @@ export type ManagedExam = {
   max_attempts?: number; questions?: SelectionQuestion[];
   violation_auto_lock_threshold?: number | null;
   attempt_count?: number; completed_attempt_count?: number;
+  created_by?: string; deletion_request?: { status: 'PENDING' | 'CANCELLED' | 'REJECTED' | 'EXECUTED'; reason?: string; requested_at?: string; handled_at?: string } | null;
 };
 type Form = { title: string; description: string; start_time: string; end_time: string; duration_minutes: string;
   max_attempts: string; require_camera: boolean; require_mic: boolean; require_fullscreen: boolean;

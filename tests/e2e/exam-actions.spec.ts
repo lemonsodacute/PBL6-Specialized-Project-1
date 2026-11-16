@@ -5,31 +5,44 @@ const draftId = '22222222-2222-4222-8222-222222222222';
 const publishedId = '33333333-3333-4333-8333-333333333333';
 const resultsId = '44444444-4444-4444-8444-444444444444';
 const closedId = '55555555-5555-4555-8555-555555555555';
-const base = { attempt_count:0,completed_attempt_count:0,description: null, duration_minutes: 30, questions_count: 5, classes: [], require_camera: true, require_mic: true,
+const base = { created_by: '11111111-1111-4111-8111-111111111111', attempt_count:0,completed_attempt_count:0,description: null, duration_minutes: 30, questions_count: 5, classes: [], require_camera: true, require_mic: true,
   start_time: '2099-01-01T01:00:00Z', end_time: '2099-01-01T02:00:00Z' };
-async function setup(page: Page) {
-  const session = await uiSession(page, 'teacher');
+async function setup(page: Page, role: 'teacher' | 'admin' = 'teacher') {
+  const session = await uiSession(page, role);
   session.exams = [{ ...base, id: draftId, title: 'Đề nháp', status: 'draft' }, { ...base, id: publishedId, title: 'Đề xuất bản', status: 'published' },
-    { ...base, id: resultsId, attempt_count:1,completed_attempt_count:1, title: 'Đề đã có bài nộp', status: 'published' }, { ...base, id: closedId, title: 'Đề đóng', status: 'closed' }];
-  await page.context().addCookies([{ name: 'auth_token', value: `fixture.${Buffer.from(JSON.stringify({role:'teacher'})).toString('base64url')}.signature`, url: 'http://localhost:3000' }]);
+    { ...base, id: resultsId, attempt_count:1,completed_attempt_count:1, title: 'Đề đã có bài nộp', status: 'published',
+      start_time: '2026-10-01T01:00:00Z', end_time: '2026-10-01T02:00:00Z',
+      ...(role === 'admin' ? { deletion_request: { status: 'PENDING', reason: 'Giảng viên đề nghị xóa đề đã kết thúc' } } : {}) }, { ...base, id: closedId, title: 'Đề đóng', status: 'closed' }];
+  await page.context().addCookies([{ name: 'auth_token', value: `fixture.${Buffer.from(JSON.stringify({role})).toString('base64url')}.signature`, url: 'http://localhost:3000' }]);
   const state = { session, reportsStatus: 200, actionStatus: 200, actionCode: '', gate: null as Promise<void> | null, mutations: [] as { method: string; id: string; body: unknown }[] };
-  const headers = { 'access-control-allow-origin': process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000', 'access-control-allow-credentials': 'true', 'access-control-allow-headers': 'authorization,content-type', 'access-control-allow-methods': 'GET,PATCH,DELETE,OPTIONS' };
+  const headers = { 'access-control-allow-origin': process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000', 'access-control-allow-credentials': 'true', 'access-control-allow-headers': 'authorization,content-type', 'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS' };
   await page.route('**/api/v1/teacher/reports', async route => {
     if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
     await route.fulfill({ status: state.reportsStatus, headers, json: state.reportsStatus === 200 ? { data: { exams: session.exams, completed_statuses: ['submitted','auto_submitted','terminated'],
       results: [{ exam_id: resultsId, status: 'submitted' }] } } : { error: { code: 'TEST_ERROR', message: 'PRIVATE_DATABASE_ERROR' } } });
   });
   await page.route('**/api/v1/exams?**',route=>route.fulfill({headers,json:{data:session.exams.map(exam=>state.reportsStatus===200?exam:{...exam,attempt_count:undefined,completed_attempt_count:undefined})}}));
-  await page.route('**/api/v1/exams/*', async route => {
+  await page.route('**/api/v1/exams/**', async route => {
     const request = route.request();
     if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
-    if (!['PATCH', 'DELETE'].includes(request.method())) return route.fallback();
-    const id = new URL(request.url()).pathname.split('/').pop()!;
-    const body = request.method() === 'PATCH' ? request.postDataJSON() : null;
+    if (!['POST', 'PATCH', 'DELETE'].includes(request.method())) return route.fallback();
+    const path = new URL(request.url()).pathname.split('/');
+    const id = path[4]; // /api/v1/exams/<exam-id>/...
+    const body = request.method() === 'POST' || request.method() === 'PATCH' ? request.postDataJSON() : null;
     state.mutations.push({ method: request.method(), id, body });
     if (state.gate) await state.gate;
     if (state.actionStatus !== 200) return route.fulfill({ status: state.actionStatus, headers, json: { error: { code: state.actionCode, message: 'PRIVATE_DATABASE_ERROR' } } });
-    if (request.method() === 'DELETE') session.exams = session.exams.filter(exam => exam.id !== id);
+    if (path.includes('deletion-request')) {
+      const exam = session.exams.find(exam => exam.id === id);
+      if (exam) {
+        if (request.method() === 'DELETE') exam.deletion_request = { status: 'CANCELLED' };
+        else if (path.includes('review')) {
+          const approval = (body as { approve: boolean }).approve;
+          exam.deletion_request = { status: approval ? 'EXECUTED' : 'REJECTED' };
+          if (approval) session.exams = session.exams.filter(item => item.id !== id);
+        } else exam.deletion_request = { status: 'PENDING', reason: (body as { reason: string }).reason };
+      }
+    } else if (request.method() === 'DELETE') session.exams = session.exams.filter(exam => exam.id !== id);
     else session.exams.forEach(exam => { if (exam.id === id) Object.assign(exam, body); });
     await route.fulfill({ headers, json: { data: { deleted: request.method() === 'DELETE' } } });
   });
@@ -51,8 +64,8 @@ test('desktop exam card has preview, primary and menu with state restrictions', 
   await page.keyboard.press('Escape');
   await submitted.getByRole('button', { name: 'Thao tác đề Đề đã có bài nộp' }).click();
   await expect(page.getByRole('menuitem', { name: 'Đóng đề', exact: true })).toBeDisabled();
-  await expect(page.getByRole('menuitem', { name: 'Xóa đề', exact: true })).toBeDisabled();
-  await expect(page.getByText('Đề đã có bài làm nên không thể đổi trạng thái hoặc xóa.')).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Yêu cầu Admin xóa đề', exact: true })).toBeEnabled();
+  await expect(page.getByText(/chỉ Admin mới có thể xóa sau khi giảng viên yêu cầu/)).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Xem giám sát' })).toHaveAttribute('href', `/dashboard/monitor/${resultsId}`);
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Thao tác đề Đề đóng' }).click();
@@ -82,7 +95,7 @@ test('publish uses existing PATCH and close/delete require modal confirmation', 
   await page.getByRole('button', { name: 'Thao tác đề Đề đóng' }).click();
   await page.getByRole('menuitem', { name: 'Xóa đề', exact: true }).click();
   const remove = page.getByRole('dialog', { name: 'Xóa đề thi?' });
-  await expect(remove).toContainText('Hành động này không thể hoàn tác.');
+  await expect(remove).toContainText('Đề chưa có bài làm sẽ được ẩn khỏi danh sách.');
   expect(state.mutations).toHaveLength(2);
   await remove.getByRole('button', { name: 'Xóa', exact: true }).click();
   await expect(page.getByRole('article').filter({ hasText: 'Đề đóng' })).toHaveCount(0);
@@ -154,3 +167,37 @@ for (const width of [375, 768, 1440]) test(`menu stays in viewport and escapes c
   expect(await menu.evaluate(node => node.parentElement === document.body)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test('teacher must provide a reason before requesting deletion, then can withdraw consent', async ({ page }) => {
+  const state = await setup(page);
+  const row = page.getByRole('article').filter({ hasText: 'Đề đã có bài nộp' });
+  await row.getByRole('button', { name: 'Thao tác đề Đề đã có bài nộp' }).click();
+  await page.getByRole('menuitem', { name: 'Yêu cầu Admin xóa đề' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Yêu cầu Admin xóa đề?' });
+  await expect(dialog).toContainText('Bài đã nộp, điểm và lịch sử giám sát vẫn được giữ');
+  await dialog.getByRole('button', { name: 'Gửi yêu cầu' }).click();
+  await expect(dialog.getByRole('alert')).toBeVisible();
+  await dialog.getByRole('textbox', { name: 'Lý do đề nghị xóa' }).fill('Đề thi đã tổ chức xong và cần lưu trữ');
+  await dialog.getByRole('button', { name: 'Gửi yêu cầu' }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(state.mutations.at(-1)).toEqual({ method: 'POST', id: resultsId,
+    body: { reason: 'Đề thi đã tổ chức xong và cần lưu trữ' } });
+  await row.getByRole('button', { name: 'Thao tác đề Đề đã có bài nộp' }).click();
+  await page.getByRole('menuitem', { name: 'Hủy yêu cầu xóa' }).click();
+  await page.getByRole('dialog', { name: 'Hủy yêu cầu xóa?' }).getByRole('button', { name: 'Hủy yêu cầu' }).click();
+  expect(state.mutations.at(-1)).toEqual({ method: 'DELETE', id: resultsId, body: null });
+});
+
+test('Admin can approve only a Teacher pending request and the exam disappears without deleting attempt records', async ({ page }) => {
+  const state = await setup(page, 'admin');
+  const row = page.getByRole('article').filter({ hasText: 'Đề đã có bài nộp' });
+  await row.getByRole('button', { name: 'Thao tác đề Đề đã có bài nộp' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Phê duyệt yêu cầu xóa' })).toBeEnabled();
+  await page.getByRole('menuitem', { name: 'Phê duyệt yêu cầu xóa' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Phê duyệt xóa đề đã có bài làm?' });
+  await expect(dialog).toContainText('Giảng viên đề nghị xóa đề đã kết thúc');
+  await dialog.getByRole('button', { name: 'Phê duyệt xóa' }).click();
+  await expect(row).toHaveCount(0);
+  expect(state.mutations.at(-1)).toEqual({ method: 'POST', id: resultsId, body: { approve: true, note: '' } });
+});
+
