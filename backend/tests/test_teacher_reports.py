@@ -94,7 +94,7 @@ class TeacherReportsTests(TestCase):
                 severity=SeverityLevel.medium, is_simulated=simulated,
                 occurred_at=now + timedelta(minutes=len(self.db.new))))
         self.db.commit()
-        for suffix in ['', '?page=1&limit=1']:
+        for suffix in ['', '?page=1&limit=1&status=submitted']:
             response = self.client.get(f'/api/v1/teacher/reports{suffix}', headers=f.headers())
             self.assertEqual(response.status_code, 200, response.text)
             overview = response.json()['data']
