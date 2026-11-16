@@ -22,7 +22,7 @@ async function setup(page: Page, role: 'teacher' | 'admin' = 'teacher') {
       results: [{ exam_id: resultsId, status: 'submitted' }] } } : { error: { code: 'TEST_ERROR', message: 'PRIVATE_DATABASE_ERROR' } } });
   });
   await page.route('**/api/v1/exams?**',route=>route.fulfill({headers,json:{data:session.exams.map(exam=>state.reportsStatus===200?exam:{...exam,attempt_count:undefined,completed_attempt_count:undefined})}}));
-  await page.route('**/api/v1/exams/*', async route => {
+  await page.route('**/api/v1/exams/**', async route => {
     const request = route.request();
     if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
     if (!['POST', 'PATCH', 'DELETE'].includes(request.method())) return route.fallback();
