@@ -76,6 +76,66 @@ class TeacherReportsTests(TestCase):
         self.assertEqual(detail['student_code'], f.student.student_code)
         self.assertEqual(detail['score'], row['score'])
 
+    def test_modern_yolo_and_gaze_events_counted_but_simulation_excluded(self):
+        f = self.fixture
+        now = datetime(2026, 11, 17, 9, 0, tzinfo=timezone.utc)
+        session = ProctoringSession(id=uuid4(), attempt_id=f.submitted.id)
+        self.db.add(session); self.db.flush()
+        self.db.add(ViolationLog(id=uuid4(), attempt_id=f.submitted.id,
+            type=ViolationType.tab_switch, severity=SeverityLevel.low, occurred_at=now))
+        for source, label, simulated in [
+            ('LEGACY', 'face_not_detected', False),
+            ('OBJECT', 'object_phone', False),
+            ('FACE', 'gaze_away', False),
+            ('OBJECT', 'object_book', True),
+        ]:
+            self.db.add(DetectionEvent(id=uuid4(), attempt_id=f.submitted.id,
+                proctoring_session_id=session.id, source=source, event_type=label,
+                severity=SeverityLevel.medium, is_simulated=simulated,
+                occurred_at=now + timedelta(minutes=len(self.db.new))))
+        self.db.commit()
+        for suffix in ['', '?page=1&limit=1&status=submitted']:
+            response = self.client.get(f'/api/v1/teacher/reports{suffix}', headers=f.headers())
+            self.assertEqual(response.status_code, 200, response.text)
+            overview = response.json()['data']
+            self.assertEqual(overview['summary']['browser_violation_count'], 1)
+            self.assertEqual(overview['summary']['detection_count'], 3)
+            self.assertEqual(overview['summary']['total_violations'], 4)
+            attempt = next(row for row in overview['results'] if row['attempt_id'] == str(f.submitted.id))
+            self.assertEqual(attempt['detection_count'], 3)
+            self.assertEqual(attempt['violation_count'], 4)
+        for suffix in ['', '?page=1&limit=20']:
+            response = self.client.get(f'/api/v1/reports/attempts/{f.submitted.id}{suffix}',
+                                       headers=f.headers())
+            self.assertEqual(response.status_code, 200, response.text)
+            data = response.json()['data']
+            self.assertEqual(data['detection_count'], 3)
+            self.assertEqual(len(data['events']), 4)
+            self.assertEqual({event['type'] for event in data['events'] if event['source'] == 'detector'},
+                             {'face_not_detected', 'object_phone', 'gaze_away'})
+        # The teacher must never see another teacher's detections in their own report.
+        other = self.overview(actor=f.other).json()['data']
+        self.assertEqual(other['summary']['detection_count'], 0)
+
+    def test_submission_trend_counts_all_authorized_attempts_not_current_page(self):
+        f = self.fixture
+        f.submitted.submitted_at = datetime(2026, 11, 16, 18, 0, tzinfo=timezone.utc)
+        second = f.attempt(f.student, AttemptStatus.submitted, 2, Decimal('0'))
+        second.submitted_at = datetime(2026, 11, 17, 18, 0, tzinfo=timezone.utc)
+        self.db.commit()
+        response = self.client.get('/api/v1/teacher/reports?page=1&limit=1', headers=f.headers())
+        self.assertEqual(response.status_code, 200, response.text)
+        data = response.json()['data']
+        self.assertEqual(len(data['results']), 1)
+        self.assertEqual(data['summary']['completed_attempts'], 2)
+        self.assertEqual(data['submission_trend'], [
+            {'date': '2026-11-17', 'value': 1},
+            {'date': '2026-11-18', 'value': 1},
+        ])
+        full = self.overview().json()['data']
+        self.assertEqual(full['submission_trend'], data['submission_trend'])
+        self.assertEqual(self.overview(actor=f.other).json()['data']['submission_trend'], [])
+
     def test_owner_filter_and_direct_url_permissions(self):
         f = self.fixture
         self.assertEqual(self.overview(actor=f.student).status_code, 403)

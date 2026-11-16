@@ -1,5 +1,7 @@
 """SQL collection projection over persisted attempts; no grading/risk recalculation."""
 from datetime import datetime, timezone
+from collections import Counter
+from zoneinfo import ZoneInfo
 from decimal import Decimal
 from sqlalchemy import case, cast, func, select, Numeric
 from app.models.entities import (AttemptStatus, DetectionEvent, Exam, ExamAttempt, User, UserRole, ViolationLog)
@@ -24,7 +26,7 @@ def attempt_projection(db, user, exam_id=None, q='', status=None, risk_min=None,
     if has_risk is not None:query=query.where(ExamAttempt.risk_score.is_not(None) if has_risk else ExamAttempt.risk_score.is_(None))
     ids=query.with_only_columns(ExamAttempt.id).subquery()
     browser=select(ViolationLog.attempt_id,func.count().label('count')).where(ViolationLog.attempt_id.in_(select(ids.c.id))).group_by(ViolationLog.attempt_id).subquery()
-    detector=select(DetectionEvent.attempt_id,func.count().label('count')).where(DetectionEvent.attempt_id.in_(select(ids.c.id)),DetectionEvent.source=='LEGACY').group_by(DetectionEvent.attempt_id).subquery()
+    detector=select(DetectionEvent.attempt_id,func.count().label('count')).where(DetectionEvent.attempt_id.in_(select(ids.c.id)),DetectionEvent.is_simulated.is_(False)).group_by(DetectionEvent.attempt_id).subquery()
     score=case((ExamAttempt.status.in_(TERMINAL),ExamAttempt.score),else_=None)
     percent=case((ExamAttempt.max_score>0,score/cast(ExamAttempt.max_score,Numeric)*100),else_=None)
     query=query.outerjoin(browser,browser.c.attempt_id==ExamAttempt.id).outerjoin(detector,detector.c.attempt_id==ExamAttempt.id)
@@ -53,13 +55,33 @@ def projection_summary(db, query, single_exam=False):
     result['max_score']=data['max_max'] if uniform else None
     return result
 
+
+def trend_from_timestamps(stamps):
+    """Group persisted submission timestamps by calendar day in Vietnam."""
+    zone = ZoneInfo('Asia/Ho_Chi_Minh')
+    counts = Counter(
+        (stamp.replace(tzinfo=timezone.utc) if stamp.tzinfo is None else stamp)
+        .astimezone(zone).date().isoformat()
+        for stamp in stamps if stamp is not None
+    )
+    return [{'date': date, 'value': counts[date]} for date in sorted(counts)]
+
+
+def submission_trend(db, projection):
+    """Daily submissions across the complete authorized/filtered scope, not a page."""
+    scope = projection.order_by(None).subquery()
+    stamps = db.scalars(select(scope.c.submitted_at).where(
+        scope.c.status.in_(TERMINAL), scope.c.submitted_at.is_not(None))).all()
+    return trend_from_timestamps(stamps)
+
 def filtered_reports(db,user,exam_id,params,status,risk_min,has_risk):
     query=attempt_projection(db,user,exam_id,params.q,status,risk_min,has_risk)
     summary=projection_summary(db,query,exam_id is not None)
+    trend=submission_trend(db,query)
     scope=query.subquery()
     query=ordered(select(scope),params.sort,{'newest':scope.c.started_at.desc().nullslast(),'oldest':scope.c.started_at.asc().nullslast(),
         'submitted':scope.c.submitted_at.desc().nullslast(),'score_desc':scope.c.score.desc().nullslast(),'score_asc':scope.c.score.asc().nullslast(),
         'name':func.lower(scope.c.full_name).asc(),'risk':scope.c.risk_score.desc().nullslast()},scope.c.attempt_id)
     query,total=page_query(db,query,params.page,params.limit)
     data=[dict(row) for row in db.execute(query).mappings()]
-    return summary,data,{'total':total,'page':params.page,'limit':params.limit}
+    return summary,data,{'total':total,'page':params.page,'limit':params.limit},trend

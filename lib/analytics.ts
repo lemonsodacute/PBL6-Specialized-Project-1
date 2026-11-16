@@ -3,6 +3,13 @@ import type { ChartValue, TrendPoint } from '@/components/analytics/Charts';
 import { resultStatusLabels } from './teacher-results';
 
 export function submissionTrend(data: ReportsOverview): TrendPoint[] {
+  // Prefer the backend's complete scoped timeline. A compatibility fallback
+  // exists only for old fixtures/APIs without the new field.
+  if (Array.isArray(data.submission_trend)) {
+    return data.submission_trend.filter(point => /^\d{4}-\d{2}-\d{2}$/.test(point.date) && Number.isFinite(point.value) && point.value >= 0)
+      .map(point => ({ date: point.date, label: `${point.date.slice(8)}/${point.date.slice(5, 7)}`, value: point.value }))
+      .sort((first, second) => first.date.localeCompare(second.date));
+  }
   const days = new Map<string, number>();
   for (const row of data.results) {
     if (!data.completed_statuses.includes(row.status) || !row.submitted_at || !Number.isFinite(Date.parse(row.submitted_at))) continue;

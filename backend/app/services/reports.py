@@ -17,7 +17,7 @@ def event_counts(db: Session, attempt_ids) -> dict:
     counts = {attempt_id: {'browser_violation_count': 0, 'detection_count': 0} for attempt_id in ids}
     if ids:
         for model, key in ((ViolationLog, 'browser_violation_count'), (DetectionEvent, 'detection_count')):
-            for attempt_id, count in db.execute(select(model.attempt_id, func.count()).where(model.attempt_id.in_(ids), *([DetectionEvent.source == 'LEGACY'] if model is DetectionEvent else [])).group_by(model.attempt_id)):
+            for attempt_id, count in db.execute(select(model.attempt_id, func.count()).where(model.attempt_id.in_(ids), *([DetectionEvent.is_simulated.is_(False)] if model is DetectionEvent else [])).group_by(model.attempt_id)):
                 counts[attempt_id][key] = count
     return {attempt_id: {**count, 'violation_count': sum(count.values())} for attempt_id, count in counts.items()}
 
@@ -62,12 +62,12 @@ def reports_overview(db: Session, user: User, exam_id: UUID | None = None,params
         _exam_for_user(exam_id, db, user)
     if params is not None and (params.page is not None or params.q or status or risk_min is not None or has_risk is not None):
         from app.services.report_collections import filtered_reports
-        summary,rows,meta=filtered_reports(db,user,exam_id,params,status,risk_min,has_risk)
+        summary,rows,meta,trend=filtered_reports(db,user,exam_id,params,status,risk_min,has_risk)
         exams=db.scalars(query.order_by(Exam.created_at.desc(),Exam.id).limit(20)).all()
         if exam_id and not any(exam.id==exam_id for exam in exams):
             exams.append(_exam_for_user(exam_id,db,user))
         return {'exams':[{'id':exam.id,'title':exam.title,'classes':[]} for exam in exams],
-                'exam_id':exam_id,'completed_statuses':list(TERMINAL),'summary':summary,'results':rows,'meta':meta}
+                'exam_id':exam_id,'completed_statuses':list(TERMINAL),'summary':summary,'submission_trend':trend,'results':rows,'meta':meta}
     exams = db.scalars(query.order_by(Exam.created_at.desc(), Exam.id)).all()
     selected = [exam for exam in exams if exam_id is None or exam.id == exam_id]
     selected_ids = [exam.id for exam in selected]
@@ -91,9 +91,12 @@ def reports_overview(db: Session, user: User, exam_id: UUID | None = None,params
     classes = {}
     for eid, cid, name in assignments:
         classes.setdefault(eid, []).append({'id': cid, 'name': name})
+    from app.services.report_collections import trend_from_timestamps
+    trend = trend_from_timestamps(row['submitted_at'] for row in rows
+                                  if row['status'] in TERMINAL)
     return {'exams': [{'id': exam.id, 'title': exam.title, 'classes': classes.get(exam.id, [])} for exam in exams],
             'exam_id': exam_id, 'completed_statuses': list(TERMINAL),
-            'summary': aggregate(rows, exam_id is not None), 'results': rows}
+            'summary': aggregate(rows, exam_id is not None), 'submission_trend': trend, 'results': rows}
 
 def attempt_report(attempt_id: UUID, db: Session, user: User, params=None, severity=None, source=None) -> dict:
     attempt = db.get(ExamAttempt, attempt_id)
@@ -104,7 +107,7 @@ def attempt_report(attempt_id: UUID, db: Session, user: User, params=None, sever
         db.commit()
     if params is not None and params.page is not None:
         browser=select(ViolationLog.id,literal('browser').label('source'),cast(ViolationLog.type,String).label('type'),cast(ViolationLog.severity,String).label('severity'),ViolationLog.occurred_at,cast(literal(None),Numeric).label('confidence')).where(ViolationLog.attempt_id==attempt.id)
-        detector=select(DetectionEvent.id,literal('detector').label('source'),cast(DetectionEvent.event_type,String).label('type'),cast(DetectionEvent.severity,String).label('severity'),DetectionEvent.occurred_at,DetectionEvent.confidence_score.label('confidence')).where(DetectionEvent.attempt_id==attempt.id,DetectionEvent.source=='LEGACY')
+        detector=select(DetectionEvent.id,literal('detector').label('source'),cast(DetectionEvent.event_type,String).label('type'),cast(DetectionEvent.severity,String).label('severity'),DetectionEvent.occurred_at,DetectionEvent.confidence_score.label('confidence')).where(DetectionEvent.attempt_id==attempt.id,DetectionEvent.is_simulated.is_(False))
         scope=union_all(browser,detector).subquery()
         query=select(scope)
         if severity:query=query.where(scope.c.severity==severity.value)
@@ -115,7 +118,7 @@ def attempt_report(attempt_id: UUID, db: Session, user: User, params=None, sever
         return {**saved_attempt(attempt,db.get(User,attempt.student_id),event_counts(db,[attempt.id])[attempt.id]),
                 'exam_id':exam.id,'exam_title':exam.title,'events':events,'meta':{'total':total,'page':params.page,'limit':params.limit}}
     browser = db.scalars(select(ViolationLog).where(ViolationLog.attempt_id == attempt.id).order_by(ViolationLog.occurred_at, ViolationLog.id)).all()
-    detector = db.scalars(select(DetectionEvent).where(DetectionEvent.attempt_id == attempt.id, DetectionEvent.source == 'LEGACY').order_by(DetectionEvent.occurred_at, DetectionEvent.id)).all()
+    detector = db.scalars(select(DetectionEvent).where(DetectionEvent.attempt_id == attempt.id, DetectionEvent.is_simulated.is_(False)).order_by(DetectionEvent.occurred_at, DetectionEvent.id)).all()
     events = [{'id': row.id, 'source': 'browser', 'type': row.type, 'severity': row.severity,
                'occurred_at': row.occurred_at, 'confidence': None} for row in browser]
     events += [{'id': row.id, 'source': 'detector', 'type': row.event_type, 'severity': row.severity,

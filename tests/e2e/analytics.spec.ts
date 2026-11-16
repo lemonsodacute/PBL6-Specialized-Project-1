@@ -3,6 +3,7 @@ import { activitySession } from './ai-activity-fixture';
 import { submissionTrend, attemptDistribution } from '../../lib/analytics';
 import type { ReportsOverview } from '../../lib/teacher-reports';
 import { adminDashboardAPI } from './admin-analytics-fixture';
+import { uiSession } from './ui-fixtures';
 
 function reportSample(): ReportsOverview {
   return {
@@ -24,6 +25,42 @@ async function reportsAPI(page: Page, data = reportSample()) {
   });
   return state;
 }
+
+test('Teacher can opt into labeled demo charts and return to persisted analytics', async ({ page }) => {
+  test.skip(!!process.env.PLAYWRIGHT_BASE_URL, 'Demo switch is dev-only; external URL may be production.');
+  await uiSession(page, 'teacher');
+  await reportsAPI(page);
+  await page.goto('/dashboard');
+  const overview = page.getByRole('region', { name: 'Phân tích bài thi' });
+  await expect(overview.getByRole('region', { name: 'Nguồn cảnh báo' })).toContainText('12');
+  await overview.getByRole('button', { name: 'Xem dữ liệu demo' }).click();
+  await expect(overview).toContainText('DEMO — DỮ LIỆU MÔ PHỎNG');
+  const sources = overview.getByRole('region', { name: 'Nguồn cảnh báo' });
+  await expect(sources).toContainText('118');
+  await expect(sources).toContainText('36');
+  await expect(overview.getByRole('region', { name: 'Loại cảnh báo AI (DEMO)' })).toContainText('Điện thoại');
+  await expect(overview.getByRole('region', { name: 'Nhịp độ nộp bài' })).toContainText('44 bài hoàn tất');
+  await overview.getByRole('button', { name: 'Tắt dữ liệu demo' }).click();
+  await expect(overview).not.toContainText('DEMO — DỮ LIỆU MÔ PHỎNG');
+  await expect(overview.getByRole('region', { name: 'Nguồn cảnh báo' })).toContainText('12');
+  await expect(overview.getByRole('region', { name: 'Nguồn cảnh báo' })).toContainText('18');
+});
+
+test('analytics prefers the complete server submission timeline over the current results page', () => {
+  const data = reportSample();
+  data.submission_trend = [
+    { date: '2026-11-15', value: 17 },
+    { date: '2026-11-16', value: 23 },
+    { date: '2026-11-17', value: 4 },
+  ];
+  expect(submissionTrend(data)).toEqual([
+    { date: '2026-11-15', label: '15/11', value: 17 },
+    { date: '2026-11-16', label: '16/11', value: 23 },
+    { date: '2026-11-17', label: '17/11', value: 4 },
+  ]);
+  expect(submissionTrend(data).reduce((sum, point) => sum + point.value, 0)).toBe(44);
+  expect(data.results).toHaveLength(8);
+});
 
 test('analytics groups only observed submissions in Vietnam time and never expands a page into totals', () => {
   const data = reportSample();
