@@ -6,10 +6,10 @@ import type { ManagedExam } from './ExamEditor';
 import styles from './ExamActions.module.css';
 
 export type ExamAttemptState = { count: number; completed: number };
-export type ExamAction = 'edit' | 'publish' | 'close' | 'delete';
+export type ExamAction = 'edit' | 'publish' | 'close' | 'delete' | 'request_delete' | 'cancel_delete' | 'approve_delete' | 'reject_delete';
 type Item = { label: string; href?: string; action?: ExamAction; disabled?: boolean; tone?: 'warning' | 'danger' };
 
-export function ExamActions({ exam, attempts, onAction }: { exam: ManagedExam; attempts?: ExamAttemptState; onAction: (action: ExamAction) => void }) {
+export function ExamActions({ exam, attempts, onAction, role = 'teacher', actorId }: { exam: ManagedExam; attempts?: ExamAttemptState; onAction: (action: ExamAction) => void; role?: 'admin' | 'teacher'; actorId?: string }) {
   const known = attempts !== undefined; const hasAttempts = known && attempts.count > 0;
   const draft = exam.status === 'draft'; const closed = exam.status === 'closed';
   const published = exam.status === 'published' || exam.status === 'ongoing';
@@ -25,9 +25,24 @@ export function ExamActions({ exam, attempts, onAction }: { exam: ManagedExam; a
   if (!draft || (attempts && attempts.completed > 0)) items.push({ label: 'Xem kết quả', href: resultsHref });
   if (published || closed) items.push({ label: 'Xem giám sát', href: monitorHref });
   if (published) items.push({ label: 'Đóng đề', action: 'close', tone: 'warning', disabled: !known || hasAttempts });
-  items.push({ label: 'Xóa đề', action: 'delete', tone: 'danger', disabled: !known || hasAttempts });
+  const pending = exam.deletion_request?.status === 'PENDING';
+  const owner = role === 'teacher' && !!actorId && exam.created_by === actorId;
+  const finished = known && hasAttempts && attempts.completed === attempts.count
+    && (closed || new Date(exam.end_time).getTime() <= now);
+  if (!hasAttempts) {
+    items.push({ label: 'Xóa đề', action: 'delete', tone: 'danger', disabled: !known });
+  } else if (role === 'admin' && pending) {
+    items.push({ label: 'Phê duyệt yêu cầu xóa', action: 'approve_delete', tone: 'danger', disabled: !finished });
+    items.push({ label: 'Từ chối yêu cầu xóa', action: 'reject_delete', tone: 'warning' });
+  } else if (owner) {
+    if (pending) items.push({ label: 'Hủy yêu cầu xóa', action: 'cancel_delete', tone: 'warning' });
+    else items.push({ label: 'Yêu cầu Admin xóa đề', action: 'request_delete', tone: 'danger', disabled: !finished });
+  }
   const note = !known ? 'Chưa kiểm tra được tình trạng bài làm. Vui lòng tải lại danh sách.'
-    : hasAttempts ? 'Đề đã có bài làm nên không thể đổi trạng thái hoặc xóa.' : '';
+    : hasAttempts && pending && role === 'admin' ? 'Giảng viên đã gửi yêu cầu; Admin có thể phê duyệt hoặc từ chối.'
+    : hasAttempts && pending ? 'Yêu cầu xóa đang chờ Admin xét duyệt.'
+    : hasAttempts && role === 'admin' ? 'Chỉ có thể xóa đề đã có bài làm sau khi giảng viên chủ đề gửi yêu cầu.'
+    : hasAttempts ? 'Đề đã có bài làm: chỉ Admin mới có thể xóa sau khi giảng viên yêu cầu, và bài nộp vẫn được lưu.' : '';
   return <div className={styles.actions}>
     <Link className={`ui-button ui-button-outline ui-button-sm ${styles.preview}`} href={previewHref} aria-label={`Xem toàn bộ đề thi ${exam.title}`}><Eye size={16} aria-hidden="true" /><span>Xem đề</span></Link>
     {primary.href ? <Link className={`ui-button ui-button-outline ui-button-sm ${styles.primary}`} href={primary.href}>{primary.label}{primary.href === resultsHref && <ArrowRight size={16} aria-hidden="true" />}</Link>
