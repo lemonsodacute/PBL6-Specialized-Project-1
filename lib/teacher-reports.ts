@@ -17,6 +17,8 @@ export type ReportsOverview = {
     browser_violation_count: number; detection_count: number; average_risk_score: Score;
     risk_scored_attempts: number; attempt_count: number };
   results: ReportAttempt[];
+  /** Daily submissions over the entire authorized report filter, not one page. */
+  submission_trend?: { date: string; value: number }[];
 };
 export type AttemptReport = ReportAttempt & { meta?:{total:number;page:number;limit:number};events: { id: string; source: 'browser' | 'detector';
   type: string; severity: string; occurred_at: string; confidence: Score }[] };
