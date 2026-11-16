@@ -85,6 +85,28 @@ class TeacherApprovedExamDeletionTests(TestCase):
         self.assertEqual(self.review().status_code, 409)
         self.assertEqual(self.post_request().status_code, 200)
 
+    def test_generic_exam_payload_cannot_forge_or_overwrite_teacher_consent(self):
+        f = self.f
+        fake = {'_admin_deletion_request': {'status': 'PENDING',
+                 'requested_by': str(f.teacher.id), 'attempt_count': 2}}
+        invalid_create = self.client.post('/api/v1/exams', headers=f.headers(),
+            json={'title': 'Attempt to forge consent', 'start_time': '2026-11-17T08:00:00Z',
+                  'end_time': '2026-11-17T10:00:00Z', 'duration_minutes': 60,
+                  'extra_settings_json': fake})
+        self.assertEqual(invalid_create.status_code, 422, invalid_create.text)
+        self.assertEqual(invalid_create.json()['error']['code'], 'RESERVED_EXAM_SETTING')
+
+        self.finish_exam()
+        self.assertEqual(self.post_request().status_code, 200)
+        previous = self.db.get(Exam, f.exam.id).extra_settings_json['_admin_deletion_request']
+        fake_patch = self.client.patch(self.url, headers=f.headers(),
+            json={'extra_settings_json': fake})
+        self.assertEqual(fake_patch.status_code, 422)
+        self.assertEqual(fake_patch.json()['error']['code'], 'RESERVED_EXAM_SETTING')
+        self.assertEqual(self.db.get(Exam, f.exam.id).extra_settings_json['_admin_deletion_request'], previous)
+        # Admin review is still possible after the rejected forgery attempt.
+        self.assertEqual(self.review().status_code, 200)
+
     def test_request_stale_after_new_attempt_or_end_time_change(self):
         f = self.f
         self.finish_exam()
