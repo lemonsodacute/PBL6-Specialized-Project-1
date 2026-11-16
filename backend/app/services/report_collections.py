@@ -56,22 +56,23 @@ def projection_summary(db, query, single_exam=False):
     return result
 
 
-def submission_trend(db, projection):
-    """Daily submission counts across the *complete authorized/filtered scope*.
-
-    Read only timestamps from the scoped query, never just one paginated page.
-    Date conversion is explicit for Asia/Ho_Chi_Minh, also under SQLite tests.
-    """
-    scope = projection.order_by(None).subquery()
-    stamps = db.scalars(select(scope.c.submitted_at).where(
-        scope.c.status.in_(TERMINAL), scope.c.submitted_at.is_not(None))).all()
+def trend_from_timestamps(stamps):
+    """Group persisted submission timestamps by calendar day in Vietnam."""
     zone = ZoneInfo('Asia/Ho_Chi_Minh')
     counts = Counter(
         (stamp.replace(tzinfo=timezone.utc) if stamp.tzinfo is None else stamp)
         .astimezone(zone).date().isoformat()
-        for stamp in stamps
+        for stamp in stamps if stamp is not None
     )
     return [{'date': date, 'value': counts[date]} for date in sorted(counts)]
+
+
+def submission_trend(db, projection):
+    """Daily submissions across the complete authorized/filtered scope, not a page."""
+    scope = projection.order_by(None).subquery()
+    stamps = db.scalars(select(scope.c.submitted_at).where(
+        scope.c.status.in_(TERMINAL), scope.c.submitted_at.is_not(None))).all()
+    return trend_from_timestamps(stamps)
 
 def filtered_reports(db,user,exam_id,params,status,risk_min,has_risk):
     query=attempt_projection(db,user,exam_id,params.q,status,risk_min,has_risk)
