@@ -4,6 +4,7 @@ from app.schemas.collections import CollectionParams
 from app.services.collections import search, ordered, page_query
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.orm import Session
 
@@ -21,6 +22,7 @@ from app.schemas.content import (
 )
 from app.schemas.question_selection import ExamSelectionRequest
 from app.services.settings import exam_defaults
+from app.services.audit import record_audit
 from app.services.attempts import finalize_expired_attempt
 from app.services.student_exam_state import student_result_metadata, student_result_metadata_many
 from app.services.question_types import SUPPORTED_QUESTION_TYPES, require_supported_exam, unsupported_question_type
@@ -99,6 +101,12 @@ def _exam_summary(db: Session, exam: Exam, user: User, summary=None) -> dict:
                             'started_at':item.started_at,'submitted_at':item.submitted_at,
                             **(summary['metadata'][item.id] if summary is not None else student_result_metadata(db, item))} for item in history]
     else:
+        # Teacher-owned deletion consent is visible to Teacher/Admin only.
+        request = (exam.extra_settings_json or {}).get('_admin_deletion_request') if isinstance(exam.extra_settings_json, dict) else None
+        if isinstance(request, dict):
+            result['deletion_request'] = {key: request.get(key) for key in ('status', 'reason', 'requested_at', 'handled_at')}
+        else:
+            result['deletion_request'] = None
         result['attempt_count'] = summary['attempts'].get(exam.id, (0, 0))[0] if summary is not None else db.scalar(select(func.count()).select_from(ExamAttempt).where(ExamAttempt.exam_id == exam.id)) or 0
         result['completed_attempt_count'] = summary['attempts'].get(exam.id, (0, 0))[1] if summary is not None else db.scalar(select(func.count()).select_from(ExamAttempt).where(ExamAttempt.exam_id == exam.id, ExamAttempt.status.in_((AttemptStatus.submitted, AttemptStatus.auto_submitted, AttemptStatus.terminated)))) or 0
     return result
@@ -317,6 +325,120 @@ def delete_exam(exam_id: UUID, db: Session = Depends(get_db), user: User = Depen
     exam.deleted_at = datetime.now(timezone.utc)
     db.commit()
     return ok({'deleted': True})
+
+
+
+class ExamDeletionRequestPayload(BaseModel):
+    reason: str = Field(min_length=10, max_length=500)
+
+
+class ExamDeletionReviewPayload(BaseModel):
+    approve: bool
+    note: str | None = Field(default=None, max_length=500)
+
+
+def _utc(value: datetime) -> datetime:
+    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
+
+
+def _archivable(exam: Exam, attempts: list[ExamAttempt]) -> bool:
+    # An exam with running attempts, or one that might still be entered, cannot
+    # be archived. This is checked again at Admin approval.
+    if any(item.status == AttemptStatus.in_progress for item in attempts):
+        return False
+    return exam.status == ExamStatus.closed or _utc(exam.end_time) <= datetime.now(timezone.utc)
+
+
+def _stored_deletion_request(exam: Exam) -> dict | None:
+    settings = exam.extra_settings_json
+    item = settings.get('_admin_deletion_request') if isinstance(settings, dict) else None
+    return item if isinstance(item, dict) else None
+
+
+@router.post('/{exam_id}/deletion-request')
+def request_exam_deletion(exam_id: UUID, payload: ExamDeletionRequestPayload,
+                          db: Session = Depends(get_db), user: User = Depends(roles(UserRole.teacher))):
+    """Only the owning Teacher may authorize an Admin to archive an attempted exam."""
+    exam = db.get(Exam, exam_id, with_for_update=True)
+    if not exam or exam.deleted_at is not None:
+        raise _not_found('Exam not found')
+    if exam.created_by != user.id:
+        raise _forbidden('Only the Teacher who created this exam may request deletion')
+    attempts = db.scalars(select(ExamAttempt).where(ExamAttempt.exam_id == exam_id)).all()
+    if not attempts:
+        raise HTTPException(409, detail={'code': 'NO_ATTEMPTS', 'message': 'Use the normal delete action for an exam without attempts', 'details': None})
+    if not _archivable(exam, attempts):
+        raise HTTPException(409, detail={'code': 'EXAM_STILL_ACTIVE', 'message': 'Finish the exam and all attempts before requesting deletion', 'details': None})
+    previous = _stored_deletion_request(exam)
+    if previous and previous.get('status') == 'PENDING':
+        raise HTTPException(409, detail={'code': 'DELETION_ALREADY_REQUESTED', 'message': 'A deletion request is already pending', 'details': None})
+    reason = payload.reason.strip()
+    if len(reason) < 10:
+        raise HTTPException(422, detail={'code': 'INVALID_REASON', 'message': 'A meaningful reason is required', 'details': None})
+    now = datetime.now(timezone.utc)
+    request = {'status': 'PENDING', 'reason': reason, 'requested_by': str(user.id),
+               'requested_at': now.isoformat(), 'attempt_count': len(attempts),
+               'end_time': _utc(exam.end_time).isoformat()}
+    exam.extra_settings_json = {**(exam.extra_settings_json or {}), '_admin_deletion_request': request}
+    record_audit(db, action='EXAM_DELETION_REQUESTED', user_id=user.id,
+                 entity_type='exam', entity_id=exam.id,
+                 metadata={'attempt_count': len(attempts), 'reason': reason})
+    db.commit()
+    return ok({'status': 'PENDING', 'message': 'Yêu cầu đã được gửi đến quản trị viên'})
+
+
+@router.delete('/{exam_id}/deletion-request')
+def cancel_exam_deletion_request(exam_id: UUID, db: Session = Depends(get_db),
+                                 user: User = Depends(roles(UserRole.teacher))):
+    exam = db.get(Exam, exam_id, with_for_update=True)
+    if not exam or exam.deleted_at is not None:
+        raise _not_found('Exam not found')
+    if exam.created_by != user.id:
+        raise _forbidden('Only the requesting Teacher may cancel this request')
+    previous = _stored_deletion_request(exam)
+    if not previous or previous.get('status') != 'PENDING' or previous.get('requested_by') != str(user.id):
+        raise HTTPException(409, detail={'code': 'NO_PENDING_REQUEST', 'message': 'No pending request to cancel', 'details': None})
+    exam.extra_settings_json = {**(exam.extra_settings_json or {}),
+        '_admin_deletion_request': {**previous, 'status': 'CANCELLED',
+                                    'handled_at': datetime.now(timezone.utc).isoformat()}}
+    record_audit(db, action='EXAM_DELETION_CANCELLED', user_id=user.id,
+                 entity_type='exam', entity_id=exam.id)
+    db.commit()
+    return ok({'status': 'CANCELLED'})
+
+
+@router.post('/{exam_id}/deletion-request/review')
+def review_exam_deletion_request(exam_id: UUID, payload: ExamDeletionReviewPayload,
+                                 db: Session = Depends(get_db), user: User = Depends(roles(UserRole.admin))):
+    """Admin alone reviews an owner's pending request; never hard-deletes submissions."""
+    exam = db.get(Exam, exam_id, with_for_update=True)
+    if not exam or exam.deleted_at is not None:
+        raise _not_found('Exam not found')
+    previous = _stored_deletion_request(exam)
+    if not previous or previous.get('status') != 'PENDING' or previous.get('requested_by') != str(exam.created_by):
+        raise HTTPException(409, detail={'code': 'TEACHER_APPROVAL_REQUIRED',
+            'message': 'A pending request from this exam\'s owning Teacher is required', 'details': None})
+    if payload.approve:
+        attempts = db.scalars(select(ExamAttempt).where(ExamAttempt.exam_id == exam.id)).all()
+        if (not attempts or len(attempts) != previous.get('attempt_count')
+            or _utc(exam.end_time).isoformat() != previous.get('end_time')
+            or not _archivable(exam, attempts)):
+            raise HTTPException(409, detail={'code': 'DELETION_REQUEST_STALE',
+                'message': 'Exam or attempts changed after the Teacher requested deletion', 'details': None})
+        exam.deleted_at = datetime.now(timezone.utc)  # soft delete; results remain intact
+    status = 'EXECUTED' if payload.approve else 'REJECTED'
+    updated = {**previous, 'status': status, 'handled_by': str(user.id),
+               'handled_at': datetime.now(timezone.utc).isoformat(),
+               'review_note': (payload.note or '').strip()}
+    exam.extra_settings_json = {**(exam.extra_settings_json or {}), '_admin_deletion_request': updated}
+    record_audit(db, action='EXAM_DELETION_APPROVED' if payload.approve else 'EXAM_DELETION_REJECTED',
+                 user_id=user.id, entity_type='exam', entity_id=exam.id,
+                 metadata={'requested_by': previous['requested_by'],
+                           'attempt_count': previous['attempt_count'], 'note': updated['review_note'],
+                           'soft_delete': bool(payload.approve)})
+    db.commit()
+    return ok({'status': status, 'deleted': bool(payload.approve),
+               'preserved_results': True})
 
 
 @router.post('/{exam_id}/questions')
