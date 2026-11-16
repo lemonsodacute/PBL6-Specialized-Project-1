@@ -261,6 +261,12 @@ def create_exam(payload: ExamCreateContent, db: Session = Depends(get_db), user:
     for source, target in (('exam_duration_minutes', 'duration_minutes'), ('exam_require_camera', 'require_camera'), ('exam_require_mic', 'require_mic')):
         if target not in payload.model_fields_set:
             values[target] = defaults[source]
+    # This namespace is reserved for the audited Teacher -> Admin workflow.
+    # The generic exam create API must not mint a fabricated approval request.
+    if isinstance(values.get('extra_settings_json'), dict) and '_admin_deletion_request' in values['extra_settings_json']:
+        raise HTTPException(422, detail={'code': 'RESERVED_EXAM_SETTING',
+            'message': 'Deletion approval metadata cannot be submitted through exam settings',
+            'details': None})
     exam = Exam(**values, created_by=user.id)
     db.add(exam)
     db.commit()
@@ -276,6 +282,20 @@ def update_exam(exam_id: UUID, payload: ExamUpdateContent, db: Session = Depends
     if user.role != UserRole.admin and exam.created_by != user.id:
         raise _forbidden('Only the creator or an admin can edit this exam')
     values = payload.model_dump(exclude_unset=True)
+    if 'extra_settings_json' in values:
+        proposed_settings = values['extra_settings_json']
+        if isinstance(proposed_settings, dict) and '_admin_deletion_request' in proposed_settings:
+            raise HTTPException(422, detail={'code': 'RESERVED_EXAM_SETTING',
+                'message': 'Deletion approval metadata cannot be set through exam settings',
+                'details': None})
+        existing_request = _stored_deletion_request(exam)
+        if existing_request:
+            if proposed_settings is not None and not isinstance(proposed_settings, dict):
+                raise HTTPException(422, detail={'code': 'INVALID_EXAM_SETTINGS',
+                    'message': 'Exam settings must be an object while a deletion request exists',
+                    'details': None})
+            values['extra_settings_json'] = {**(proposed_settings or {}),
+                                            '_admin_deletion_request': existing_request}
     if db.scalar(select(ExamAttempt.id).where(ExamAttempt.exam_id == exam.id).limit(1)):
         # Existing submissions, grading and proctoring logs are immutable.
         # Only a *larger* retake allowance or a later deadline is safe to edit.
