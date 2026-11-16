@@ -27,7 +27,8 @@ export default function ExamsPage() {
   const [editingId, setEditingId] = useState<string>();
   const [initialSelection, setInitialSelection] = useState<SelectionDraft>();
   const [attemptStates, setAttemptStates] = useState<Record<string, ExamAttemptState> | null>(null);
-  const [confirm, setConfirm] = useState<{ exam: ManagedExam; action: 'close' | 'delete' } | null>(null);
+  const [confirm, setConfirm] = useState<{ exam: ManagedExam; action: Exclude<ExamAction, 'edit' | 'publish'> } | null>(null);
+  const [deletionReason, setDeletionReason] = useState('');
   const [actionSaving, setActionSaving] = useState(false); const [actionError, setActionError] = useState('');
   const working = useRef(false); const epoch = useRef(0);
   const load = async () => {
@@ -62,18 +63,22 @@ export default function ExamsPage() {
   function action(exam: ManagedExam, selected: ExamAction) {
     if (selected === 'edit') { setEditingId(exam.id); setInitialSelection(undefined); setOpen(true); }
     else if (selected === 'publish') void changeStatus(exam);
-    else { setActionError(''); setConfirm({ exam, action: selected }); }
+    else { setActionError(''); setDeletionReason(''); setConfirm({ exam, action: selected }); }
   }
   async function confirmAction() {
     if (!confirm || working.current) return;
     working.current = true; setActionSaving(true); setActionError('');
     try {
       if (confirm.action === 'delete') await api.exams.delete(confirm.exam.id);
-      else await api.exams.update(confirm.exam.id, { status: 'closed' });
+      else if (confirm.action === 'close') await api.exams.update(confirm.exam.id, { status: 'closed' });
+      else if (confirm.action === 'request_delete') await api.exams.requestDeletion(confirm.exam.id, deletionReason.trim());
+      else if (confirm.action === 'cancel_delete') await api.exams.cancelDeletion(confirm.exam.id);
+      else if (confirm.action === 'approve_delete') await api.exams.reviewDeletion(confirm.exam.id, true);
+      else if (confirm.action === 'reject_delete') await api.exams.reviewDeletion(confirm.exam.id, false);
       setConfirm(null); await load();
     } catch (cause) {
       setActionError(cause instanceof ApiError && cause.code === 'EXAM_HAS_ATTEMPTS'
-        ? 'Đề đã có bài làm. Không thể đổi trạng thái hoặc xóa đề theo quy định hiện tại.'
+        ? 'Đề đã có bài làm. Giảng viên phải gửi yêu cầu và Admin xác nhận; không thể xóa trực tiếp.'
         : friendlyError(cause, 'Không thể thực hiện thao tác. Vui lòng thử lại.'));
     } finally { working.current = false; setActionSaving(false); }
   }
@@ -103,7 +108,7 @@ export default function ExamsPage() {
             </details>}
           </div>
         </div>
-        <div className={styles.headerControls}><Badge>{statusLabels[item.status] ?? item.status}</Badge><ExamActions exam={item} attempts={attemptStates?.[item.id]} onAction={selected => action(item, selected)} /></div>
+        <div className={styles.headerControls}><Badge>{statusLabels[item.status] ?? item.status}</Badge><ExamActions exam={item} attempts={attemptStates?.[item.id]} role={user?.role === 'admin' ? 'admin' : 'teacher'} actorId={user?.id} onAction={selected => action(item, selected)} /></div>
       </div>
       <dl className={styles.detailGrid}>
         <div className={`${styles.detail} ${styles.timeDetail}`}><dt>Thời gian</dt><dd><time dateTime={item.start_time}>{formatDate(item.start_time)}</time><small>đến <time dateTime={item.end_time}>{formatDate(item.end_time)}</time></small></dd></div>
@@ -116,7 +121,31 @@ export default function ExamsPage() {
       </dl>
     </Card>)}</div> : <Card borderRole="exams"><EmptySearchState state={collection}/></Card>)}
     {!error && <CollectionPagination state={collection} total={total} count={items.length} loading={loading}/>}
-    <ConfirmDialog open={!!confirm} title={confirm?.action==='delete'?'Xóa đề thi?':'Đóng đề thi?'} description={confirm?.action==='delete'?'Hành động này không thể hoàn tác.':'Sinh viên sẽ không thể tiếp tục làm bài theo policy hiện tại.'} confirmLabel={confirm?.action==='delete'?'Xóa':'Đóng đề'} tone={confirm?.action==='delete'?'danger':'warning'} busy={actionSaving} error={actionError} onCancel={()=>setConfirm(null)} onConfirm={()=>void confirmAction()}><p><strong>{confirm?.exam.title}</strong></p></ConfirmDialog>
+    <ConfirmDialog open={!!confirm}
+      title={confirm?.action === 'request_delete' ? 'Yêu cầu Admin xóa đề?' : confirm?.action === 'approve_delete' ? 'Phê duyệt xóa đề đã có bài làm?'
+        : confirm?.action === 'reject_delete' ? 'Từ chối yêu cầu xóa?' : confirm?.action === 'cancel_delete' ? 'Hủy yêu cầu xóa?'
+        : confirm?.action === 'delete' ? 'Xóa đề thi?' : 'Đóng đề thi?'}
+      description={confirm?.action === 'approve_delete' || confirm?.action === 'request_delete'
+        ? 'Đề sẽ được ẩn khỏi danh sách khi Admin phê duyệt. Bài đã nộp, điểm và lịch sử giám sát vẫn được giữ trong cơ sở dữ liệu.'
+        : confirm?.action === 'delete' ? 'Đề chưa có bài làm sẽ được ẩn khỏi danh sách.'
+        : confirm?.action === 'close' ? 'Sinh viên sẽ không thể tiếp tục làm bài theo chính sách hiện tại.'
+        : 'Thao tác này sẽ được ghi vào nhật ký quản trị.'}
+      confirmLabel={confirm?.action === 'request_delete' ? 'Gửi yêu cầu'
+        : confirm?.action === 'approve_delete' ? 'Phê duyệt xóa'
+        : confirm?.action === 'reject_delete' ? 'Từ chối'
+        : confirm?.action === 'cancel_delete' ? 'Hủy yêu cầu'
+        : confirm?.action === 'delete' ? 'Xóa' : 'Đóng đề'}
+      tone={['delete', 'request_delete', 'approve_delete'].includes(confirm?.action ?? '') ? 'danger' : 'warning'}
+      busy={actionSaving} error={actionError}
+      onCancel={() => setConfirm(null)} onConfirm={() => void confirmAction()}>
+      <p><strong>{confirm?.exam.title}</strong></p>
+      {confirm?.exam.deletion_request?.reason && ['approve_delete', 'reject_delete'].includes(confirm.action) && <p>Lý do giảng viên: {confirm.exam.deletion_request.reason}</p>}
+      {confirm?.action === 'request_delete' && <label style={{ display: 'grid', gap: 8, marginTop: 12 }}>
+        <span>Lý do đề nghị xóa (tối thiểu 10 ký tự)</span>
+        <textarea aria-label="Lý do đề nghị xóa" value={deletionReason} onChange={event => setDeletionReason(event.target.value)}
+          maxLength={500} rows={3} required />
+      </label>}
+    </ConfirmDialog>
     <Modal open={open} size="large" title={editingId ? 'Sửa đề thi' : 'Tạo đề thi'} onClose={close} className="exam-form-modal">
       {open && <ExamEditor key={editingId ?? 'new'} examId={editingId} confirmSave={!!editingId} onSavingChange={setEditorSaving} initialSelection={initialSelection} onCancel={close} onSaved={() => { if (user) sessionStorage.removeItem(selectionDraftKey(user.id)); close(); void load(); }} />}
     </Modal>
