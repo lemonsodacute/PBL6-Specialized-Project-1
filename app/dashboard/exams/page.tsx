@@ -67,6 +67,10 @@ export default function ExamsPage() {
   }
   async function confirmAction() {
     if (!confirm || working.current) return;
+    if (confirm.action === 'request_delete' && deletionReason.trim().length < 10) {
+      setActionError('Vui lòng nhập lý do cụ thể, tối thiểu 10 ký tự.');
+      return;
+    }
     working.current = true; setActionSaving(true); setActionError('');
     try {
       if (confirm.action === 'delete') await api.exams.delete(confirm.exam.id);
