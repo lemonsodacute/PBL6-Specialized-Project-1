@@ -1,7 +1,6 @@
 """SQL collection projection over persisted attempts; no grading/risk recalculation."""
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from collections import Counter
-from zoneinfo import ZoneInfo
 from decimal import Decimal
 from sqlalchemy import case, cast, func, select, Numeric
 from app.models.entities import (AttemptStatus, DetectionEvent, Exam, ExamAttempt, User, UserRole, ViolationLog)
@@ -58,7 +57,9 @@ def projection_summary(db, query, single_exam=False):
 
 def trend_from_timestamps(stamps):
     """Group persisted submission timestamps by calendar day in Vietnam."""
-    zone = ZoneInfo('Asia/Ho_Chi_Minh')
+    # Vietnam is UTC+07:00 without DST for all modern exam dates. A fixed offset
+    # avoids ZoneInfoNotFoundError on Windows when system IANA data/tzdata is absent.
+    zone = timezone(timedelta(hours=7))
     counts = Counter(
         (stamp.replace(tzinfo=timezone.utc) if stamp.tzinfo is None else stamp)
         .astimezone(zone).date().isoformat()
