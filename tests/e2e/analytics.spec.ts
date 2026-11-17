@@ -62,6 +62,38 @@ test('analytics prefers the complete server submission timeline over the current
   expect(data.results).toHaveLength(8);
 });
 
+test('Teacher dashboard handles an unreachable API without Next.js console-error overlay and recovers on retry', async ({ page }) => {
+  await uiSession(page, 'teacher');
+  let offline = true;
+  const emitted: string[] = [];
+  page.on('pageerror', error => emitted.push(error.message));
+  page.on('console', message => {
+    if (message.type() === 'error' && message.text().includes('[API network error]')) emitted.push(message.text());
+  });
+  await page.route('**/api/v1/teacher/reports**', route => {
+    const headers = {
+      'access-control-allow-origin': route.request().headers().origin ?? 'http://localhost:3000',
+      'access-control-allow-credentials': 'true',
+      'access-control-allow-headers': 'authorization,content-type',
+      'access-control-allow-methods': 'GET,OPTIONS',
+    };
+    if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
+    if (offline) return route.abort('failed');
+    return route.fulfill({ status: 200, headers, json: { data: reportSample() } });
+  });
+  await page.goto('/dashboard');
+  const section = page.getByRole('region', { name: 'Phân tích bài thi' });
+  await expect(section.getByRole('alert')).toContainText('Không kết nối được Backend');
+  await expect(section.getByRole('alert')).toContainText('/api/v1/health');
+  await expect(section.getByRole('button', { name: 'Tải lại phân tích' })).toBeVisible();
+  expect(emitted).toEqual([]);
+  offline = false;
+  await section.getByRole('button', { name: 'Tải lại phân tích' }).click();
+  await expect(section.getByRole('alert')).toHaveCount(0);
+  await expect(section.getByRole('region', { name: 'Nguồn cảnh báo' })).toContainText('12');
+  expect(emitted).toEqual([]);
+});
+
 test('analytics groups only observed submissions in Vietnam time and never expands a page into totals', () => {
   const data = reportSample();
   data.results[0].submitted_at = '2026-10-15T18:00:00Z';

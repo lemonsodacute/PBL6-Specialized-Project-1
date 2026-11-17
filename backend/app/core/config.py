@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     PROCTOR_INGEST_PER_MINUTE: int = Field(default=120, ge=1, le=600)
     PROCTOR_SIMULATOR_ENABLED: bool = False
     COOKIE_SECURE: bool | None = None
-    CORS_ORIGINS: list[str] = ['http://localhost:3000']
+    CORS_ORIGINS: list[str] = ['http://localhost:3000', 'http://127.0.0.1:3000']
     EMAIL_PROVIDER: str = 'console'
     WEBRTC_STUN_SERVERS: str = 'stun:stun.l.google.com:19302'
     LIVEKIT_URL: str = ''  # Public ws(s) URL for classroom clients.

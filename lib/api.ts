@@ -123,12 +123,28 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     return payload as T;
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      console.warn('[API timeout]', { path: path.split('?')[0], timeoutMs: options.timeoutMs ?? 30_000 });
-      throw new ApiError('Yêu cầu API quá thời gian chờ. Vui lòng kiểm tra kết nối mạng và thử lại.', 408);
+      // A timeout is an expected recoverable state, not a Next.js dev overlay error.
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[API timeout]', { endpoint: path.split('?')[0], timeoutMs: options.timeoutMs ?? 30_000 });
+      }
+      throw new ApiError('API phản hồi quá chậm. Kiểm tra Backend và thử lại.', 408, 'API_TIMEOUT');
     }
-    if (error instanceof TypeError && error.message.toLowerCase().includes('failed to fetch')) {
-      console.error('[API network error]', { path: path.split('?')[0] });
-      throw new ApiError('Không thể kết nối đến máy chủ. Kiểm tra mạng hoặc cấu hình CORS.', 0);
+    if (error instanceof TypeError) {
+      // Browsers throw TypeError for connection refused, DNS, blocked mixed content
+      // and CORS. Never console.error here: Next.js treats that as an uncaught
+      // development overlay even though the page already handles the error.
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[API unavailable]', {
+          endpoint: path.split('?')[0],
+          apiOrigin: API_URL,
+          reason: error.message,
+        });
+      }
+      throw new ApiError(
+        'Không kết nối được Backend. Kiểm tra API tại ' + API_URL +
+        '/api/v1/health, NEXT_PUBLIC_API_URL và CORS; sau đó thử lại.',
+        0, 'NETWORK_ERROR',
+      );
     }
     throw error;
   } finally {

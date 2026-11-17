@@ -24,6 +24,8 @@ export type AttemptReport = ReportAttempt & { meta?:{total:number;page:number;li
   type: string; severity: string; occurred_at: string; confidence: Score }[] };
 export function reportError(cause: unknown) {
   if (cause instanceof ApiError) {
+    if (cause.status === 0 && cause.code === 'NETWORK_ERROR') return cause.message;
+    if (cause.status === 408 && cause.code === 'API_TIMEOUT') return cause.message;
     if (cause.status === 401) return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
     if (cause.status === 403) return 'Bạn không có quyền xem báo cáo này.';
     if (cause.status === 404) return 'Không tìm thấy đề thi hoặc bài làm.';
