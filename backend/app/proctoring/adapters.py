@@ -91,6 +91,20 @@ class TemporalState:
     incident_id: UUID = field(default_factory=uuid4)
 
 
+# Display labels for trusted gaze observations; other model providers remain unchanged.
+GAZE_DIRECTION_MESSAGES = {
+    'LIEC_SANG_TRAI': 'Liếc mắt sang trái',
+    'LIEC_SANG_PHAI': 'Liếc mắt sang phải',
+    'LIEC_LEN_TREN': 'Nhìn lên trên',
+    'LIEC_XUONG_DUOI': 'Nhìn xuống dưới',
+    'QUAY_SANG_TRAI': 'Quay đầu sang trái',
+    'QUAY_SANG_PHAI': 'Quay đầu sang phải',
+    'CUI_XUONG_BAN': 'Cúi đầu xuống',
+    'NGUA_LEN_TREN': 'Ngẩng đầu lên',
+    'NGHIENG_DAU': 'Nghiêng đầu',
+}
+
+
 class TemporalPolicy:
     def __init__(self):
         self.states: dict[str,TemporalState] = {}
@@ -128,6 +142,7 @@ class TemporalPolicy:
             output.append(NormalizedProctorEvent(external_id=uuid4(),provider=provider,exam_id=context.exam_id,
                 attempt_id=context.attempt_id,student_id=context.student_id,source=config.source,event_type=kind,
                 severity=proposed_severity,confidence=prediction.confidence,occurred_at=stamp,first_seen=state.first,last_seen=stamp,
+                message=GAZE_DIRECTION_MESSAGES.get(prediction.label, '') if provider == 'local_gaze' else '',
                 metadata=prediction.metadata.model_copy(update={'frame_count':state.frames, 'incident_id':state.incident_id}),evidence=prediction.evidence))
         for kind in set(self.states)-present:
             state = self.states[kind]

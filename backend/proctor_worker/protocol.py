@@ -39,6 +39,10 @@ class Gaze(Raw):
     pitch: float | None = Field(default=None, ge=-180, le=180)
     roll: float | None = Field(default=None, ge=-180, le=180)
     gaze_ratio: float | None = Field(default=None, ge=0)
+    # MediaPipe eyeLook blendshapes; optional for older worker responses.
+    eye_h: float | None = Field(default=None, ge=-1, le=1)
+    eye_v: float | None = Field(default=None, ge=-1, le=1)
+    blink: bool | None = None
     raw_status: str | None = None
 
     @model_validator(mode='after')
@@ -46,7 +50,9 @@ class Gaze(Raw):
         if self.status == 'OK':
             if self.face_detected is None or not self.raw_status:
                 raise ValueError('Missing face observation')
-            if self.face_detected and None in (self.yaw, self.pitch, self.roll, self.gaze_ratio):
+            if self.face_detected and (None in (self.yaw, self.pitch, self.roll)
+                    or (self.gaze_ratio is None and (self.eye_h is None or self.eye_v is None))
+                    or (self.eye_h is None) != (self.eye_v is None)):
                 raise ValueError('Incomplete pose')
         return self
 

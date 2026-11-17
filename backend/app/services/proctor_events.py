@@ -172,7 +172,17 @@ def ingest(db: Session, event: NormalizedProctorEvent, *, mode='model', actor_id
         else:
             row.duration_ms = max(row.duration_ms, observed_ms)
         if incoming_incident:
-            row.metadata_json = {**(row.metadata_json or {}), 'incident_id':incoming_incident}
+            # Keep the most recent confirmed gaze/head direction when a new
+            # episode is aggregated into an existing event. This must not
+            # overwrite metadata for object detection events.
+            if new_incident and event.provider == 'local_gaze' and event.message:
+                row.message = event.message
+                row.metadata_json = {
+                    **(row.metadata_json or {}),
+                    **event.metadata.model_dump(mode='json', exclude_none=True),
+                }
+            else:
+                row.metadata_json = {**(row.metadata_json or {}), 'incident_id':incoming_incident}
         if event.confidence is not None:
             row.confidence_score = Decimal(str(event.confidence))
             row.max_confidence = max(row.max_confidence if row.max_confidence is not None else Decimal('0'), Decimal(str(event.confidence)))

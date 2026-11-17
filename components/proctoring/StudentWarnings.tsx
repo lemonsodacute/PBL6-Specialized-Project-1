@@ -8,7 +8,7 @@ import { apiFetch } from '@/lib/api';
 import { eventLabels } from '@/lib/proctoring';
 import styles from './StudentWarnings.module.css';
 
-type StoredWarning = { id: string; event_type: string; occurred_at: string; occurrence_count: number; type_occurrence_count?: number };
+type StoredWarning = { id: string; event_type: string; occurred_at: string; occurrence_count: number; type_occurrence_count?: number; direction_label?: string };
 type BrowserWarning = { id: string; event_type: string; delivery: 'pending' | 'sent' | 'failed' };
 const guidance: Record<string, string> = {
   object_phone: 'Vui lòng cất điện thoại khỏi khu vực làm bài.',
@@ -31,7 +31,7 @@ const guidance: Record<string, string> = {
 };
 const labels: Record<string, string> = { ...eventLabels, tab_switch: 'Chuyển thẻ trình duyệt', right_click: 'Nhấp chuột phải' };
 
-type StudentWarning = { key: string; type: string; detail: string; count?: number };
+type StudentWarning = { key: string; type: string; detail: string; count?: number; title?: string };
 type AcknowledgedWarnings = { attemptId: string; keys: string[] };
 const storageKey = (attemptId: string) => `proctoowl:warning-ack:${attemptId}`;
 
@@ -92,7 +92,9 @@ export function useStudentWarnings(attemptId: string, enabled: boolean) {
   }, []);
   const allWarnings: StudentWarning[] = [
     ...browser.map(item => ({ key: item.id, type: item.event_type, detail: item.delivery === 'sent' ? 'Đã ghi nhận để giáo viên xem xét.' : item.delivery === 'failed' ? 'Chưa gửi được cảnh báo tới máy chủ. Vui lòng kiểm tra kết nối mạng.' : 'Đang gửi cảnh báo tới máy chủ…' })),
-    ...stored.map(item => ({ key: `${item.id}:${item.occurrence_count}`, type: item.event_type, count: item.type_occurrence_count ?? item.occurrence_count, detail: 'Đã ghi nhận để giáo viên xem xét.' })),
+    ...stored.map(item => ({ key: `${item.id}:${item.occurrence_count}`, type: item.event_type, count: item.type_occurrence_count ?? item.occurrence_count,
+      title: (item.event_type === 'gaze_away' || item.event_type === 'head_turned') && item.direction_label ? item.direction_label : undefined,
+      detail: 'Đã ghi nhận để giáo viên xem xét.' })),
   ];
 
   // Every *new recorded incident* may show again, even when the user already
@@ -149,7 +151,7 @@ export function StudentWarnings({ state, visible = true }: { state: ReturnType<t
           <h2 id={titleId}>Cảnh báo giám sát</h2>
           <div id={descriptionId} className={styles.content}>
             {state.warnings.slice(0, 3).map(item => <div key={item.type} className={styles.item}>
-              <strong>{labels[item.type] ?? 'Hoạt động cần chú ý'}</strong>
+              <strong>{item.title ?? labels[item.type] ?? 'Hoạt động cần chú ý'}</strong>
               <p>{guidance[item.type] ?? 'Vui lòng kiểm tra và tuân thủ quy định của bài thi.'}</p>
               <small>{item.count ? `Số lần ghi nhận: ${item.count} · ` : ''}{item.detail}</small>
             </div>)}

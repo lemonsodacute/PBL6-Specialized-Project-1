@@ -308,7 +308,12 @@ def student_warnings(attempt_id: UUID, db: Session = Depends(get_db), user: User
     return ok([{'id': str(row.id), 'event_type': row.event_type,
                 'occurred_at': row.last_seen or row.occurred_at,
                 'occurrence_count': row.occurrence_count,
-                'type_occurrence_count': type_totals.get(row.event_type, row.occurrence_count)}
+                'type_occurrence_count': type_totals.get(row.event_type, row.occurrence_count),
+                # The Student may see the direction of their own warning, but
+                # not model confidences, evidence frames or teacher review notes.
+                **({'direction_label': row.message}
+                   if row.provider == 'local_gaze' and row.event_type in ('gaze_away', 'head_turned')
+                   and row.message else {})}
                for row in rows])
 
 

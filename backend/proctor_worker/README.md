@@ -59,8 +59,8 @@ The trusted Backend assigns severity through `app/proctoring/local_policy.py` an
 | `headphone` | `object_headphone` | MEDIUM at 25–79%; HIGH from 80%, observed ≥900 ms; **class has weak validation performance** |
 | two or more detected `person` boxes | `person_in_background` | MEDIUM when second confidence is 25–69%; HIGH from 70%, observed ≥600 ms |
 | `KHONG_THAY_MAT` | `face_not_detected` | LOW after ≥2 seconds continuous absence |
-| `LIEC_SANG_TRAI`, `LIEC_SANG_PHAI` | `gaze_away` | HIGH after ≥2 seconds continuous off-screen gaze |
-| `QUAY_SANG_TRAI`, `QUAY_SANG_PHAI`, `CUI_XUONG_BAN`, `NGUA_LEN_TREN` | `head_turned` | HIGH after ≥2 seconds continuous head deviation |
+| `LIEC_SANG_TRAI`, `LIEC_SANG_PHAI`, `LIEC_LEN_TREN`, `LIEC_XUONG_DUOI` | `gaze_away` | HIGH after ≥2 seconds continuous off-screen gaze |
+| `QUAY_SANG_TRAI`, `QUAY_SANG_PHAI`, `CUI_XUONG_BAN`, `NGUA_LEN_TREN`, `NGHIENG_DAU` | `head_turned` | HIGH after ≥2 seconds continuous head deviation |
 | `BINH_THUONG` | No event | No alert |
 | `laptop`, `tv` | Not configured | No automatic prohibition without an exam-specific rule |
 
@@ -74,7 +74,29 @@ To enable both local profiles, run the isolated Worker and Backend with `PROCTOR
 
 The supplied six-point solvePnP estimate included a neutral half-turn between its y-up face template and the OpenCV y-down camera. Applying its thresholds directly to that absolute Euler pitch produced -165.49 degrees on the public portrait. The adapted tracker uses MediaPipe's full-face canonical-to-camera transform. It converts both bases with diag(1, -1, -1), removes scale and extracts Z-Y-X Euler angles. Neutral is identity. Yaw spans -90 to +90 degrees, positive toward the subject's right on an unmirrored feed. Pitch and roll span -180 to +180 degrees, with positive pitch up and positive roll clockwise in the image. Pose singularities near 90-degree yaw and individual neutral offsets still need labeled recordings. [MediaPipe face geometry](https://github.com/google-ai-edge/mediapipe/wiki/MediaPipe-Face-Mesh)
 
-Raw gaze ratio uses the supplied two-eye iris-distance method. Reference thresholds remain yaw ±18 degrees, pitch -14/+18 degrees and gaze ratio 0.37/0.63. The backend smooths all four measurements per attempt with a 200 ms time constant. Missing faces or excessive gaps reset smoothing. The live profile recognizes gaze/head direction after the two-second review threshold; accuracy remains uncalibrated and all decisions require human review.
+The integrated gaze detector now also extracts MediaPipe `eyeLook*` blendshape scores (horizontal and vertical) and blink state. It keeps the legacy iris ratio for diagnostics/older-worker compatibility only. **On each active Student attempt**, the Backend collects a neutral baseline for at least 3 seconds **and 15 non-blinking observations** while the student looks straight at the screen. It then averages the last five valid measurements, holds the last eye reading during a blink, combines relative head yaw/pitch with eye offsets, and uses different entry/exit thresholds (1.0/0.8) to reduce flicker. A head deviation over its own threshold remains visible even if the eyes compensate. Roll greater than 25 degrees is also reviewable. The Backend's existing temporal policy still requires **2 continuous seconds** before a HIGH direction alert and sends the existing `gaze_away`/`head_turned` events to Student warnings and the Teacher feed; it does not add a second popup engine. Each new review event also records an allowlisted specific direction, such as **Liếc mắt sang trái**, **Liếc mắt sang phải**, **Nhìn lên trên**, **Nhìn xuống dưới**, or **Quay đầu sang phải**. Student warnings show this wording instead of only “Nhìn ra ngoài”; Teacher events retain the same event types for filtering and reporting.
+
+### Regression check: phone detection vs. gaze
+
+Phone/book/smartwatch/headphone object recognition still runs through the **independent** `local_yolo` adapter and YOLO child, with no changes to model weights, confidence tiers, temporal thresholds or incident deduplication. Gaze sample interval is now **200ms** (was 100ms) to reduce inference traffic on the shared CPU Worker; YOLO remains **250ms**. This is a load mitigation, not proof of why a particular webcam did not detect a phone.
+
+If looking away alerts still arrive but a clearly visible phone never alerts:
+1. Check that the isolated Worker is running with its YOLO child ready. From `backend/`, **do not print the key**:
+
+```powershell
+$key = (Get-Content .\private\proctor-worker.key -Raw).Trim()
+try { Invoke-RestMethod -Uri 'http://127.0.0.1:8765/health' -Headers @{ 'X-Proctor-Worker-Key' = $key } }
+finally { Remove-Variable key -ErrorAction SilentlyContinue }
+```
+
+Expected: `yolo: READY`, `model_loaded: true`. If `yolo: UNAVAILABLE`, investigate `proctor_worker/yolo_runtime/.venv`, startup logs, and model asset provisioning before changing gaze or object thresholds. Gaze being available **does not** imply YOLO is ready.
+2. With `PROCTOR_DIAGNOSTICS=true` in **both** Backend and Worker processes, check `worker_infer` logs for `objects_status` and `phone_count`, and `temporal_policy` for `local_yolo` events. Remove the diagnostic flag after debugging.
+3. In an active camera-required attempt, hold a phone clearly within the camera field for several seconds, and confirm **both** “Phát hiện điện thoại” and the exact gaze direction can be shown if both behaviors occur. A low-confidence or missed YOLO detection cannot be fixed by UI labels.
+4. Use the dedicated regression tests. They use mocked detector measurements, **not** a real camera, so physical verification remains mandatory.
+
+**Important for a live test:** set `PROCTOR_MODEL_ENABLED=true` in `backend/.env`, keep `PROCTOR_MODELS` unset (not `{}`), start the proctor worker and restart the FastAPI backend. Enter a new camera-required Student exam; **look directly at the screen for the initial calibration period**, then sustain one direction for 3–5 seconds before checking the Student popup and Teacher feed. Sampled-frame cadence on a busy CPU can stretch the time needed to collect 15 observations. If the model is disabled, the worker is unavailable, or the Student exam is not actively sending camera frames, no gaze alerts are possible. No model weights, object detection thresholds or phone/book/headphone event handling changed.
+
+These direction scales are adapted from the supplied standalone `gaze_tracking1.py`; the yaw/pitch conventions follow the production MediaPipe matrix conversion, with positive pitch meaning **up**. The baseline is volatile **per attempt**, not shared among students and not stored in the database. Accuracy remains **uncalibrated against a representative webcam dataset**. A gaze alert is for teacher review, not proof of cheating.
 
 ### Live Student-camera calibration preparation
 
@@ -85,7 +107,7 @@ $env:PROCTOR_GAZE_CALIBRATION='true'
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001
 ```
 
-Keep `ENVIRONMENT=development` and `PROCTOR_MODEL_ENABLED=true` in `backend/.env`, use an exam with its existing camera session enabled, and open the active Student attempt. Select one of the seven poses and click `Record 5s`; repeat each pose at least three times, returning to `LOOK_FORWARD` between poses. Keep the face centered, hold a steady distance and lighting, and move eyes without turning the head for the eye poses. The initial second is settling time. Frames without a face and samples with invalid values or large angle jumps are discarded. Review accepted and discarded counts before exporting. The panel and backend logs contain numerical readings only. Disable afterward with `$env:PROCTOR_GAZE_CALIBRATION='false'` and restart the backend. This is measurement collection only; directional alerts remain disabled. Do not use prerecorded frames as evidence of browser-camera calibration.
+Keep `ENVIRONMENT=development` and `PROCTOR_MODEL_ENABLED=true` in `backend/.env`, use an exam with its existing camera session enabled, and open the active Student attempt. Select one of the seven poses and click `Record 5s`; repeat each pose at least three times, returning to `LOOK_FORWARD` between poses. Keep the face centered, hold a steady distance and lighting, and move eyes without turning the head for the eye poses. The initial second is settling time. Frames without a face and samples with invalid values or large angle jumps are discarded. Review accepted and discarded counts before exporting. The panel and backend logs contain numerical readings only. Disable afterward with `$env:PROCTOR_GAZE_CALIBRATION='false'` and restart the backend. This DEV flag only enables numeric sampling/diagnostics; live direction alerts are instead controlled by `PROCTOR_MODEL_ENABLED`, the local gaze profile and the active camera input. Neither flag establishes real-world threshold calibration. Do not use prerecorded frames as evidence of browser-camera calibration.
 
 ## Verification on 2 November 2026
 
