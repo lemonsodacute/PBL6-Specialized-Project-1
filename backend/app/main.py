@@ -60,6 +60,23 @@ async def validation_error(_:Request,exc:RequestValidationError):
     details = [{key: value for key, value in error.items() if key not in {'input', 'ctx'}} for error in exc.errors()]
     return JSONResponse(status_code=422, content=error_content('VALIDATION_ERROR','Request validation failed',details))
 @app.exception_handler(Exception)
-async def server_error(_:Request,__:Exception): return JSONResponse(status_code=500, content=error_content('INTERNAL_ERROR','Internal server error',None))
+async def server_error(request: Request, exc: Exception):
+    # FastAPI/Starlette's outer ServerErrorMiddleware can produce a 500 response
+    # outside of CORSMiddleware. Preserve the exact configured origin on that
+    # response, otherwise browsers misleadingly report an ordinary server 500 as
+    # a CORS failure (the successful OPTIONS preflight does not prevent this).
+    logging.getLogger('app.api').error(
+        'Unhandled API error at %s', request.url.path,
+        exc_info=(type(exc), exc, exc.__traceback__),
+    )
+    origin = request.headers.get('origin')
+    headers = {}
+    if origin and origin in settings.CORS_ORIGINS:
+        headers = {
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Credentials': 'true',
+            'Vary': 'Origin',
+        }
+    return JSONResponse(status_code=500, content=error_content('INTERNAL_ERROR', 'Internal server error', None), headers=headers)
 app.include_router(router,prefix='/api/v1')
 install_request_timing(app, engine, enabled=settings.ENVIRONMENT.lower() not in {'production', 'prod'})
