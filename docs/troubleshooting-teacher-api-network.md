@@ -29,3 +29,11 @@ The teacher analytics request is GET /api/v1/teacher/reports. The frontend uses 
 - Tests simulate a blocked request, assert inline guidance without the old console error, then restore the connection and retry.
 
 This patch cannot make a stopped local Backend run automatically. Never hide an actual connectivity failure by replacing it with fabricated chart values.
+
+## When OPTIONS succeeds but the real GET still reports CORS
+
+A successful OPTIONS response only verifies the preflight. If `GET /api/v1/teacher/reports` raises an unhandled server exception, Starlette's outer error middleware can produce a 500 **without** CORS headers, making Chrome report `No Access-Control-Allow-Origin`. The patch preserves allowed-origin CORS headers on the JSON 500 and logs the traceback to the FastAPI terminal. Check that traceback first; HTTP 500 is a server failure, not permission to relax CORS.
+
+The date trend now uses Vietnam's UTC+07:00 offset directly for contemporary submissions. Standard-library `ZoneInfo('Asia/Ho_Chi_Minh')` can fail on Windows without the optional IANA `tzdata` package; no timezone package installation is required for this report path.
+
+If the updated endpoint still returns 500, capture the traceback from the backend terminal (remove passwords, Authorization headers, tokens and student personal data before sharing). Also verify applied migrations with `cd backend; .\\.venv\\Scripts\\python.exe -m alembic current`, especially if recent AI-detection table fields are missing. Do not run migrations or reset the DB blindly.
