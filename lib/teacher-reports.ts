@@ -29,6 +29,7 @@ export function reportError(cause: unknown) {
     if (cause.status === 401) return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
     if (cause.status === 403) return 'Bạn không có quyền xem báo cáo này.';
     if (cause.status === 404) return 'Không tìm thấy đề thi hoặc bài làm.';
+    if (cause.status >= 500) return 'Backend gặp lỗi khi xử lý báo cáo (HTTP ' + cause.status + '). Kiểm tra traceback trong terminal FastAPI rồi thử lại.';
   }
   return 'Không thể tải báo cáo. Vui lòng thử lại.';
 }
